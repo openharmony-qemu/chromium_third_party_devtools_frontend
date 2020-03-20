@@ -5,6 +5,7 @@
 group("test") {
   deps = [
     "e2e",
+    "shared",
     "unittests/front_end",
   ]
 }
