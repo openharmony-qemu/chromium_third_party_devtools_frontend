@@ -9,6 +9,7 @@ group("e2e") {
   deps = [
     ":config",
     ":tests",
+    "resources",
   ]
 }
 
