@@ -36,7 +36,7 @@ export declare class Connection extends EventEmitter {
     session(sessionId: string): CDPSession | null;
     url(): string;
     send<T extends keyof ProtocolMapping.Commands>(method: T, ...paramArgs: ProtocolMapping.Commands[T]['paramsType']): Promise<ProtocolMapping.Commands[T]['returnType']>;
-    _rawSend(message: Record<string, unknown>): number;
+    _rawSend(message: {}): number;
     _onMessage(message: string): Promise<void>;
     _onClose(): void;
     dispose(): void;
@@ -49,7 +49,7 @@ export declare class Connection extends EventEmitter {
 interface CDPSessionOnMessageObject {
     id?: number;
     method: string;
-    params: Record<string, unknown>;
+    params: {};
     error: {
         message: string;
         data: any;

@@ -43,11 +43,11 @@ export declare class ConsoleMessage {
     private _type;
     private _text;
     private _args;
-    private _stackTraceLocations;
+    private _location;
     /**
      * @public
      */
-    constructor(type: ConsoleMessageType, text: string, args: JSHandle[], stackTraceLocations: ConsoleMessageLocation[]);
+    constructor(type: ConsoleMessageType, text: string, args: JSHandle[], location?: ConsoleMessageLocation);
     /**
      * @returns The type of the console message.
      */
@@ -64,9 +64,5 @@ export declare class ConsoleMessage {
      * @returns The location of the console message.
      */
     location(): ConsoleMessageLocation;
-    /**
-     * @returns The array of locations on the stack of the console message.
-     */
-    stackTrace(): ConsoleMessageLocation[];
 }
 //# sourceMappingURL=ConsoleMessage.d.ts.map

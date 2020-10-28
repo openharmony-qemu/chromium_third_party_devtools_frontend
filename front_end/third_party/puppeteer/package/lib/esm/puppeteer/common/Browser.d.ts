@@ -15,6 +15,7 @@
  */
 /// <reference types="node" />
 import { ChildProcess } from 'child_process';
+import { Protocol } from 'devtools-protocol';
 
 import { Connection } from './Connection.js';
 import { EventEmitter } from './EventEmitter.js';
@@ -80,7 +81,7 @@ export declare const enum BrowserEmittedEvents {
 }
 /**
  * A Browser is created when Puppeteer connects to a Chromium instance, either through
- * {@link PuppeteerNode.launch} or {@link Puppeteer.connect}.
+ * {@link Puppeteer.launch} or {@link Puppeteer.connect}.
  *
  * @remarks
  *
@@ -389,7 +390,7 @@ export declare class BrowserContext extends EventEmitter {
      * @param permissions - An array of permissions to grant.
      * All permissions that are not listed here will be automatically denied.
      */
-    overridePermissions(origin: string, permissions: string[]): Promise<void>;
+    overridePermissions(origin: string, permissions: Protocol.Browser.PermissionType[]): Promise<void>;
     /**
      * Clears all permission overrides for the browser context.
      *

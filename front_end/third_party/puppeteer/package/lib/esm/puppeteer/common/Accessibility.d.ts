@@ -92,12 +92,12 @@ export interface SerializedAXNode {
  */
 export interface SnapshotOptions {
     /**
-     * Prune uninteresting nodes from the tree.
+     * Prune unintersting nodes from the tree.
      * @defaultValue true
      */
     interestingOnly?: boolean;
     /**
-     * Root node to get the accessibility tree for
+     * Prune unintersting nodes from the tree.
      * @defaultValue The root node of the entire page.
      */
     root?: ElementHandle;
