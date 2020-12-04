@@ -43,7 +43,7 @@ export declare class Target {
     /**
      * @internal
      */
-    _isClosedPromise: Promise<boolean>;
+    _isClosedPromise: Promise<void>;
     /**
      * @internal
      */
