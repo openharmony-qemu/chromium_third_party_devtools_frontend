@@ -13,30 +13,34 @@ const data: Components.TreeOutline.TreeOutlineData = {
   tree: [
     {
       key: 'Offices',
-      children: [
+      children: (): Promise<Components.TreeOutlineUtils.TreeNode[]> => Promise.resolve([
         {
           key: 'Europe',
-          children: [
+          children: (): Promise<Components.TreeOutlineUtils.TreeNode[]> => Promise.resolve([
             {
               key: 'UK',
-              children: [
-                {key: 'LON', children: [{key: '6PS'}, {key: 'CSG'}, {key: 'BEL'}]},
-              ],
+              children: (): Promise<Components.TreeOutlineUtils.TreeNode[]> => Promise.resolve([
+                {
+                  key: 'LON',
+                  children: (): Promise<Components.TreeOutlineUtils.TreeNode[]> =>
+                      Promise.resolve([{key: '6PS'}, {key: 'CSG'}, {key: 'BEL'}]),
+                },
+              ]),
             },
             {
               key: 'Germany',
-              children: [
+              children: (): Promise<Components.TreeOutlineUtils.TreeNode[]> => Promise.resolve([
                 {key: 'MUC'},
                 {key: 'BER'},
-              ],
+              ]),
             },
-          ],
+          ]),
         },
-      ],
+      ]),
     },
     {
       key: 'Products',
-      children: [
+      children: (): Promise<Components.TreeOutlineUtils.TreeNode[]> => Promise.resolve([
         {
           key: 'Chrome',
         },
@@ -49,8 +53,7 @@ const data: Components.TreeOutline.TreeOutlineData = {
         {
           key: 'Calendar',
         },
-      ],
-
+      ]),
     },
   ],
 
