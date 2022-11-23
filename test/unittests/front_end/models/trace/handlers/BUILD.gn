@@ -9,6 +9,7 @@ ts_library("handlers") {
   sources = [ "MetaHandler_test.ts" ]
 
   deps = [
+    "../../../../../../front_end/core/platform:bundle",
     "../../../../../../front_end/models/trace:bundle",
     "../../../helpers",
   ]
