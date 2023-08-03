@@ -3,8 +3,6 @@
 # found in the LICENSE file.
 
   .text
-  # Need a non-empty code section for variable lookups to be able to find the
-  # comp unit by code offset.
   .file "embedded.c"
   .globl  __original_main
   .type __original_main,@function
@@ -14,7 +12,6 @@ __original_main:                        # @__original_main
   return
   end_function
 .Lfunc_end0:
-  .size __original_main, .Lfunc_end0-__original_main
 
   .section  .debug_info,"",@
   .int32  .Ldebug_info_end0-.Ldebug_info_start0 # Length of Unit
@@ -22,28 +19,34 @@ __original_main:                        # @__original_main
   .int16 4                                      # DWARF version number
   .int32 0                                      # Offset Into Abbrev. Section
   .int8 4                                       # Address Size (in bytes)
-  .int8 1                                       # Abbrev [1] DW_TAG_compile_unit
+
+  ${ABBR} 1                                     # DW_TAG_compile_unit
   .int32 0x8                                    # DW_AT_low_pc
   .int32 0x10                                   # DW_AT_high_pc
   .int32 .Lstring0                              # DW_AT_comp_dir
-  .int8 2                                       # Abbrev [2] DW_TAG_variable
-  .int32 0xDEADBEEF
+
+  ${ABBR} 2                                     # DW_TAG_variable
+  .int32 0xDEADBEEF                             # DW_AT_const_value
   .int32 .Lstring1                              # DW_AT_name
   .int32 .Ldebug_info_type0                     # DW_AT_type
-  .int8 5                                       # Abbrev [2] DW_TAG_variable
+
+  ${ABBR} 5                                     # DW_TAG_variable
   .int32 0xDEADBEEF
   .int32 .Lstring3                              # DW_AT_name
   .int32 .Ldebug_info_type1                     # DW_AT_type
+
 .Ldebug_info_type0:
-  .int8 3                                       # Abbrev [3] DW_TAG_type
+  ${ABBR} 3                                     # DW_TAG_type
   .int32 .Lstring2                              # DW_AT_name
   .int8 0x07                                    # DW_AT_encoding
   .int8 4                                       # DW_AT_byte_size
+
 .Ldebug_info_type1:
-  .int8 4                                       # Abbrev [4] DW_TAG_pointer_type
+  ${ABBR} 4                                     # DW_TAG_pointer_type
   .int32 .Lstring4                              # DW_AT_name
   .int8 4                                       # DW_AT_byte_size
   .int32 .Ldebug_info_type0                     # DW_AT_type
+  ${EOM}                                        # End DW_TAG_compile_unit
 .Ldebug_info_end0:
 
   .section  .debug_addr,"",@
