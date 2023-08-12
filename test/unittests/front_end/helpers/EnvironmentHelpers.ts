@@ -48,25 +48,7 @@ const REGISTERED_EXPERIMENTS = [
 ];
 
 export async function initializeGlobalVars({reset = true} = {}) {
-  // Expose the locale.
-  i18n.DevToolsLocale.DevToolsLocale.instance({
-    create: true,
-    data: {
-      navigatorLanguage: 'en-US',
-      settingLanguage: 'en-US',
-      lookupClosestDevToolsLocale: () => 'en-US',
-    },
-  });
-
-  // Load the strings from the resource file.
-  const locale = i18n.DevToolsLocale.DevToolsLocale.instance().locale;
-  // proxied call.
-  try {
-    await i18n.i18n.fetchAndRegisterLocaleData(locale);
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.warn('EnvironmentHelper: Loading en-US locale failed', error.message);
-  }
+  await initializeGlobalLocaleVars();
 
   // Create the appropriate settings needed to boot.
   const settings = [
@@ -150,6 +132,9 @@ export async function initializeGlobalVars({reset = true} = {}) {
         Common.Settings.SettingCategory.APPEARANCE, 'uiTheme', 'systemPreferred', Common.Settings.SettingType.ENUM),
     createSettingValue(
         Common.Settings.SettingCategory.APPEARANCE, 'language', 'en-US', Common.Settings.SettingType.ENUM),
+    createSettingValue(
+        Common.Settings.SettingCategory.SOURCES, 'network.enable-remote-file-loading', false,
+        Common.Settings.SettingType.BOOLEAN),
   ];
 
   Common.Settings.registerSettingsForTest(settings, reset);
@@ -185,6 +170,7 @@ export async function deinitializeGlobalVars() {
   Root.Runtime.experiments.clearForTest();
 
   // Remove instances.
+  await deinitializeGlobalLocaleVars();
   SDK.TargetManager.TargetManager.removeInstance();
   Root.Runtime.Runtime.removeInstance();
   Common.Settings.Settings.removeInstance();
@@ -206,6 +192,40 @@ export function describeWithEnvironment(title: string, fn: (this: Mocha.Suite) =
   return describe(`env-${title}`, () => {
     before(async () => await initializeGlobalVars(opts));
     after(async () => await deinitializeGlobalVars());
+    describe(title, fn);
+  });
+}
+
+export async function initializeGlobalLocaleVars() {
+  // Expose the locale.
+  i18n.DevToolsLocale.DevToolsLocale.instance({
+    create: true,
+    data: {
+      navigatorLanguage: 'en-US',
+      settingLanguage: 'en-US',
+      lookupClosestDevToolsLocale: () => 'en-US',
+    },
+  });
+
+  // Load the strings from the resource file.
+  const locale = i18n.DevToolsLocale.DevToolsLocale.instance().locale;
+  // proxied call.
+  try {
+    await i18n.i18n.fetchAndRegisterLocaleData(locale);
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.warn('EnvironmentHelper: Loading en-US locale failed', error.message);
+  }
+}
+
+export function deinitializeGlobalLocaleVars() {
+  i18n.DevToolsLocale.DevToolsLocale.removeInstance();
+}
+
+export function describeWithLocale(title: string, fn: (this: Mocha.Suite) => void) {
+  return describe(`locale-${title}`, () => {
+    before(async () => await initializeGlobalLocaleVars());
+    after(deinitializeGlobalLocaleVars);
     describe(title, fn);
   });
 }

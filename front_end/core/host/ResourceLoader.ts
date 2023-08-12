@@ -105,9 +105,10 @@ export let load = function(
         arg0: boolean, arg1: {
           [x: string]: string,
         },
-        arg2: string, arg3: LoadErrorDescription) => void): void {
+        arg2: string, arg3: LoadErrorDescription) => void,
+    allowRemoteFilePaths: boolean): void {
   const stream = new Common.StringOutputStream.StringOutputStream();
-  loadAsStream(url, headers, stream, mycallback);
+  loadAsStream(url, headers, stream, mycallback, allowRemoteFilePaths);
 
   function mycallback(
       success: boolean, headers: {
@@ -233,6 +234,15 @@ const loadXHR = (url: string): Promise<string> => {
   });
 };
 
+function canBeRemoteFilePath(url: string): boolean {
+  try {
+    const urlObject = new URL(url);
+    return urlObject.protocol === 'file:' && urlObject.host !== '';
+  } catch (exception) {
+    return false;
+  }
+}
+
 export const loadAsStream = function(
     url: string, headers: {
       [x: string]: string,
@@ -242,11 +252,25 @@ export const loadAsStream = function(
         ((arg0: boolean, arg1: {
            [x: string]: string,
          },
-          arg2: LoadErrorDescription) => void)): void {
+          arg2: LoadErrorDescription) => void),
+    allowRemoteFilePaths?: boolean): void {
   const streamId = _bindOutputStream(stream);
   const parsedURL = new Common.ParsedURL.ParsedURL(url);
   if (parsedURL.isDataURL()) {
     loadXHR(url).then(dataURLDecodeSuccessful).catch(dataURLDecodeFailed);
+    return;
+  }
+
+  if (!allowRemoteFilePaths && canBeRemoteFilePath(url)) {
+    // Remote file paths can cause security problems, see crbug.com/1342722.
+    if (callback) {
+      callback(/* success */ false, /* headers */ {}, {
+        statusCode: 400,  // BAD_REQUEST
+        netError: -20,    // BLOCKED_BY_CLIENT
+        netErrorName: 'net::BLOCKED_BY_CLIENT',
+        message: 'Loading from a remote file path is prohibited for security reasons.',
+      });
+    }
     return;
   }
 
