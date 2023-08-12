@@ -92,7 +92,7 @@ function launchChrome() {
   // Use port 0 to request any free port.
   const enabledFeatures = ['Portals', 'PortalsCrossOrigin', 'PartitionedCookies'];
   const launchArgs = [
-    '--remote-debugging-port=0', '--enable-experimental-web-platform-features',
+    '--remote-allow-origins=*', '--remote-debugging-port=0', '--enable-experimental-web-platform-features',
     // This fingerprint may be generated from the certificate using
     // openssl x509 -noout -pubkey -in scripts/hosted_mode/cert.pem | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64
     '--ignore-certificate-errors-spki-list=KLy6vv6synForXwI6lDIl+D3ZrMV6Y1EMTY6YpOcAos=',
