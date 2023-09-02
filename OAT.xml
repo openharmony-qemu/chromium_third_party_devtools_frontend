@@ -1,0 +1,520 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Copyright (c) 2021 Huawei Device Co., Ltd.
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+
+    This is the configuration file template for OpenHarmony OSS Audit Tool, please copy it to your
+project root dir and modify it refer to OpenHarmony/tools_oat/README.
+    All configurations in this file will be merged to OAT-Default.xml, if you have any questions or
+concerns, please create issue in OpenHarmony/tools_oat and @jalenchen or chenyaxun.
+
+    licensefile:
+    1.If the project don't have "LICENSE" in root dir, please define all the license files in this
+project in , OAT will check license files according to this rule.
+
+    policylist:
+    1. policy: If the OAT-Default.xml policies do not meet your requirements, please add policies here.
+    2. policyitem: The fields type, name, path, desc is required, and the fields rule, group,
+filefilter is optional,the default value is:
+    <policyitem type="" name="" path="" desc="" rule="may" group="defaultGroup"
+filefilter="defaultPolicyFilter"/>
+    3. policyitem type:
+        "compatibility" is used to check license compatibility in the specified path;
+        "license" is used to check source license header in the specified path;
+        "copyright" is used to check source copyright header in the specified path;
+        "import" is used to check source dependency in the specified path, such as import ... ,include ...
+        "filetype" is used to check file type in the specified path, supported file types: archive, binary
+        "filename" is used to check whether the specified file exists in the specified path(projectroot
+means the root dir of the project), supported file names: LICENSE, README, README.OpenSource
+    4. policyitem name: This field is used for define the license, copyright, "*" means match all, the
+"!" prefix means could not match this value. For example, "!GPL" means can not use GPL license.
+    5. policyitem path: This field is used for define the source file scope to apply this policyitem,
+the "!" prefix means exclude the files. For example, "!.*/lib/.*" means files in lib dir will be
+exclude while process this policyitem.
+    6. policyitem rule and group: These two fields are used together to merge policy results. "may"
+policyitems in the same group means any one in this group passed, the result will be passed.
+    7. policyitem filefilter: Used to bind filefilter which define filter rules.
+    7. policyitem desc: Used to describe the reason of this policy item, committers will check this
+while merging the code.
+    8. filefilter: Filter rules, the type filename is used to filter file name, the type filepath is
+used to filter file path.
+
+    Note:If the text contains special characters, please escape them according to the following rules:
+    " == &quot;
+    & == &amp;
+    ' == &apos;
+    < == &lt;
+    > == &gt;
+-->
+
+<configuration>
+    <oatconfig>
+        <policylist>
+            <policy name="projectPolicy" desc="">
+                <policyitem type="compatibility" name="Khronos License1" path=".*" desc="" />
+                <policyitem type="compatibility" name="Khronos License2" path="node_modules/chai/lib/chai/utils.*" desc="" />
+                <policyitem type="compatibility" name="Khronos License3" path=".*" desc="" />
+                <policyitem type="compatibility" name="MPL-2.0" path="front_end/third_party/axe-core.*" desc="" />
+                 <policyitem type="compatibility" name="BSDStyleLicense|LGPLStyleLicense" path=".*" desc="" />
+                 <policyitem type="compatibility" name="BSDStyleLicense|LGPLStyleLicense" path="front_end/panels/network/ResourceWebSocketFrameView.ts.*" desc="" />
+                 <policyitem type="compatibility" name="Khronos License4" path="front_end/third_party/lighthouse.*" desc="" />
+                 <policyitem type="compatibility" name="Khronos License5" path=".*" desc="" />
+                 <policyitem type="compatibility" name="Khronos License6" path=".*" desc="" />
+                 <policyitem type="compatibility" name="Khronos License7" path="node_modules/body-parser/lib/types.*" desc="" />
+                 <policyitem type="compatibility" name="MPL-2.0" path=".*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License8" path=".*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License9" path=".*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License10" path="node_modules/accepts.*" desc="" />
+                  <policyitem type="compatibility" name="Python-2.0|GPLStyleLicense" path=".*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License11" path="chai/lib/chai/utils.*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License12" path="front_end/third_party/marked/package.*" desc="" />
+                  <policyitem type="compatibility" name="BSDStyleLicense|LGPLStyleLicense" path="front_end/panels/network.*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License13" path="node_modules/check-error.*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License14" path="node_modules/check-error.*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License15" path="node_modules/depd/lib/browser.*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License16" path="node_modules/chai.*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License17" path="node_modules/@typescript-eslint/eslint-plugin/dist/rules/indent-new-do-not-use.*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License18" path="node_modules/clean-css/lib.*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License19" path="node_modules/chai/lib/chai/utils.*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License20" path=".*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License21" path=".*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License22" path="node_modules/bytes.*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License23" path=".*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License24" path=".*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License25" path=".*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License26" path="node_modules/istanbul-lib-source-maps/lib.*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License27" path="node_modules/chai/lib/chai/utils.*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License28" path="node_modules/lodash.*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License29" path="node_modules/license-checker/lib.*" desc="" />
+                  <policyitem type="compatibility" name="Khronos License30" path=".*" desc="" />
+                   <policyitem type="compatibility" name="Khronos License31" path=".*" desc="" />
+                   <policyitem type="compatibility" name="Khronos License32" path="node_modules/html-minifier/src.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License33" path="node_modules/meow/node_modules/normalize-package-data/lib.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License34" path="node_modules/meow/node_modules/normalize-package-data/lib.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License35" path="node_modules/license-checker/tests.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License36" path="node_modules/html-minifier/node_modules/clean-css/lib.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License37" path="node_modules/license-checker/bin.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License38" path="node_modules/karma-coverage/lib.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License39" path="node_modules/progress/lib.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License40" path="node_modules/sinon/pkg.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License41" path="front_end/third_party/intl-messageformat/package.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License42" path="node_modules/assertion-error.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License43" path=".*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License44" path="node_modules/@sinonjs/text-encoding/lib.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License45" path="node_modules/table/dist/src.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License46" path=".*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License47" path=".*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License48" path=".*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License49" path=".*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License50" path="node_modules/table/dist/src.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License51" path="node_modules/safe-buffer.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License52" path="node_modules/ua-parser-js.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License53" path="node_modules/@typescript-eslint/eslint-plugin/dist/rules/indent-new-do-not-use.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License54" path="node_modules/range-parser.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License55" path="node_modules/he.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License56" path="node_modules/uri-js/dist/esnext.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License57" path="node_modules/ajv/scripts.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License58" path="node_modules/minify-html-literals/src.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License59" path="node_modules/@typescript-eslint/eslint-plugin/dist/rules/indent-new-do-not-use.*" desc="" />
+                    <policyitem type="compatibility" name="Khronos License60" path="node_modules/uri-js/dist/es5.*" desc="" />
+
+            </policy>
+        </policylist>
+        <filefilterlist>
+            <filefilter name="defaultPolicyFilter"
+                desc="Filters for compatibility,license header policies">
+                <filteritem type="filepath" name="node_modules/@types/normalize-package-data/index.d.ts"
+                    desc="" />
+                <filteritem type="filepath" name="front_end/third_party/codemirror.next/chunk/codemirror.js"
+                    desc="" />
+                <filteritem type="filepath" name="node_modules/spdx-expression-parse/scan.js"
+                    desc="" />
+                <filteritem type="filepath" name="node_modules/base64-arraybuffer/rollup.config.ts"
+                    desc="" />
+                <filteritem type="filepath" name="front_end/third_party/codemirror/package/mode/elm/elm.js"
+                    desc="" />
+                <filteritem type="filepath" name="node_modules/@sinonjs/text-encoding.*"
+                    desc="" />
+                <filteritem type="filepath" name=".*README.chromium"
+                    desc="" />
+                 <filteritem type="filepath" name="README.OpenSource"
+                    desc="" />
+                    <filteritem type="filepath" name="front_end/third_party/codemirror.next/chunk/html.js"
+                    desc="" />
+                    <filteritem type="filepath" name=".*LICENSE"
+                    desc="" />
+                    <filteritem type="filepath" name="node_modules/csso/dist/csso.min.js"
+                    desc="" />
+                    <filteritem type="filepath" name="node_modules/css-tree/dist/csstree.min.js"
+                    desc="" />
+                    <filteritem type="filepath" name=".*license.js"
+                    desc="" />
+                    <filteritem type="filepath" name="node_modules/cliui/build/lib/string-utils.js"
+                    desc="" />
+                    <filteritem type="filepath" name="node_modules/csso/dist/csso.js"
+                    desc="" />
+                    <filteritem type="filepath" name=".*index.js"
+                    desc="" />
+                    <filteritem type="filepath" name=".*min.js"
+                    desc="" />
+                    <filteritem type="filepath" name="node_modules/stable/stable.js"
+                    desc="" />
+                    <filteritem type="filepath" name="front_end/ui/legacy/components/data_grid/DataGrid.ts"
+                    desc="" />
+                    <filteritem type="filepath" name="node_modules/spdx-expression-parse/parse.js"
+                    desc="" />
+                    <filteritem type="filepath" name="front_end/panels/network/ResourceWebSocketFrameView.ts"
+                    desc="" />
+                    <filteritem type="filepath" name="node_modules/color-convert/conversions.js"
+                    desc="" />
+                    <filteritem type="filepath" name="node_modules/normalize-package-data/lib/fixer.js"
+                    desc="" />
+                    <filteritem type="filepath" name="third_party/typescript/METADATA"
+                    desc="" />
+            </filefilter>
+            <filefilter name="defaultFilter">
+                <filteritem type="filepath" name="README.OpenSource"
+                    desc="" />
+            </filefilter> 
+        </filefilterlist>
+        
+        <licensematcherlist>
+            
+
+            <licensematcher name="Khronos License1" desc="">
+                <licensetext name="
+                CodeMirror, copyright (c) by Marijn Haverbeke and others
+                 Distributed under an MIT license: https://codemirror.net/LICENSE
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License2" desc="">
+                <licensetext name="
+                * Chai - addMethod utility
+                * Copyright(c) 2012-2014 Jake Luer &lt;jake@alogicalparadox.com&gt;
+                * MIT Licensed
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License3" desc="">
+                <licensetext name="
+               CodeMirror, copyright (c) by Marijn Haverbeke and others
+                Distributed under an MIT license: https://codemirror.net/LICENSE
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License4" desc="">
+                <licensetext name="
+               * Lighthouse v9.2.0 7bda3f32acb25bdc7dd3f305d47c6190ad444001 (Dec 16 2021)
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License5" desc="">
+                <licensetext name="
+               Copyright (c) 2014, Yahoo! Inc. All rights reserved.
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License6" desc="">
+                <licensetext name="
+               * Copyright(c) 2012-2014 Jake Luer &lt;jake@alogicalparadox.com&lt;
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License7" desc="">
+                <licensetext name="
+               * Copyright(c) 2014 Jonathan Ong
+               * Copyright(c) 2014-2015 Douglas Christopher Wilson
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License8" desc="">
+                <licensetext name="
+               * Copyright(c) 2014-2015 Douglas Christopher Wilson
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License9" desc="">
+                <licensetext name="
+               * Copyright (c) 2011-2013, Christopher Jeffrey (MIT License)
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License10" desc="">
+                <licensetext name="
+               * Copyright(c) 2014 Jonathan Ong
+                * Copyright(c) 2015 Douglas Christopher Wilson
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License11" desc="">
+                <licensetext name="
+              * Copyright(c) 2012-2015 Sakthipriyan Vairamani &lt;thechargingvolcano@gmail.com&gt;
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License12" desc="">
+                <licensetext name="
+              * Copyright (c) 2011-2021, Christopher Jeffrey. (MIT Licensed)
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License13" desc="">
+                <licensetext name="
+              * Copyright(c) 2012-2016 Jake Luer &lt;jake@alogicalparadox.com&gt;
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License14" desc="">
+                <licensetext name="
+              * Copyright(c) 2012-2014 Roman Shtylman
+             * Copyright(c) 2015 Douglas Christopher Wilson
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License15" desc="">
+                <licensetext name="
+              * Copyright(c) 2015 Douglas Christopher Wilson
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License16" desc="">
+                <licensetext name="
+              * Copyright(c) 2011-2014 Jake Luer &lt;jake@alogicalparadox.com&gt;
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License17" desc="">
+                <licensetext name="
+              * A class to store information on desired offsets of tokens from each other
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License18" desc="">
+                <licensetext name="
+              * Clean-css - https://github.com/clean-css/clean-css
+                * Released under the terms of MIT license
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License19" desc="">
+                <licensetext name="
+              * Copyright(c) 2011-2016 Jake Luer &lt;jake@alogicalparadox.com&gt;
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License20" desc="">
+                <licensetext name="
+              * Copyright(c) 2014 Douglas Christopher Wilson
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License21" desc="">
+                <licensetext name="
+              * Copyright(c) 2012-2013 TJ Holowaychuk
+                * Copyright(c) 2015 Andreas Lubbe
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License22" desc="">
+                <licensetext name="
+              * Copyright(c) 2012-2014 TJ Holowaychuk
+                * Copyright(c) 2015 Jed Watson
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License23" desc="">
+                <licensetext name="
+              Copyright 2012-2015, Yahoo Inc.
+                Copyrights licensed under the New BSD License. See the accompanying LICENSE file for terms.
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License24" desc="">
+                <licensetext name="
+              * See LICENSE file in root directory for full license.
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License25" desc="">
+                <licensetext name="
+              * Copyright(c) 2014 Jonathan Ong
+                * Copyright(c) 2016 Douglas Christopher Wilson
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License26" desc="">
+                <licensetext name="
+              Copyright 2015, Yahoo Inc.
+                Copyrights licensed under the New BSD License. See the accompanying LICENSE file for terms.
+            " desc="" />
+            </licensematcher> 
+            <licensematcher name="Khronos License27" desc="">
+                <licensetext name="
+              * Copyright(c) 2011 Jake Luer &lt;jake@alogicalparadox.com&gt;
+            " desc="" />
+            </licensematcher> 
+            <licensematcher name="Khronos License28" desc="">
+                <licensetext name="
+              * Lodash (Custom Build) lodash.com/license | Underscore.js 1.8.3 underscorejs.org/LICENSE
+                 * Build: `lodash core -o ./dist/lodash.core.js`
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License29" desc="">
+                <licensetext name="
+              Copyright (c) 2012, Yahoo! Inc. All rights reserved.
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License30" desc="">
+                <licensetext name="
+              var assert = require('assert'),
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License31" desc="">
+                <licensetext name="
+             * Copyright(c) 2013 Jake Luer &lt;jake@alogicalparadox.com&gt;
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License32" desc="">
+                <licensetext name="
+             * HTML Parser By John Resig (ejohn.org)
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License33" desc="">
+                <licensetext name="
+             module.exports = normalize
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License34" desc="">
+                <licensetext name="
+             var isValidSemver = require &apos;'semver/functions/valid' &apos;
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License35" desc="">
+                <licensetext name="
+             var assert = require( &apos;assert &apos;),
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License36" desc="">
+                <licensetext name="
+             * Clean-css - https://github.com/jakubpawlowicz/clean-css
+                * Released under the terms of MIT license
+                *
+            * Copyright (C) 2017 JakubPawlowicz.com
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License37" desc="">
+                <licensetext name="
+             Copyright (c) 2013, Yahoo! Inc. All rights reserved.
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License38" desc="">
+                <licensetext name="
+             var path = require(&apos;path&apos;)
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License39" desc="">
+                <licensetext name="
+             * Copyright(c) 2011 TJ Holowaychuk &lt;tj@vision-media.ca&gt;
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License40" desc="">
+                <licensetext name="
+             /* Sinon.JS 12.0.1, 2021-11-04, @license BSD-3 */
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License41" desc="">
+                <licensetext name="
+             Copyright (c) 2021, Oath Inc.
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License42" desc="">
+                <licensetext name="
+             * Copyright(c) 2013 Jake Luer &lt;jake@qualiancy.com&gt;
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License43" desc="">
+                <licensetext name="
+             * Copyright(c) 2014 Jonathan Ong
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License44" desc="">
+                <licensetext name="
+             * @fileoverview Global |this| required for resolving indexes in node.
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License45" desc="">
+                <licensetext name="
+              * Converts Windows-style newline to Unix-style
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License46" desc="">
+                <licensetext name="
+              /* MIT license */
+                /* eslint-disable no-mixed-operators */
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License47" desc="">
+                <licensetext name="
+              * Copyright(c) 2014-2017 Douglas Christopher Wilson
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License48" desc="">
+                <licensetext name="
+              /* eslint-disable no-control-regex */
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License49" desc="">
+                <licensetext name="
+              * Module dependencies.
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License50" desc="">
+                <licensetext name="
+              * Pads a string to the left and/or right to position the subject
+                * text in a desired alignment within a container. 
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License51" desc="">
+                <licensetext name="
+              /*! safe-buffer. MIT License. Feross Aboukhadijeh &lt;https://feross.org/opensource&gt; */
+                /* eslint-disable node/no-deprecated-api */
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License52" desc="">
+                <licensetext name="
+              /* UAParser.js v0.7.31
+                 Copyright © 2012-2021 Faisal Salman &lt;f@faisalman.com&gt;
+                 MIT License */
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License53" desc="">
+                <licensetext name="
+              * A mutable balanced binary search tree that stores (key, value) pairs. The keys are numeric, and must be unique.
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License54" desc="">
+                <licensetext name="
+              * Copyright(c) 2012-2014 TJ Holowaychuk
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License55" desc="">
+                <licensetext name="
+              /*! https://mths.be/he v1.2.0 by @mathias | MIT license */
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License56" desc="">
+                <licensetext name="
+              * Copyright 2011 Gary Court. All rights reserved.
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License57" desc="">
+                <licensetext name="
+              #!/usr/bin/env bash
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License58" desc="">
+                <licensetext name="
+              * The default &lt;code&gt;clean-css&lt;/code&gt; options, optimized for production
+                * minification.
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License59" desc="">
+                <licensetext name="
+              * A helper class to get token-based info related to indentation
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License60" desc="">
+                <licensetext name="
+              /** @license URI.js v4.4.0 (c) 2011 Gary Court. License: http://github.com/garycourt/uri-js */
+            " desc="" />
+            </licensematcher>
+        </licensematcherlist>  
+    </oatconfig>
+</configuration>
