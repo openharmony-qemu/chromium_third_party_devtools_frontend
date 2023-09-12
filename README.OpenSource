@@ -1,6 +1,6 @@
 [
     {
-        "Name": "chromium_third_party_devtools_frontend",                   # 上游开源软件名全称
+        "Name": "devtools-frontend",                   # 上游开源软件名全称
         "License": "GPLStyleLicense",        # 上游开源软件中包含的许可证信息
         "License File": "LICENSE",    # 许可证所在文件路径
         "Version Number": "1655fc6e5b1b7db015e2b0fc9dfe75f6b0034388",
@@ -8,7 +8,7 @@
         "Description": "调试器前端"           # 开源软件功能描述
     },
     {
-        "Name": "chromium_third_party_devtools_frontend",                   # 上游开源软件名全称
+        "Name": "devtools-frontend",                   # 上游开源软件名全称
         "License": "MPL-2.0",        # 上游开源软件中包含的许可证信息
         "License File": "LICENSE",    # 许可证所在文件路径
         "Version Number": "1655fc6e5b1b7db015e2b0fc9dfe75f6b0034388",
@@ -16,7 +16,7 @@
         "Description": "调试器前端"           # 开源软件功能描述
     },
     {
-        "Name": "chromium_third_party_devtools_frontend",                   # 上游开源软件名全称
+        "Name": "devtools-frontend",                   # 上游开源软件名全称
         "License": "LGPLStyleLicense",        # 上游开源软件中包含的许可证信息
         "License File": "LICENSE",    # 许可证所在文件路径
         "Version Number": "1655fc6e5b1b7db015e2b0fc9dfe75f6b0034388",
@@ -24,7 +24,7 @@
         "Description": "调试器前端"           # 开源软件功能描述
     },
     {
-        "Name": "chromium_third_party_devtools_frontend",                   # 上游开源软件名全称
+        "Name": "devtools-frontend",                   # 上游开源软件名全称
         "License": "Python-2.0",        # 上游开源软件中包含的许可证信息
         "License File": "LICENSE",    # 许可证所在文件路径
         "Version Number": "1655fc6e5b1b7db015e2b0fc9dfe75f6b0034388",
@@ -32,7 +32,7 @@
         "Description": "调试器前端"           # 开源软件功能描述
     },
     {
-        "Name": "chromium_third_party_devtools_frontend",                   # 上游开源软件名全称
+        "Name": "devtools-frontend",                   # 上游开源软件名全称
         "License": "Generic Bare Warranty Disclaimer",        # 上游开源软件中包含的许可证信息
         "License File": "LICENSE",    # 许可证所在文件路径
         "Version Number": "1655fc6e5b1b7db015e2b0fc9dfe75f6b0034388",
@@ -40,7 +40,7 @@
         "Description": "调试器前端"           # 开源软件功能描述
     },
     {
-        "Name": "chromium_third_party_devtools_frontend",                   # 上游开源软件名全称
+        "Name": "devtools-frontend",                   # 上游开源软件名全称
         "License": "Public Domain",        # 上游开源软件中包含的许可证信息
         "License File": "LICENSE",    # 许可证所在文件路径
         "Version Number": "1655fc6e5b1b7db015e2b0fc9dfe75f6b0034388",
@@ -48,7 +48,7 @@
         "Description": "调试器前端"           # 开源软件功能描述
     },
     {
-        "Name": "chromium_third_party_devtools_frontend",                   # 上游开源软件名全称
+        "Name": "devtools-frontend",                   # 上游开源软件名全称
         "License": "CC-BY-4.0",        # 上游开源软件中包含的许可证信息
         "License File": "LICENSE",    # 许可证所在文件路径
         "Version Number": "1655fc6e5b1b7db015e2b0fc9dfe75f6b0034388",
@@ -56,7 +56,7 @@
         "Description": "调试器前端"           # 开源软件功能描述
     },
     {
-        "Name": "chromium_third_party_devtools_frontend",                   # 上游开源软件名全称
+        "Name": "devtools-frontend",                   # 上游开源软件名全称
         "License": "MPL-1.0",        # 上游开源软件中包含的许可证信息
         "License File": "LICENSE",    # 许可证所在文件路径
         "Version Number": "1655fc6e5b1b7db015e2b0fc9dfe75f6b0034388",
@@ -64,7 +64,7 @@
         "Description": "调试器前端"           # 开源软件功能描述
     },
     {
-        "Name": "chromium_third_party_devtools_frontend",                   # 上游开源软件名全称
+        "Name": "devtools-frontend",                   # 上游开源软件名全称
         "License": "CC0-1.0"        # 上游开源软件中包含的许可证信息
         "License File": "LICENSE",    # 许可证所在文件路径
         "Version Number": "1655fc6e5b1b7db015e2b0fc9dfe75f6b0034388",
