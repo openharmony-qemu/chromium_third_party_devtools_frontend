@@ -1,211 +1,396 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Copyright (c) 2021 Huawei Device Co., Ltd.
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+
+    This is the configuration file template for OpenHarmony OSS Audit Tool, please copy it to your
+project root dir and modify it refer to OpenHarmony/tools_oat/README.
+    All configurations in this file will be merged to OAT-Default.xml, if you have any questions or
+concerns, please create issue in OpenHarmony/tools_oat and @jalenchen or chenyaxun.
+
+    licensefile:
+    1.If the project don't have "LICENSE" in root dir, please define all the license files in this
+project in , OAT will check license files according to this rule.
+
+    policylist:
+    1. policy: If the OAT-Default.xml policies do not meet your requirements, please add policies here.
+    2. policyitem: The fields type, name, path, desc is required, and the fields rule, group,
+filefilter is optional,the default value is:
+    <policyitem type="" name="" path="" desc="" rule="may" group="defaultGroup"
+filefilter="defaultPolicyFilter"/>
+    3. policyitem type:
+        "compatibility" is used to check license compatibility in the specified path;
+        "license" is used to check source license header in the specified path;
+        "copyright" is used to check source copyright header in the specified path;
+        "import" is used to check source dependency in the specified path, such as import ... ,include ...
+        "filetype" is used to check file type in the specified path, supported file types: archive, binary
+        "filename" is used to check whether the specified file exists in the specified path(projectroot
+means the root dir of the project), supported file names: LICENSE, README, README.OpenSource
+    4. policyitem name: This field is used for define the license, copyright, "*" means match all, the
+"!" prefix means could not match this value. For example, "!GPL" means can not use GPL license.
+    5. policyitem path: This field is used for define the source file scope to apply this policyitem,
+the "!" prefix means exclude the files. For example, "!.*/lib/.*" means files in lib dir will be
+exclude while process this policyitem.
+    6. policyitem rule and group: These two fields are used together to merge policy results. "may"
+policyitems in the same group means any one in this group passed, the result will be passed.
+    7. policyitem filefilter: Used to bind filefilter which define filter rules.
+    7. policyitem desc: Used to describe the reason of this policy item, committers will check this
+while merging the code.
+    8. filefilter: Filter rules, the type filename is used to filter file name, the type filepath is
+used to filter file path.
+
+    Note:If the text contains special characters, please escape them according to the following rules:
+    " == &quot;
+    & == &amp;
+    ' == &apos;
+    < == &lt;
+    > == &gt;
+-->
+
 <configuration>
     <oatconfig>
-        <policylist>
+         <policylist>
             <policy name="projectPolicy" desc="">
-                <policyitem type="compatibility" name="GPLStyleLicense" path=".*" desc="" />
-                <policyitem type="compatibility" name="LGPLStyleLicense" path=".*" desc="" />
-                <policyitem type="compatibility" name="MPL-2.0" path=".*" desc="" />
-                <policyitem type="compatibility" name="Python-2.0" path=".*" desc="" />
-                <policyitem type="compatibility" name="Generic Bare Warranty Disclaimer" path=".*" desc="" />
-                <policyitem type="compatibility" name="Public Domain" path=".*" desc="" />
-                <policyitem type="compatibility" name="CC-BY-4.0" path=".*" desc="" />
-                <policyitem type="compatibility" name="MPL-1.0" path=".*" desc="" />
-                <policyitem type="compatibility" name="CC0-1.0" path=".*" desc="" />
+                <policyitem type="compatibility" name="MIT" path="node_modules/chai/lib/chai/utils/.*" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="MIT" path="node_modules/ua-parser-js/dist/.*" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="Apache-2.0" path="front_end/third_party/wasmparser/README.chromium" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="Apache-2.0" path="front_end/third_party/.*README.chromium" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="Apache-2.0" path="third_party/typescript/README.chromium" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="Apache-2.0" path="third_party/pyjson5/README.chromium" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="BSD-3-Clause" path="node_modules/diff/LICENSE" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="BSD-3-Clause" path="node_modules/istanbul-lib-report/lib/.*" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="BSD-3-Clause" path="node_modules/@babel/generator/node_modules/source-map/LICENSE" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="BSD-3-Clause" path="node_modules/css-what/LICENSE" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="BSD-3-Clause" path="node_modules/license-checker/.*" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="BSD-3-Clause" path="node_modules/sinon/pkg/.*" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="BSD-3-Clause" path="front_end/third_party/lit-html/README.chromium" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="BSD-3-Clause" path="node_modules/qs/LICENSE" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="BSD-2-Clause" path="front_end/ui/legacy/components/data_grid/DataGrid.ts" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="BSD-2-Clause-Views" path="node_modules/uri-js/LICENSE" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="MIT" path="front_end/third_party/marked/package/bin/.*" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="Unknown License file reference" path="node_modules/eslint-utils/node_modules/eslint-visitor-keys/lib/index.js" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="Unknown License file reference" path="front_end/third_party/intl-messageformat/.*" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="CC0-1.0" path="node_modules/mdn-data/LICENSE" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="Python-2.0" path="node_modules/argparse/LICENSE" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="BSDStyleLicense" path="front_end/panels/network/ResourceWebSocketFrameView.ts" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="CC-BY-4.0" path="node_modules/caniuse-lite/LICENSE" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="MPL-2.0" path="front_end/third_party/axe-core/.*" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="MPL-2.0" path="node_modules/axe-core/LICENSE" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="MPL-1.0" path="node_modules/html-minifier/.*" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="GPLStyleLicense" path="node_modules/argparse/LICENSE" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="LGPLStyleLicense" path="front_end/panels/network/ResourceWebSocketFrameView.ts" desc="经法务确认为宽松型许可证" />
             </policy>
         </policylist>
         <filefilterlist>
             <filefilter name="defaultPolicyFilter"
                 desc="Filters for compatibility,license header policies">
-                  <filteritem type="filepath" name="README.OpenSource"
-                    desc="" />
-                  <filteritem type="filepath" name="front_end/third_party/codemirror/package.*"
-                    desc="" />
-                  <filteritem type="filepath" name="front_end/third_party/intl-messageformat/package/src/core.js"
-                    desc="" />
-                  <filteritem type="filepath" name="front_end/third_party/codemirror.next/chunk.*"
-                    desc="" />
-                  <filteritem type="filepath" name="node_modules/body-parser/lib/types.*"
-                    desc="" />
-                  <filteritem type="filepath" name="node_modules/chai.*"
-                    desc="" />
-                  <filteritem type="filepath" name="front_end/third_party/marked.*"
-                    desc="" />
-                  <filteritem type="filepath" name="front_end/third_party/intl-messageformat/package/lib/src/core.js"
-                    desc="" />
-                  <filteritem type="filepath" name="node_modules/body-parser.*"
-                    desc="" />
-                  <filteritem type="filepath" name=".*index.js"
-                    desc="" />
-                  <filteritem type="filepath" name="node_modules/istanbul-lib-report/lib.*"
-                    desc="" />
-                  <filteritem type="filepath" name="node_modules/@typescript-eslint/eslint-plugin/dist/rules/indent-new-do-not-use.*"
-                    desc="" />
-                  <filteritem type="filepath" name=".*index.d.ts"
-                    desc="" />
-                  <filteritem type="filepath" name=".*min.js"
-                    desc="" />
-                  <filteritem type="filepath" name="node_modules/istanbul-lib-coverage/lib.*"
-                    desc="" />
-                  <filteritem type="filepath" name=".*normalize.js"
-                    desc="" />
-                  <filteritem type="filepath" name="node_modules/istanbul-lib-source-maps/lib.*"
-                    desc="" />
-                  <filteritem type="filepath" name="node_modules/istanbul-reports/lib/html.*"
-                    desc="" />
-                  <filteritem type="filepath" name="node_modules/spdx-expression-parse.*"
-                    desc="" />
-                  <filteritem type="filepath" name="node_modules/meow/node_modules/normalize-package-data/lib/fixer.js"
-                    desc="" />
-                  <filteritem type="filepath" name="node_modules/csso/dist/csso.js"
-                    desc="" />
-                  <filteritem type="filepath" name="node_modules/license-checker/tests.*"
-                    desc="" />
-                  <filteritem type="filepath" name="front_end/third_party/intl-messageformat/README.chromium"
-                    desc="" />
-                  <filteritem type="filepath" name="node_modules/ajv/scripts/travis-gh-pages"
-                    desc="" />
-                  <filteritem type="filepath" name="node_modules/table/dist/src.*"
-                    desc="" />
-                  <filteritem type="filepath" name=".*conversions.js"
-                    desc="" />
-                  <filteritem type="filepath" name=".*config.ts"
-                    desc="" />
-                  <filteritem type="filepath" name=".*pack.js"
-                    desc="" />
-                  <filteritem type="filepath" name=".*spread.js"
-                    desc="" />
-                  <filteritem type="filepath" name="node_modules/karma-sinon/LICENSE"
-                    desc="" />
-                  <filteritem type="filepath" name=".*instrumenter.js"
-                    desc="" />
-                  <filteritem type="filepath" name=".*fixer.js"
-                    desc="" />
-                  <filteritem type="filepath" name="third_party/i18n/README.chromium"
-                    desc="" />
-                  <filteritem type="filepath" name=".*all.js"
-                    desc="" />
-                  <filteritem type="filepath" name=".*third_party/typescript/METADATA"
-                    desc="" />
-                  <filteritem type="filepath" name=".*utils.js"
-                    desc="" />
-                  <filteritem type="filepath" name="third_party/pyjson5/README.chromium"
-                    desc="" />
-                  <filteritem type="filepath" name="node_modules/minify-html-literals/src/strategy.js"
-                    desc="" />
+                <filteritem type="filepath" name="front_end/third_party/codemirror/package/.*"
+                    desc="chromium原生文件无license" />
+                <filteritem type="filepath" name="node_modules/@typescript-eslint/eslint-plugin/dist/rules/indent-new-do-not-use/.*"
+                    desc="chromium原生文件无license" />
+                <filteritem type="filepath" name="front_end/third_party/lighthouse/lighthouse-dt-bundle.js"
+                    desc="chromium原生文件无license" />
+                <filteritem type="filepath" name="node_modules/license-checker/tests/.*"
+                    desc="chromium原生文件无license" />
+                <filteritem type="filepath" name="front_end/third_party/codemirror.next/chunk/.*"
+                    desc="chromium原生文件无license" />
+                <filteritem type="filepath" name="node_modules/table/dist/src/.*"
+                    desc="chromium原生文件无license" />
+                <filteritem type="filepath" name="node_modules/@types/normalize-package-data/index.d.ts"
+                    desc="chromium原生文件无license" />
+                <filteritem type="filepath" name="meow/node_modules/normalize-package-data/lib/.*"
+                    desc="chromium原生文件无license" />
+                <filteritem type="filepath" name="front_end/third_party/marked/README.chromium"
+                    desc="chromium原生文件无license" />
+                <filteritem type="filepath" name="node_modules/spdx-compare/index.js"
+                    desc="chromium原生文件无license" />
+                <filteritem type="filepath" name="node_modules/.*js"
+                    desc="chromium原生文件无license" />
+                <filteritem type="filepath" name="node_modules/base64-arraybuffer/rollup.config.ts"
+                    desc="chromium原生文件无license" />
+                <filteritem type="filepath" name="node_modules/karma-sinon/LICENSE"
+                    desc="chromium原生文件无license" />
+                <filteritem type="filepath" name="front_end/third_party/intl-messageformat/README.chromium"
+                    desc="chromium原生文件无license" />
+                <filteritem type="filepath" name="node_modules/ajv/scripts/travis-gh-pages"
+                    desc="chromium原生文件无license" />
+                <filteritem type="filepath" name="third_party/typescript/METADATA"
+                    desc="chromium原生文件无license" />
+                <filteritem type="filepath" name="third_party/i18n/README.chromium"
+                    desc="chromium原生文件无license" />
             </filefilter>
+
             <filefilter name="defaultFilter">
-                <filteritem type="filepath" name="README.OpenSource"
-                    desc="" />
-                <filteritem type="filepath" name=".*png"
-                    desc="" />
-                <filteritem type="filepath" name=".*avif"
-                    desc="" />
-                <filteritem type="filepath" name=".*lcl"
-                    desc="" />
-                <filteritem type="filepath" name=".*diff"
-                    desc="" />
-                <filteritem type="filepath" name=".*wasm"
-                    desc="" />
-                <filteritem type="filepath" name="third_party/node/win.*"
-                    desc="" />
-                <filteritem type="filepath" name="node_modules/tar-fs/test/fixtures.*"
-                    desc="" />
-                <filteritem type="filepath" name=".*dylib"
-                    desc="" />
-                <filteritem type="filepath" name=".*har"
-                    desc="" />
-                <filteritem type="filepath" name=".*webm"
-                    desc="" />
-                <filteritem type="filepath" name=".*pem"
-                    desc="" />
-                <filteritem type="filepath" name=".*jpg"
-                    desc="" />
-                <filteritem type="filepath" name=".*ico"
-                    desc="" />
-                <filteritem type="filepath" name=".*so"
-                    desc="" />、
-                <filteritem type="filepath" name=".*wbn"
-                    desc="" />
+                <filteritem type="filepath" name="README.OpenSource" desc="Filter readme.opensource files" />
+            </filefilter>
+            <filefilter name="binaryFileTypePolicyFilter">
+                <filteritem type="filename" name="*.png"
+                    desc="chromium原生二进制文件，不会使用" />
+                <filteritem type="filename" name="*.avif"
+                    desc="chromium原生二进制文件，不会使用" />
+                <filteritem type="filename" name="*.dll.lcl"
+                    desc="chromium原生二进制文件，不会使用" />
+                <filteritem type="filename" name="*.so"
+                    desc="chromium原生二进制文件，不会使用" />
+                <filteritem type="filename" name="*.jpg"
+                    desc="chromium原生二进制文件，不会使用" />
+                <filteritem type="filename" name="*.wbn"
+                    desc="chromium原生二进制文件，不会使用" />
+                <filteritem type="filename" name="*.wasm"
+                    desc="chromium原生二进制文件，不会使用" />
+                <filteritem type="filename" name="*.dylib"
+                    desc="chromium原生二进制文件，不会使用" />
+                <filteritem type="filename" name="*.pem"
+                    desc="chromium原生二进制文件，不会使用" />
+                <filteritem type="filename" name="*.har"
+                    desc="chromium原生二进制文件，不会使用" />
+                <filteritem type="filename" name="*.webm"
+                    desc="chromium原生二进制文件，不会使用" />
+                <filteritem type="filename" name="*image_diff"
+                    desc="chromium原生二进制文件，不会使用" />
+                <filteritem type="filename" name="*.ico"
+                    desc="chromium原生二进制文件，不会使用" />
+                <filteritem type="filename" name="*.exe.sha1"
+                    desc="chromium原生二进制文件，不会使用" />
+                <filteritem type="filename" name="*.tar"
+                    desc="chromium原生二进制文件，不会使用" />
                 <filteritem type="filepath" name="node_modules/clone/LICENSE"
-                    desc="" />
-            </filefilter> 
+                    desc="chromium原生二进制文件，不会使用" />
+            </filefilter>
         </filefilterlist>
         <licensematcherlist>
-             <licensematcher name="Apache-2.0" desc="">
+            <licensematcher name="MIT" desc="">
                 <licensetext name="
-                License: Apache License 2.0
-                Security Critical: no
-            " desc="" />
-            </licensematcher>
-            <licensematcher name="AGPL-3.0-only" desc="">
-                <licensetext name="
-                THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-            " desc="" />
+                * MIT Licensed
+                " desc="" />
             </licensematcher>
             <licensematcher name="Apache-2.0" desc="">
                 <licensetext name="
-                License File: LICENSE
-                Security Critical: no
-            " desc="" />
-            </licensematcher>
-            <licensematcher name="BSD-3-Clause" desc="">
-                <licensetext name="
-                THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
-            " desc="" />
-            </licensematcher>
-            <licensematcher name="BSD-3-Clause" desc="">
-                <licensetext name="
-                Coverage Reporter
-                Part of this code is based on [1], which is licensed under the New BSD License.
-                For more information see the See the accompanying LICENSE-istanbul file for terms. 
-            " desc="" />
-            </licensematcher>
-            <licensematcher name="BSD-3-Clause" desc="">
-                <licensetext name="
-                @license BSD-3  
-            " desc="" />
-            </licensematcher>
-            <licensematcher name="Apache-2.0" desc="">
-                <licensetext name="
+                Name: Wasmparser
+                Short Name: wasmparser
+                URL: https://github.com/wasdk/wasmparser
+                Version: 5.4.0
+                License: Apache
                 License File: package/LICENSE
                 Security Critical: no
-            " desc="" />
-            <licensematcher name="Apache-2.0" desc="">
-                <licensetext name="
-                License File: src/LICENSE
-                Security Critical: No
-            " desc="" />
+
+                Description:
+                Simple streamable WebAssembly binary parser.
+                " desc="" />
             </licensematcher>
             <licensematcher name="Apache-2.0" desc="">
                 <licensetext name="
-                License File: src/LICENSE
-                Security Critical: No
-            " desc="" />
+                License: Apache License 2.0
+                " desc="" />
             </licensematcher>
-            </licensematcher>
-            <licensematcher name="MPL-2.0" desc="">
+            <licensematcher name="Apache-2.0" desc="">
                 <licensetext name="
-                License File: LICENSE
+                Name: Puppeteer
+                Short Name: Puppeteer
+                URL: https://github.com/puppeteer/puppeteer
+                Version: 13.1.1
+                License: Apache-2.0
+                License File: package/LICENSE
                 Security Critical: no
-            " desc="" />
+                " desc="" />
             </licensematcher>
             <licensematcher name="Apache-2.0" desc="">
                 <licensetext name="
-                * @homepage https://github.com/GoogleChrome/lighthouse#readme
-                * @author   The Lighthouse Authors
-                * @license  Apache-2.0
-            " desc="" />
+                Name: TypeScript
+                Short Name: typescript
+                URL: Internal
+                Version: 0.1
+                License: Apache 2.0
+                License File: LICENSE
+                Security Critical: No
+                Description:
+                TypeScript is a typed superset of JavaScript that compiles to plain JavaScript.
+                This package includes TypeScript integration into Ninja.
+                " desc="" />
+            </licensematcher>
+            <licensematcher name="Apache-2.0" desc="">
+                <licensetext name="
+                Name: pyjson5
+                Short Name: pyjson5
+                URL: https://github.com/dpranke/pyjson5
+                Version: 0.6.1
+                Date: May 22, 2018
+                Revision: c88ac1f
+                License: Apache 2.0
+                License File: src/LICENSE
+                Security Critical: No
+                " desc="" />
+            </licensematcher>
+            <licensematcher name="BSD-3-Clause" desc="">
+                <licensetext name="
+                Redistribution and use of this software in source and binary forms, with or without modification,
+                are permitted provided that the following conditions are met:
+
+                * Redistributions of source code must retain the above
+                copyright notice, this list of conditions and the
+                following disclaimer.
+
+                * Redistributions in binary form must reproduce the above
+                copyright notice, this list of conditions and the
+                following disclaimer in the documentation and/or other
+                materials provided with the distribution.
+
+                * Neither the name of Kevin Decker nor the names of its
+                contributors may be used to endorse or promote products
+                derived from this software without specific prior
+                written permission.
+
+                THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND ANY EXPRESS OR
+                IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+                FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+                CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+                DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+                DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+                IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+                OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+                " desc="" />
+            </licensematcher>
+            <licensematcher name="BSD-3-Clause" desc="">
+                <licensetext name="
+                Copyrights licensed under the New BSD License. See the accompanying LICENSE file for terms.
+                " desc="" />
+            </licensematcher>
+            <licensematcher name="BSD-3-Clause" desc="">
+                <licensetext name="
+                Redistribution and use in source and binary forms, with or without
+                modification, are permitted provided that the following conditions are met:
+                    * Redistributions of source code must retain the above copyright
+                    notice, this list of conditions and the following disclaimer.
+                    * Redistributions in binary form must reproduce the above copyright
+                    notice, this list of conditions and the following disclaimer in the
+                    documentation and/or other materials provided with the distribution.
+                    * The names of any contributors may not be used to endorse or promote
+                    products derived from this software without specific prior written
+                    permission.
+
+                THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND
+                ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+                WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+                DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS AND CONTRIBUTORS BE LIABLE FOR ANY
+                DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+                (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+                LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+                ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+                (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+                SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+                " desc="" />
+            </licensematcher>
+            <licensematcher name="BSD-3-Clause" desc="">
+                <licensetext name="
+                Name: Lit-HTML
+                Short Name: lit-html
+                URL: https://github.com/polymer/lit-html
+                Version: 2.0.2
+                License: BSD-3
+                License File: package/LICENSE
+                Security Critical: no
+                " desc="" />
+            </licensematcher>
+            <licensematcher name="BSD-3-Clause" desc="">
+                <licensetext name="
+                Sinon.JS 12.0.1, 2021-11-04, @license BSD-3 
+                " desc="" />
+            </licensematcher>
+            <licensematcher name="BSD-3-Clause" desc="">
+                <licensetext name="
+                All rights reserved.
+
+                Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+                Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+                Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+                THIS IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS,
+                EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+                " desc="" />
+            </licensematcher>
+            <licensematcher name="BSD-3-Clause" desc="">
+                <licensetext name="
+                Redistribution and use in source and binary forms, with or without
+                modification, are permitted provided that the following conditions are met:
+
+                * Redistributions of source code must retain the above copyright notice, this
+                list of conditions and the following disclaimer.
+
+                * Redistributions in binary form must reproduce the above copyright notice,
+                this list of conditions and the following disclaimer in the documentation
+                and/or other materials provided with the distribution.
+
+                * Neither the names of the Mozilla Foundation nor the names of project
+                contributors may be used to endorse or promote products derived from this
+                software without specific prior written permission.
+
+                THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND
+                ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+                WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+                DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+                FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+                DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+                SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+                CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+                OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+                OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+                " desc="" />
+            </licensematcher>
+            <licensematcher name="BSD-3-Clause" desc="">
+                <licensetext name="
+                Code licensed under the BSD License:
+                http://yuilibrary.com/license/
+                " desc="" />
             </licensematcher>
             <licensematcher name="MIT" desc="">
                 <licensetext name="
-                MIT license
-            " desc="" />
+                * Copyright (c) 2011-2013, Christopher Jeffrey (MIT License)
+                " desc="" />
             </licensematcher>
-            <licensematcher name="BSD-2-Clause" desc="">
+            <licensematcher name="BSD-2-Clause-Views" desc="">
                 <licensetext name="
-                THIS IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
-            " desc="" />
+                Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+                1.	Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+                2.	Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+                THIS SOFTWARE IS PROVIDED BY GARY COURT &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GARY COURT OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+                The views and conclusions contained in the software and documentation are those of the authors and should not be interpreted as representing official policies, either expressed or implied, of Gary Court.
+                " desc="" />
+            </licensematcher>
+            <licensematcher name="MPL-2.0" desc="">
+                <licensetext name="
+                Name: AXE-CORE Accessibility Audit
+                Short Name: axe-core
+                URL: https://github.com/dequelabs/axe-core/
+                Version: 0
+                Date: Mon Jul 24 12:17:05 2017
+                Revision: d02dba3223fefe525438330e40b5da5de81eeeb5
+                License: MPL 2.0
+                License File: LICENSE
+                Security Critical: no
+                " desc="" />
+            </licensematcher>
+            <licensematcher name="Unknown License file reference" desc="">
+                <licensetext name="
+                * See LICENSE file in root directory for full license.
+                " desc="" />
             </licensematcher>
             <licensematcher name="MPL-1.0" desc="">
                 <licensetext name="
@@ -213,38 +398,61 @@
                 * Modified by Juriy &quot;kangax&quot; Zaytsev
                 * Original code by Erik Arvidsson, Mozilla Public License
                 * http://erik.eae.net/simplehtmlparser/simplehtmlparser.js
-            " desc="" />
+                " desc="" />
             </licensematcher>
-            <licensematcher name="MIT" desc="">
+            <licensematcher name="Unknown License file reference" desc="">
                 <licensetext name="
-                * MIT Licensed
-            " desc="" />
-            </licensematcher>
-            <licensematcher name="MIT" desc="">
-                <licensetext name="
-                * Clean-css - https://github.com/jakubpawlowicz/clean-css
-                * Released under the terms of MIT license
-            " desc="" />
-            </licensematcher> 
-            <licensematcher name="BSD-3-Clause" desc="">
-                <licensetext name="
-                Code licensed under the BSD License:
-                http://yuilibrary.com/license/
-            " desc="" />
-            </licensematcher>
-            <licensematcher name="Public Domain" desc="">
-                <licensetext name="
-                This is free and unencumbered software released into the public domain.
-                See LICENSE.md for more information.
-            " desc="" />
-            </licensematcher>
-            <licensematcher name="Generic Bare Warranty Disclaimer" desc="">
-                <licensetext name="
-                THIS SOFTWARE IS PROVIDED BY
-            " desc="" />
+                Licensed under the terms of the New BSD license. See below for terms.
+
+                Redistribution and use of this software in source and binary forms,
+                with or without modification, are permitted provided that the following
+                conditions are met:
+
+                - Redistributions of source code must retain the above
+                copyright notice, this list of conditions and the
+                following disclaimer.
+
+                - Redistributions in binary form must reproduce the above
+                copyright notice, this list of conditions and the
+                following disclaimer in the documentation and/or other
+                materials provided with the distribution.
+
+                - Neither the name of Oath Inc. nor the names of its
+                contributors may be used to endorse or promote products
+                derived from this software without specific prior
+                written permission of Oath Inc.
+
+                THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS
+                IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+                TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+                PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+                OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+                SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+                LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+                DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+                THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+                (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+                OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+                " desc="" />
             </licensematcher>
             <licensematcher name="CC0-1.0" desc="">
                 <licensetext name="
+                The laws of most jurisdictions throughout the world automatically confer
+                exclusive Copyright and Related Rights (defined below) upon the creator and
+                subsequent owner(s) (each and all, an &quot;owner&quot;) of an original work of
+                authorship and/or a database (each, a &quot;Work&quot;).
+
+                Certain owners wish to permanently relinquish those rights to a Work for the
+                purpose of contributing to a commons of creative, cultural and scientific
+                works (&quot;Commons&quot;) that the public can reliably and without fear of later
+                claims of infringement build upon, modify, incorporate in other works, reuse
+                and redistribute as freely as possible in any form whatsoever and for any
+                purposes, including without limitation commercial purposes. These owners may
+                contribute to the Commons to promote the ideal of a free culture and the
+                further production of creative, cultural and scientific works, or to gain
+                reputation or greater distribution for their Work in part through the use and
+                efforts of others.
+
                 For these and/or other purposes and motivations, and without any expectation
                 of additional consideration or compensation, the person associating CC0 with a
                 Work (the &quot;Affirmer&quot;), to the extent that he or she is an owner of Copyright
@@ -252,8 +460,118 @@
                 and publicly distribute the Work under its terms, with knowledge of his or her
                 Copyright and Related Rights in the Work and the meaning and intended legal
                 effect of CC0 on those rights.
-            " desc="" />
+
+                1. Copyright and Related Rights. A Work made available under CC0 may be
+                protected by copyright and related or neighboring rights (&quot;Copyright and
+                Related Rights&quot;). Copyright and Related Rights include, but are not limited
+                to, the following:
+
+                i. the right to reproduce, adapt, distribute, perform, display, communicate,
+                and translate a Work;
+
+                ii. moral rights retained by the original author(s) and/or performer(s);
+
+                iii. publicity and privacy rights pertaining to a person's image or likeness
+                depicted in a Work;
+
+                iv. rights protecting against unfair competition in regards to a Work,
+                subject to the limitations in paragraph 4(a), below;
+
+                v. rights protecting the extraction, dissemination, use and reuse of data in
+                a Work;
+
+                vi. database rights (such as those arising under Directive 96/9/EC of the
+                European Parliament and of the Council of 11 March 1996 on the legal
+                protection of databases, and under any national implementation thereof,
+                including any amended or successor version of such directive); and
+
+                vii. other similar, equivalent or corresponding rights throughout the world
+                based on applicable law or treaty, and any national implementations thereof.
+
+                2. Waiver. To the greatest extent permitted by, but not in contravention of,
+                applicable law, Affirmer hereby overtly, fully, permanently, irrevocably and
+                unconditionally waives, abandons, and surrenders all of Affirmer's Copyright
+                and Related Rights and associated claims and causes of action, whether now
+                known or unknown (including existing as well as future claims and causes of
+                action), in the Work (i) in all territories worldwide, (ii) for the maximum
+                duration provided by applicable law or treaty (including future time
+                extensions), (iii) in any current or future medium and for any number of
+                copies, and (iv) for any purpose whatsoever, including without limitation
+                commercial, advertising or promotional purposes (the &quot;Waiver&quot;). Affirmer makes
+                the Waiver for the benefit of each member of the public at large and to the
+                detriment of Affirmer's heirs and successors, fully intending that such Waiver
+                shall not be subject to revocation, rescission, cancellation, termination, or
+                any other legal or equitable action to disrupt the quiet enjoyment of the Work
+                by the public as contemplated by Affirmer's express Statement of Purpose.
+
+                3. Public License Fallback. Should any part of the Waiver for any reason be
+                judged legally invalid or ineffective under applicable law, then the Waiver
+                shall be preserved to the maximum extent permitted taking into account
+                Affirmer's express Statement of Purpose. In addition, to the extent the Waiver
+                is so judged Affirmer hereby grants to each affected person a royalty-free,
+                non transferable, non sublicensable, non exclusive, irrevocable and
+                unconditional license to exercise Affirmer's Copyright and Related Rights in
+                the Work (i) in all territories worldwide, (ii) for the maximum duration
+                provided by applicable law or treaty (including future time extensions), (iii)
+                in any current or future medium and for any number of copies, and (iv) for any
+                purpose whatsoever, including without limitation commercial, advertising or
+                promotional purposes (the &quot;License&quot;). The License shall be deemed effective as
+                of the date CC0 was applied by Affirmer to the Work. Should any part of the
+                License for any reason be judged legally invalid or ineffective under
+                applicable law, such partial invalidity or ineffectiveness shall not
+                invalidate the remainder of the License, and in such case Affirmer hereby
+                affirms that he or she will not (i) exercise any of his or her remaining
+                Copyright and Related Rights in the Work or (ii) assert any associated claims
+                and causes of action with respect to the Work, in either case contrary to
+                Affirmer's express Statement of Purpose.
+
+                4. Limitations and Disclaimers.
+
+                a. No trademark or patent rights held by Affirmer are waived, abandoned,
+                surrendered, licensed or otherwise affected by this document.
+
+                b. Affirmer offers the Work as-is and makes no representations or warranties
+                of any kind concerning the Work, express, implied, statutory or otherwise,
+                including without limitation warranties of title, merchantability, fitness
+                for a particular purpose, non infringement, or the absence of latent or
+                other defects, accuracy, or the present or absence of errors, whether or not
+                discoverable, all to the greatest extent permissible under applicable law.
+
+                c. Affirmer disclaims responsibility for clearing rights of other persons
+                that may apply to the Work or any use thereof, including without limitation
+                any person's Copyright and Related Rights in the Work. Further, Affirmer
+                disclaims responsibility for obtaining any necessary consents, permissions
+                or other rights required for any use of the Work.
+
+                d. Affirmer understands and acknowledges that Creative Commons is not a
+                party to this document and has no duty or obligation with respect to this
+                CC0 or use of the Work.
+                " desc="" />
             </licensematcher>
-        </licensematcherlist>  
+            <licensematcher name="BSD-2-Clause" desc="">
+                <licensetext name="
+                * Redistribution and use in source and binary forms, with or without
+                * modification, are permitted provided that the following conditions
+                * are met:
+                * 1. Redistributions of source code must retain the above copyright
+                *        notice, this list of conditions and the following disclaimer.
+                * 2. Redistributions in binary form must reproduce the above copyright
+                *        notice, this list of conditions and the following disclaimer in the
+                *        documentation and/or other materials provided with the distribution.
+                *
+                * THIS SOFTWARE IS PROVIDED BY APPLE INC. ``AS IS'' AND ANY
+                * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+                * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+                * PURPOSE ARE DISCLAIMED.         IN NO EVENT SHALL APPLE INC. OR
+                * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+                * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+                * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+                * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+                * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+                * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+                * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+                " desc="" />
+            </licensematcher>
+        </licensematcherlist>
     </oatconfig>
 </configuration>
