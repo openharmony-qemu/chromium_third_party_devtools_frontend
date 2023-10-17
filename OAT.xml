@@ -85,11 +85,11 @@ used to filter file path.
                 <policyitem type="compatibility" name="Python-2.0" path="node_modules/argparse/LICENSE" desc="经法务确认为宽松型许可证" />
                 <policyitem type="compatibility" name="BSDStyleLicense" path="front_end/panels/network/ResourceWebSocketFrameView.ts" desc="经法务确认为宽松型许可证" />
                 <policyitem type="compatibility" name="CC-BY-4.0" path="node_modules/caniuse-lite/LICENSE" desc="经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="MPL-2.0" path="front_end/third_party/axe-core/.*" desc="经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="MPL-2.0" path="node_modules/axe-core/LICENSE" desc="经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="MPL-1.0" path="node_modules/html-minifier/.*" desc="经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="GPLStyleLicense" path="node_modules/argparse/LICENSE" desc="经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="LGPLStyleLicense" path="front_end/panels/network/ResourceWebSocketFrameView.ts" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="MPL-2.0" path="front_end/third_party/axe-core/.*" desc="经法务确认,涉及文件在render下进行了隔离" />
+                <policyitem type="compatibility" name="MPL-2.0" path="node_modules/axe-core/LICENSE" desc="经法务确认,涉及文件在render下进行了隔离" />
+                <policyitem type="compatibility" name="MPL-1.0" path="node_modules/html-minifier/.*" desc="经法务确认,涉及文件在render下进行了隔离" />
+                <policyitem type="compatibility" name="GPLStyleLicense" path="node_modules/argparse/LICENSE" desc="经法务确认,涉及文件在render下进行了隔离" />
+                <policyitem type="compatibility" name="LGPLStyleLicense" path="front_end/panels/network/ResourceWebSocketFrameView.ts" desc="经法务确认,涉及文件在render下进行了隔离" />
             </policy>
         </policylist>
         <filefilterlist>
