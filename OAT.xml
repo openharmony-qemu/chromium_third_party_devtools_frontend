@@ -79,8 +79,7 @@ used to filter file path.
                 <policyitem type="compatibility" name="BSD-2-Clause" path="front_end/ui/legacy/components/data_grid/DataGrid.ts" desc="经法务确认为宽松型许可证" />
                 <policyitem type="compatibility" name="BSD-2-Clause-Views" path="node_modules/uri-js/LICENSE" desc="经法务确认为宽松型许可证" />
                 <policyitem type="compatibility" name="MIT" path="front_end/third_party/marked/package/bin/.*" desc="经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="Unknown License file reference" path="node_modules/eslint-utils/node_modules/eslint-visitor-keys/lib/index.js" desc="经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="Unknown License file reference" path="front_end/third_party/intl-messageformat/.*" desc="经法务确认为宽松型许可证" />
+                <policyitem type="compatibility" name="BSD-3-Clause" path="front_end/third_party/intl-messageformat、.*" desc="经法务确认为宽松型许可证" />
                 <policyitem type="compatibility" name="CC0-1.0" path="node_modules/mdn-data/LICENSE" desc="经法务确认为宽松型许可证" />
                 <policyitem type="compatibility" name="Python-2.0" path="node_modules/argparse/LICENSE" desc="经法务确认为宽松型许可证" />
                 <policyitem type="compatibility" name="BSDStyleLicense" path="front_end/panels/network/ResourceWebSocketFrameView.ts" desc="经法务确认为宽松型许可证" />
@@ -174,6 +173,9 @@ used to filter file path.
                 <licensetext name="
                 * MIT Licensed
                 " desc="" />
+                <licensetext name="
+                Christopher Jeffrey (MIT License)
+                " desc="" />
             </licensematcher>
             <licensematcher name="Apache-2.0" desc="">
                 <licensetext name="
@@ -188,13 +190,9 @@ used to filter file path.
                 Description:
                 Simple streamable WebAssembly binary parser.
                 " desc="" />
-            </licensematcher>
-            <licensematcher name="Apache-2.0" desc="">
                 <licensetext name="
                 License: Apache License 2.0
                 " desc="" />
-            </licensematcher>
-            <licensematcher name="Apache-2.0" desc="">
                 <licensetext name="
                 Name: Puppeteer
                 Short Name: Puppeteer
@@ -204,8 +202,6 @@ used to filter file path.
                 License File: package/LICENSE
                 Security Critical: no
                 " desc="" />
-            </licensematcher>
-            <licensematcher name="Apache-2.0" desc="">
                 <licensetext name="
                 Name: TypeScript
                 Short Name: typescript
@@ -218,8 +214,6 @@ used to filter file path.
                 TypeScript is a typed superset of JavaScript that compiles to plain JavaScript.
                 This package includes TypeScript integration into Ninja.
                 " desc="" />
-            </licensematcher>
-            <licensematcher name="Apache-2.0" desc="">
                 <licensetext name="
                 Name: pyjson5
                 Short Name: pyjson5
@@ -234,176 +228,6 @@ used to filter file path.
             </licensematcher>
             <licensematcher name="BSD-3-Clause" desc="">
                 <licensetext name="
-                Redistribution and use of this software in source and binary forms, with or without modification,
-                are permitted provided that the following conditions are met:
-
-                * Redistributions of source code must retain the above
-                copyright notice, this list of conditions and the
-                following disclaimer.
-
-                * Redistributions in binary form must reproduce the above
-                copyright notice, this list of conditions and the
-                following disclaimer in the documentation and/or other
-                materials provided with the distribution.
-
-                * Neither the name of Kevin Decker nor the names of its
-                contributors may be used to endorse or promote products
-                derived from this software without specific prior
-                written permission.
-
-                THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND ANY EXPRESS OR
-                IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
-                FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-                CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-                DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-                DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
-                IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-                OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-                " desc="" />
-            </licensematcher>
-            <licensematcher name="BSD-3-Clause" desc="">
-                <licensetext name="
-                Copyrights licensed under the New BSD License. See the accompanying LICENSE file for terms.
-                " desc="" />
-            </licensematcher>
-            <licensematcher name="BSD-3-Clause" desc="">
-                <licensetext name="
-                Redistribution and use in source and binary forms, with or without
-                modification, are permitted provided that the following conditions are met:
-                    * Redistributions of source code must retain the above copyright
-                    notice, this list of conditions and the following disclaimer.
-                    * Redistributions in binary form must reproduce the above copyright
-                    notice, this list of conditions and the following disclaimer in the
-                    documentation and/or other materials provided with the distribution.
-                    * The names of any contributors may not be used to endorse or promote
-                    products derived from this software without specific prior written
-                    permission.
-
-                THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND
-                ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-                WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-                DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS AND CONTRIBUTORS BE LIABLE FOR ANY
-                DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-                (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-                LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-                ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-                (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-                SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-                " desc="" />
-            </licensematcher>
-            <licensematcher name="BSD-3-Clause" desc="">
-                <licensetext name="
-                Name: Lit-HTML
-                Short Name: lit-html
-                URL: https://github.com/polymer/lit-html
-                Version: 2.0.2
-                License: BSD-3
-                License File: package/LICENSE
-                Security Critical: no
-                " desc="" />
-            </licensematcher>
-            <licensematcher name="BSD-3-Clause" desc="">
-                <licensetext name="
-                Sinon.JS 12.0.1, 2021-11-04, @license BSD-3 
-                " desc="" />
-            </licensematcher>
-            <licensematcher name="BSD-3-Clause" desc="">
-                <licensetext name="
-                All rights reserved.
-
-                Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-                Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-                Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-                THIS IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS,
-                EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-                " desc="" />
-            </licensematcher>
-            <licensematcher name="BSD-3-Clause" desc="">
-                <licensetext name="
-                Redistribution and use in source and binary forms, with or without
-                modification, are permitted provided that the following conditions are met:
-
-                * Redistributions of source code must retain the above copyright notice, this
-                list of conditions and the following disclaimer.
-
-                * Redistributions in binary form must reproduce the above copyright notice,
-                this list of conditions and the following disclaimer in the documentation
-                and/or other materials provided with the distribution.
-
-                * Neither the names of the Mozilla Foundation nor the names of project
-                contributors may be used to endorse or promote products derived from this
-                software without specific prior written permission.
-
-                THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND
-                ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-                WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-                DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-                FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-                DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-                SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-                CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-                OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-                OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-                " desc="" />
-            </licensematcher>
-            <licensematcher name="BSD-3-Clause" desc="">
-                <licensetext name="
-                Code licensed under the BSD License:
-                http://yuilibrary.com/license/
-                " desc="" />
-            </licensematcher>
-            <licensematcher name="MIT" desc="">
-                <licensetext name="
-                * Copyright (c) 2011-2013, Christopher Jeffrey (MIT License)
-                " desc="" />
-            </licensematcher>
-            <licensematcher name="BSD-2-Clause-Views" desc="">
-                <licensetext name="
-                Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-                1.	Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-                2.	Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-                THIS SOFTWARE IS PROVIDED BY GARY COURT &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GARY COURT OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-                The views and conclusions contained in the software and documentation are those of the authors and should not be interpreted as representing official policies, either expressed or implied, of Gary Court.
-                " desc="" />
-            </licensematcher>
-            <licensematcher name="MPL-2.0" desc="">
-                <licensetext name="
-                Name: AXE-CORE Accessibility Audit
-                Short Name: axe-core
-                URL: https://github.com/dequelabs/axe-core/
-                Version: 0
-                Date: Mon Jul 24 12:17:05 2017
-                Revision: d02dba3223fefe525438330e40b5da5de81eeeb5
-                License: MPL 2.0
-                License File: LICENSE
-                Security Critical: no
-                " desc="" />
-            </licensematcher>
-            <licensematcher name="Unknown License file reference" desc="">
-                <licensetext name="
-                * See LICENSE file in root directory for full license.
-                " desc="" />
-            </licensematcher>
-            <licensematcher name="MPL-1.0" desc="">
-                <licensetext name="
-                * HTML Parser By John Resig (ejohn.org)
-                * Modified by Juriy &quot;kangax&quot; Zaytsev
-                * Original code by Erik Arvidsson, Mozilla Public License
-                * http://erik.eae.net/simplehtmlparser/simplehtmlparser.js
-                " desc="" />
-            </licensematcher>
-            <licensematcher name="Unknown License file reference" desc="">
-                <licensetext name="
-                Licensed under the terms of the New BSD license. See below for terms.
-
                 Redistribution and use of this software in source and binary forms,
                 with or without modification, are permitted provided that the following
                 conditions are met:
@@ -433,6 +257,148 @@ used to filter file path.
                 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
                 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
                 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+                " desc="" />
+                <licensetext name="
+                Redistribution and use of this software in source and binary forms, with or without modification,
+                are permitted provided that the following conditions are met:
+
+                * Redistributions of source code must retain the above
+                copyright notice, this list of conditions and the
+                following disclaimer.
+
+                * Redistributions in binary form must reproduce the above
+                copyright notice, this list of conditions and the
+                following disclaimer in the documentation and/or other
+                materials provided with the distribution.
+
+                * Neither the name of Kevin Decker nor the names of its
+                contributors may be used to endorse or promote products
+                derived from this software without specific prior
+                written permission.
+
+                THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND ANY EXPRESS OR
+                IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+                FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+                CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+                DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+                DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+                IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+                OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+                " desc="" />
+                <licensetext name="
+                licensed under the New BSD License. See the accompanying LICENSE file for terms.
+                " desc="" />
+                <licensetext name="
+                Redistribution and use in source and binary forms, with or without
+                modification, are permitted provided that the following conditions are met:
+                    * Redistributions of source code must retain the above copyright
+                    notice, this list of conditions and the following disclaimer.
+                    * Redistributions in binary form must reproduce the above copyright
+                    notice, this list of conditions and the following disclaimer in the
+                    documentation and/or other materials provided with the distribution.
+                    * The names of any contributors may not be used to endorse or promote
+                    products derived from this software without specific prior written
+                    permission.
+
+                THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND
+                ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+                WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+                DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS AND CONTRIBUTORS BE LIABLE FOR ANY
+                DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+                (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+                LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+                ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+                (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+                SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+                " desc="" />
+                <licensetext name="
+                Name: Lit-HTML
+                Short Name: lit-html
+                URL: https://github.com/polymer/lit-html
+                Version: 2.0.2
+                License: BSD-3
+                License File: package/LICENSE
+                Security Critical: no
+                " desc="" />
+                <licensetext name="
+                Sinon.JS 12.0.1, 2021-11-04, @license BSD-3 
+                " desc="" />
+                <licensetext name="
+                All rights reserved.
+
+                Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+                Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+                Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+                THIS IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS,
+                EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+                " desc="" />
+                <licensetext name="
+                Redistribution and use in source and binary forms, with or without
+                modification, are permitted provided that the following conditions are met:
+
+                * Redistributions of source code must retain the above copyright notice, this
+                list of conditions and the following disclaimer.
+
+                * Redistributions in binary form must reproduce the above copyright notice,
+                this list of conditions and the following disclaimer in the documentation
+                and/or other materials provided with the distribution.
+
+                * Neither the names of the Mozilla Foundation nor the names of project
+                contributors may be used to endorse or promote products derived from this
+                software without specific prior written permission.
+
+                THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND
+                ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+                WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+                DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+                FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+                DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+                SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+                CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+                OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+                OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+                " desc="" />
+                <licensetext name="
+                Code licensed under the BSD License:
+                http://yuilibrary.com/license/
+                " desc="" />
+            </licensematcher>
+            <licensematcher name="BSD-2-Clause-Views" desc="">
+                <licensetext name="
+                Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+                1.	Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+                2.	Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+                THIS SOFTWARE IS PROVIDED BY GARY COURT &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GARY COURT OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+                The views and conclusions contained in the software and documentation are those of the authors and should not be interpreted as representing official policies, either expressed or implied, of Gary Court.
+                " desc="" />
+            </licensematcher>
+            <licensematcher name="MPL-2.0" desc="">
+                <licensetext name="
+                Name: AXE-CORE Accessibility Audit
+                Short Name: axe-core
+                URL: https://github.com/dequelabs/axe-core/
+                Version: 0
+                Date: Mon Jul 24 12:17:05 2017
+                Revision: d02dba3223fefe525438330e40b5da5de81eeeb5
+                License: MPL 2.0
+                License File: LICENSE
+                Security Critical: no
+                " desc="" />
+            </licensematcher>
+            <licensematcher name="MPL-1.0" desc="">
+                <licensetext name="
+                * HTML Parser By John Resig (ejohn.org)
+                * Modified by Juriy &quot;kangax&quot; Zaytsev
+                * Original code by Erik Arvidsson, Mozilla Public License
+                * http://erik.eae.net/simplehtmlparser/simplehtmlparser.js
                 " desc="" />
             </licensematcher>
             <licensematcher name="CC0-1.0" desc="">
