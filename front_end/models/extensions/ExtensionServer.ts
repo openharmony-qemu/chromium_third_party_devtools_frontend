@@ -1208,7 +1208,7 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<EventTyp
         parsedURL.protocol === 'chrome-untrusted:' || parsedURL.protocol === 'chrome-error:') {
       return false;
     }
-    if (parsedURL.protocol.startsWith('http') && parsedURL.hostname === 'chrome.google.com' &&
+    if (parsedURL.protocol.startsWith('http') && parsedURL.hostname.match(/^chrome\.google\.com\.?$/) &&
         parsedURL.pathname.startsWith('/webstore')) {
       return false;
     }
