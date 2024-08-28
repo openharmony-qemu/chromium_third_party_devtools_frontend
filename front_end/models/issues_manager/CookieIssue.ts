@@ -5,15 +5,15 @@
 
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
+import type * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
 
 import {Issue, IssueCategory, IssueKind} from './Issue.js';
-
 import {
-  resolveLazyDescription,
   type LazyMarkdownIssueDescription,
   type MarkdownIssueDescription,
+  resolveLazyDescription,
 } from './MarkdownIssueDescription.js';
 
 const UIStrings = {
@@ -78,7 +78,7 @@ export class CookieIssue extends Issue {
       for (const exclusionReason of cookieIssueDetails.cookieExclusionReasons) {
         const code = CookieIssue.codeForCookieIssueDetails(
             exclusionReason, cookieIssueDetails.cookieWarningReasons, cookieIssueDetails.operation,
-            cookieIssueDetails.cookieUrl);
+            cookieIssueDetails.cookieUrl as Platform.DevToolsPath.UrlString | undefined);
         if (code) {
           issues.push(new CookieIssue(code, cookieIssueDetails, issuesModel));
         }
@@ -90,7 +90,8 @@ export class CookieIssue extends Issue {
       for (const warningReason of cookieIssueDetails.cookieWarningReasons) {
         // warningReasons should be an empty array here.
         const code = CookieIssue.codeForCookieIssueDetails(
-            warningReason, [], cookieIssueDetails.operation, cookieIssueDetails.cookieUrl);
+            warningReason, [], cookieIssueDetails.operation,
+            cookieIssueDetails.cookieUrl as Platform.DevToolsPath.UrlString | undefined);
         if (code) {
           issues.push(new CookieIssue(code, cookieIssueDetails, issuesModel));
         }
@@ -108,8 +109,9 @@ export class CookieIssue extends Issue {
   static codeForCookieIssueDetails(
       reason: Protocol.Audits.CookieExclusionReason|Protocol.Audits.CookieWarningReason,
       warningReasons: Protocol.Audits.CookieWarningReason[], operation: Protocol.Audits.CookieOperation,
-      cookieUrl?: string): string|null {
-    const isURLSecure = cookieUrl && (cookieUrl.startsWith('https://') || cookieUrl.startsWith('wss://'));
+      cookieUrl?: Platform.DevToolsPath.UrlString): string|null {
+    const isURLSecure =
+        cookieUrl && (Common.ParsedURL.schemeIs(cookieUrl, 'https:') || Common.ParsedURL.schemeIs(cookieUrl, 'wss:'));
     const secure = isURLSecure ? 'Secure' : 'Insecure';
 
     if (reason === Protocol.Audits.CookieExclusionReason.ExcludeSameSiteStrict ||
