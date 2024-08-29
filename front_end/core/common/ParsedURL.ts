@@ -64,6 +64,14 @@ export function normalizePath(path: string): string {
   return normalizedPath;
 }
 
+export function schemeIs(url: Platform.DevToolsPath.UrlString, scheme: string): boolean {
+  try {
+    return (new URL(url)).protocol === scheme;
+  } catch (e) {
+    return false;
+  }
+}
+
 export class ParsedURL {
   isValid: boolean;
   url: string;

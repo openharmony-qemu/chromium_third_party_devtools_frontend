@@ -1,7 +1,7 @@
 // Copyright 2020 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-
+import * as Platform from '../../core/platform/platform.js';
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as SDK from '../../core/sdk/sdk.js';
@@ -1077,7 +1077,7 @@ export class DebuggerLanguagePluginManager implements
             console.log(i18nString(UIStrings.loadingDebugSymbolsFor, {PH1: plugin.name, PH2: url}));
           }
           try {
-            const code = (!symbolsUrl && url.startsWith('wasm://')) ? await script.getWasmBytecode() : undefined;
+            const code = (!symbolsUrl && Common.ParsedURL.schemeIs(url as Platform.DevToolsPath.UrlString, 'wasm:')) ? await script.getWasmBytecode() : undefined
             const sourceFileURLs = await plugin.addRawModule(rawModuleId, symbolsUrl, {url, code});
             // Check that the handle isn't stale by now. This works because the code that assigns to
             // `rawModuleHandle` below will run before this code because of the `await` in the preceding

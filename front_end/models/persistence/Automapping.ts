@@ -192,7 +192,7 @@ export class Automapping {
     if (this.interceptors.some(interceptor => interceptor(networkSourceCode))) {
       return;
     }
-    if (networkSourceCode.url().startsWith('wasm://')) {
+    if (Common.ParsedURL.schemeIs(networkSourceCode.url() as Platform.DevToolsPath.UrlString, 'wasm:')) {
       return;
     }
     const createBindingPromise =
@@ -322,7 +322,7 @@ export class Automapping {
 
   private createBinding(networkSourceCode: Workspace.UISourceCode.UISourceCode): Promise<AutomappingStatus|null> {
     const url = networkSourceCode.url();
-    if (url.startsWith('file://') || url.startsWith('snippet://')) {
+    if (Common.ParsedURL.schemeIs(url as Platform.DevToolsPath.UrlString, 'file:') || Common.ParsedURL.schemeIs(url as Platform.DevToolsPath.UrlString, 'snippet:')) {
       const decodedUrl = sanitizeSourceUrl(url);
       if (!decodedUrl) {
         return Promise.resolve(null as AutomappingStatus | null);

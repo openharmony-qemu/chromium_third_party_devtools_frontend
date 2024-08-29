@@ -226,7 +226,7 @@ export class ConsoleContextSelector implements SDK.TargetManager.SDKModelObserve
       const resourceTreeModel = target.model(SDK.ResourceTreeModel.ResourceTreeModel);
       frame = resourceTreeModel && resourceTreeModel.frameForId(executionContext.frameId);
     }
-    if (executionContext.origin.startsWith('chrome-extension://')) {
+    if (Common.ParsedURL.schemeIs(executionContext.origin as Platform.DevToolsPath.UrlString, 'chrome-extension:')) {
       return i18nString(UIStrings.extension);
     }
     const sameTargetParentFrame = frame && frame.sameTargetParentFrame();

@@ -1,7 +1,7 @@
 // Copyright 2017 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-
+import * as Platform from '../../core/platform/platform.js';
 import * as Common from '../../core/common/common.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as TextUtils from '../text_utils/text_utils.js';
@@ -223,7 +223,7 @@ class ModelInfo {
     }
     if ((resourceType === Common.ResourceType.resourceTypes.Image ||
          resourceType === Common.ResourceType.resourceTypes.Font) &&
-        resource.contentURL().startsWith('data:')) {
+         Common.ParsedURL.schemeIs(resource.contentURL() as Platform.DevToolsPath.UrlString, 'data:')) {
       return false;
     }
     return true;
