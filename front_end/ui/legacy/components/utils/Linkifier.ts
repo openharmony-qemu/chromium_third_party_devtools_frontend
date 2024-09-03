@@ -516,7 +516,7 @@ export class Linkifier implements SDK.TargetManager.Observer {
     const preventClick = options.preventClick;
     const maxLength = options.maxLength || UI.UIUtils.MaxLengthForDisplayedURLs;
     const bypassURLTrimming = options.bypassURLTrimming;
-    if (!url || url.trim().toLowerCase().startsWith('javascript:')) {
+    if (!url || Common.ParsedURL.schemeIs(url, 'javascript:')) {
       const element = document.createElement('span');
       if (className) {
         element.className = className;
@@ -948,7 +948,7 @@ export class ContentProviderContextMenuProvider implements UI.ContextMenu.Provid
       return;
     }
 
-    if (!contentUrl.startsWith('file://')) {
+    if (!Common.ParsedURL.schemeIs(contentUrl, 'file:')) {
       contextMenu.revealSection().appendItem(
           UI.UIUtils.openLinkExternallyLabel(),
           () => Host.InspectorFrontendHost.InspectorFrontendHostInstance.openInNewTab(
