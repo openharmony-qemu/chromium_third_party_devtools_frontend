@@ -5,6 +5,7 @@
 
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
+import type * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
 
@@ -76,7 +77,7 @@ export class SameSiteCookieIssue extends Issue {
       for (const exclusionReason of sameSiteDetails.cookieExclusionReasons) {
         const code = SameSiteCookieIssue.codeForSameSiteDetails(
             exclusionReason, sameSiteDetails.cookieWarningReasons, sameSiteDetails.operation,
-            sameSiteDetails.cookieUrl);
+            sameSiteDetails.cookieUrl as Platform.DevToolsPath.UrlString | undefined);
         if (code) {
           issues.push(new SameSiteCookieIssue(code, sameSiteDetails, issuesModel));
         }
@@ -88,7 +89,8 @@ export class SameSiteCookieIssue extends Issue {
       for (const warningReason of sameSiteDetails.cookieWarningReasons) {
         // warningReasons should be an empty array here.
         const code = SameSiteCookieIssue.codeForSameSiteDetails(
-            warningReason, [], sameSiteDetails.operation, sameSiteDetails.cookieUrl);
+            warningReason, [], sameSiteDetails.operation,
+	    sameSiteDetails.cookieUrl as Platform.DevToolsPath.UrlString | undefined);
         if (code) {
           issues.push(new SameSiteCookieIssue(code, sameSiteDetails, issuesModel));
         }
@@ -106,8 +108,9 @@ export class SameSiteCookieIssue extends Issue {
   static codeForSameSiteDetails(
       reason: Protocol.Audits.SameSiteCookieExclusionReason|Protocol.Audits.SameSiteCookieWarningReason,
       warningReasons: Protocol.Audits.SameSiteCookieWarningReason[], operation: Protocol.Audits.SameSiteCookieOperation,
-      cookieUrl?: string): string|null {
-    const isURLSecure = cookieUrl && (cookieUrl.startsWith('https://') || cookieUrl.startsWith('wss://'));
+      cookieUrl?: Platform.DevToolsPath.UrlString): string|null {
+    const isURLSecure =
+        cookieUrl && (Common.ParsedURL.schemeIs(cookieUrl, 'https:') || Common.ParsedURL.schemeIs(cookieUrl, 'wss:'));
     const secure = isURLSecure ? 'Secure' : 'Insecure';
 
     if (reason === Protocol.Audits.SameSiteCookieExclusionReason.ExcludeSameSiteStrict ||

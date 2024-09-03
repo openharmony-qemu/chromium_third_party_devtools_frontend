@@ -27,7 +27,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
+import * as Platform from '../../../../core/platform/platform.js';
 import * as Common from '../../../../core/common/common.js';
 import * as Host from '../../../../core/host/host.js';
 import * as i18n from '../../../../core/i18n/i18n.js';
@@ -516,7 +516,7 @@ export class Linkifier implements SDK.TargetManager.Observer {
     const preventClick = options.preventClick;
     const maxLength = options.maxLength || UI.UIUtils.MaxLengthForDisplayedURLs;
     const bypassURLTrimming = options.bypassURLTrimming;
-    if (!url || url.trim().toLowerCase().startsWith('javascript:')) {
+    if (!url || Common.ParsedURL.schemeIs(url as Platform.DevToolsPath.UrlString, 'javascript:')) {
       const element = document.createElement('span');
       if (className) {
         element.className = className;

@@ -155,7 +155,7 @@ export class TextSourceMap implements SourceMap {
     this.#json = payload;
     this.#compiledURLInternal = compiledURL;
     this.#sourceMappingURL = sourceMappingURL;
-    this.#baseURL = sourceMappingURL.startsWith('data:') ? compiledURL : sourceMappingURL;
+    this.#baseURL = (Common.ParsedURL.schemeIs(sourceMappingURL as Platform.DevToolsPath.UrlString, 'data:')) ? compiledURL : sourceMappingURL;
 
     this.#mappingsInternal = null;
     this.#sourceInfos = new Map();

@@ -48,7 +48,7 @@ export class PersistenceUtils {
   static iconForUISourceCode(uiSourceCode: Workspace.UISourceCode.UISourceCode): UI.Icon.Icon|null {
     const binding = PersistenceImpl.instance().binding(uiSourceCode);
     if (binding) {
-      if (!binding.fileSystem.url().startsWith('file://')) {
+      if (!Common.ParsedURL.schemeIs(binding.fileSystem.url() as Platform.DevToolsPath.UrlString, 'file:')) {
         return null;
       }
       const icon = UI.Icon.Icon.create('mediumicon-file-sync');
@@ -60,7 +60,7 @@ export class PersistenceUtils {
       return icon;
     }
     if (uiSourceCode.project().type() !== Workspace.Workspace.projectTypes.FileSystem ||
-        !uiSourceCode.url().startsWith('file://')) {
+        !Common.ParsedURL.schemeIs(uiSourceCode.url() as Platform.DevToolsPath.UrlString, 'file:')) {
       return null;
     }
 
