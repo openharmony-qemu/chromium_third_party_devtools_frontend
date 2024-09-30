@@ -31,6 +31,7 @@
 // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
 /* eslint-disable @typescript-eslint/naming-convention */
 
+import {type Chrome} from '../../../extension-api/ExtensionAPI.js';  // eslint-disable-line rulesdir/es_modules_import
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
@@ -38,6 +39,7 @@ import * as Platform from '../../core/platform/platform.js';
 import * as _ProtocolClient from '../../core/protocol_client/protocol_client.js';  // eslint-disable-line @typescript-eslint/no-unused-vars
 import * as Root from '../../core/root/root.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import type * as Protocol from '../../generated/protocol.js';
 import * as Logs from '../../models/logs/logs.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
@@ -46,15 +48,13 @@ import * as Bindings from '../bindings/bindings.js';
 import * as HAR from '../har/har.js';
 import type * as TextUtils from '../text_utils/text_utils.js';
 import * as Workspace from '../workspace/workspace.js';
-import type * as Protocol from '../../generated/protocol.js';
 
+import {PrivateAPI} from './ExtensionAPI.js';
 import {ExtensionButton, ExtensionPanel, ExtensionSidebarPane} from './ExtensionPanel.js';
-
+import {HostUrlPattern} from './HostUrlPattern.js';
 import {LanguageExtensionEndpoint} from './LanguageExtensionEndpoint.js';
 import {RecorderExtensionEndpoint} from './RecorderExtensionEndpoint.js';
-import {PrivateAPI} from './ExtensionAPI.js';
 import {RecorderPluginManager} from './RecorderPluginManager.js';
-import {type Chrome} from '../../../extension-api/ExtensionAPI.js';  // eslint-disable-line rulesdir/es_modules_import
 
 const extensionOrigins: WeakMap<MessagePort, Platform.DevToolsPath.UrlString> = new WeakMap();
 
@@ -67,6 +67,59 @@ declare global {
 const kAllowedOrigins = [].map(url => (new URL(url)).origin);
 
 let extensionServerInstance: ExtensionServer|null;
+
+export class HostsPolicy {
+  static create(policy?: Host.InspectorFrontendHostAPI.ExtensionHostsPolicy): HostsPolicy|null {
+    const runtimeAllowedHosts = [];
+    const runtimeBlockedHosts = [];
+    if (policy) {
+      for (const pattern of policy.runtimeAllowedHosts) {
+        const parsedPattern = HostUrlPattern.parse(pattern);
+        if (!parsedPattern) {
+          return null;
+        }
+        runtimeAllowedHosts.push(parsedPattern);
+      }
+      for (const pattern of policy.runtimeBlockedHosts) {
+        const parsedPattern = HostUrlPattern.parse(pattern);
+        if (!parsedPattern) {
+          return null;
+        }
+        runtimeBlockedHosts.push(parsedPattern);
+      }
+    }
+    return new HostsPolicy(runtimeAllowedHosts, runtimeBlockedHosts);
+  }
+  private constructor(readonly runtimeAllowedHosts: HostUrlPattern[], readonly runtimeBlockedHosts: HostUrlPattern[]) {
+  }
+
+  isAllowedOnCurrentTarget(): boolean {
+    const inspectedURL = SDK.TargetManager.TargetManager.instance().primaryPageTarget()?.inspectedURL();
+    if (!inspectedURL) {
+      // If there aren't any blocked hosts retain the old behavior and don't worry about the inspectedURL
+      return this.runtimeBlockedHosts.length === 0;
+    }
+    if (this.runtimeBlockedHosts.some(pattern => pattern.matchesUrl(inspectedURL)) &&
+        !this.runtimeAllowedHosts.some(pattern => pattern.matchesUrl(inspectedURL))) {
+      return false;
+    }
+    return true;
+  }
+}
+
+function currentTargetIsFile(): boolean {
+  const inspectedURL = SDK.TargetManager.TargetManager.instance().primaryPageTarget()?.inspectedURL();
+  if (!inspectedURL) {
+    return false;
+  }
+  let parsedURL;
+  try {
+    parsedURL = new URL(inspectedURL);
+  } catch (exception) {
+    return false;
+  }
+  return parsedURL.protocol === 'file:';
+}
 
 export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
   private readonly clientObjects: Map<string, unknown>;
@@ -81,6 +134,8 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<EventTyp
   private lastRequestId: number;
   private registeredExtensions: Map<string, {
     name: string,
+    hostsPolicy: HostsPolicy,
+    allowFileAccess: boolean,
   }>;
   private status: ExtensionStatus;
   private readonly sidebarPanesInternal: ExtensionSidebarPane[];
@@ -88,6 +143,7 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<EventTyp
   private inspectedTabId?: string;
   private readonly extensionAPITestHook?: (server: unknown, api: unknown) => unknown;
   private themeChangeHandlers: Map<string, MessagePort> = new Map();
+  readonly #pendingExtensions: Host.InspectorFrontendHostAPI.ExtensionDescriptor[] = [];
 
   private constructor() {
     super();
@@ -347,6 +403,8 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<EventTyp
     this.requests = new Map();
     const url = event.data.inspectedURL();
     this.postNotification(PrivateAPI.Events.InspectedURLChanged, url);
+    this.#pendingExtensions.forEach(e => this.addExtension(e));
+    this.#pendingExtensions.splice(0);
   }
 
   hasSubscribers(type: string): boolean {
@@ -363,7 +421,9 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<EventTyp
     }
     const message = {command: 'notify-' + type, arguments: Array.prototype.slice.call(arguments, 1)};
     for (const subscriber of subscribers) {
-      subscriber.postMessage(message);
+      if (this.extensionEnabled(subscriber)) {
+        subscriber.postMessage(message);
+      }
     }
   }
 
@@ -950,21 +1010,31 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<EventTyp
     }
   }
 
-  addExtensionForTest(extensionInfo: Host.InspectorFrontendHostAPI.ExtensionDescriptor, origin: string): boolean
-      |undefined {
-    const name = extensionInfo.name || `Extension ${origin}`;
-    this.registeredExtensions.set(origin, {name});
-    return true;
+  addExtensionFrame({startPage, name}: Host.InspectorFrontendHostAPI.ExtensionDescriptor): void {
+    const iframe = document.createElement('iframe');
+    iframe.src = startPage;
+    iframe.dataset.devtoolsExtension = name;
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
   }
 
-  private addExtension(extensionInfo: Host.InspectorFrontendHostAPI.ExtensionDescriptor): boolean|undefined {
+  addExtension(extensionInfo: Host.InspectorFrontendHostAPI.ExtensionDescriptor): boolean|undefined {
     const startPage = extensionInfo.startPage;
 
     const inspectedURL = SDK.TargetManager.TargetManager.instance().primaryPageTarget()?.inspectedURL() ?? '';
-    if (inspectedURL !== '' && !this.canInspectURL(inspectedURL)) {
+    if (inspectedURL === '') {
+      this.#pendingExtensions.push(extensionInfo);
+      return;
+    }
+    if (!this.canInspectURL(inspectedURL)) {
       this.disableExtensions();
     }
     if (!this.extensionsEnabled) {
+      return;
+    }
+    const hostsPolicy = HostsPolicy.create(extensionInfo.hostsPolicy);
+    if (!hostsPolicy || !hostsPolicy.isAllowedOnCurrentTarget() ||
+        (!extensionInfo.allowFileAccess && currentTargetIsFile())) {
       return;
     }
     try {
@@ -979,14 +1049,10 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<EventTyp
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.setInjectedScriptForOrigin(
             extensionOrigin, injectedAPI);
         const name = extensionInfo.name || `Extension ${extensionOrigin}`;
-        this.registeredExtensions.set(extensionOrigin, {name});
+        this.registeredExtensions.set(
+          extensionOrigin, {name, hostsPolicy, allowFileAccess: Boolean(extensionInfo.allowFileAccess)});
       }
-
-      const iframe = document.createElement('iframe');
-      iframe.src = startPage;
-      iframe.dataset.devtoolsExtension = extensionInfo.name;
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);  // Only for main window.
+      this.addExtensionFrame(extensionInfo);
     } catch (e) {
       console.error('Failed to initialize extension ' + startPage + ':' + e);
       return false;
@@ -1012,15 +1078,31 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<EventTyp
     }
   };
 
+  private extensionEnabled(port: MessagePort): boolean {
+    if (!this.extensionsEnabled) {
+      return false;
+    }
+    const origin = extensionOrigins.get(port);
+    if (!origin) {
+      return false;
+    }
+    const extension = this.registeredExtensions.get(origin);
+    if (!extension) {
+      return false;
+    }
+    return extension.hostsPolicy.isAllowedOnCurrentTarget() && (extension.allowFileAccess || !currentTargetIsFile());
+  }
+
   private async onmessage(event: MessageEvent): Promise<void> {
     const message = event.data;
     let result;
 
+    const port = event.currentTarget as MessagePort;
     const handler = this.handlers.get(message.command);
 
     if (!handler) {
       result = this.status.E_NOTSUPPORTED(message.command);
-    } else if (!this.extensionsEnabled) {
+    } else if (!this.extensionEnabled(port)) {
       result = this.status.E_FAILED('Permission denied');
     } else {
       result = await handler(message, event.target as MessagePort);
@@ -1204,12 +1286,15 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<EventTyp
     if (kAllowedOrigins.includes(parsedURL.origin)) {
       return true;
     }
-    if (parsedURL.protocol === 'chrome:' || parsedURL.protocol === 'devtools:' ||
-        parsedURL.protocol === 'chrome-untrusted:' || parsedURL.protocol === 'chrome-error:') {
+    if (parsedURL.protocol === 'chrome:' || parsedURL.protocol === 'devtools:'||
+      parsedURL.protocol === 'chrome-untrusted:' || parsedURL.protocol === 'chrome-error:') {
       return false;
     }
     if (parsedURL.protocol.startsWith('http') && parsedURL.hostname.match(/^chrome\.google\.com\.?$/) &&
         parsedURL.pathname.startsWith('/webstore')) {
+      return false;
+    }
+    if (parsedURL.protocol.startsWith('http') && parsedURL.hostname === 'chromewebstore.google.com') {
       return false;
     }
 
