@@ -247,6 +247,7 @@ export async function initializeGlobalVars({reset = true} = {}) {
   Common.Settings.Settings.instance(
       {forceNew: reset, syncedStorage: storage, globalStorage: storage, localStorage: storage});
 
+  Root.Runtime.experiments.clearForTest();
   for (const experimentName of REGISTERED_EXPERIMENTS) {
     Root.Runtime.experiments.register(experimentName, '');
   }
@@ -372,4 +373,21 @@ export function createFakeSetting<T>(name: string, defaultValue: T): Common.Sett
 
 export function enableFeatureForTest(feature: string): void {
   Root.Runtime.experiments.enableForTest(feature);
+}
+
+export function setupActionRegistry() {
+
+  before(function() {
+    const actionRegistry = UI.ActionRegistry.ActionRegistry.instance();
+    UI.ShortcutRegistry.ShortcutRegistry.instance({
+      forceNew: true,
+      actionRegistry,
+    });
+  });
+  after(function() {
+    if (UI) {
+      UI.ShortcutRegistry.ShortcutRegistry.removeInstance();
+      UI.ActionRegistry.ActionRegistry.removeInstance();
+    }
+  });
 }

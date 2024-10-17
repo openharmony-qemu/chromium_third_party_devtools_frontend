@@ -24,7 +24,7 @@ const DevToolsAPIImpl = class {
     this._pendingExtensionDescriptors = [];
 
     /**
-     * @type {?function(!ExtensionDescriptor)}
+     * @type {?function(!ExtensionDescriptor): void}
      */
     this._addExtensionCallback = null;
 
