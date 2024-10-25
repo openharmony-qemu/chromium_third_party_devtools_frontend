@@ -1636,12 +1636,12 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
     Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(JSON.stringify(harArchive, null, 2));
   }
 
-  private async copyCurlCommand(request: SDK.NetworkRequest.NetworkRequest, platform: string): Promise<void> {
+  private async copyCurlCommand(request: SDK.NetworkRequest.NetworkRequest, platform: 'unix'|'win'): Promise<void> {
     const command = await this.generateCurlCommand(request, platform);
     Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(command);
   }
 
-  private async copyAllCurlCommand(platform: string): Promise<void> {
+  private async copyAllCurlCommand(platform: 'unix'|'win'): Promise<void> {
     const commands = await this.generateAllCurlCommand(Logs.NetworkLog.NetworkLog.instance().requests(), platform);
     Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(commands);
   }
@@ -2046,15 +2046,14 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
     return commands.join(' ;\n');
   }
 
-  private async generateCurlCommand(request: SDK.NetworkRequest.NetworkRequest, platform: string): Promise<string> {
+  private async generateCurlCommand(request: SDK.NetworkRequest.NetworkRequest, platform: 'unix'|'win'): Promise<string> {
     let command: string[] = [];
     // Most of these headers are derived from the URL and are automatically added by cURL.
     // The |Accept-Encoding| header is ignored to prevent decompression errors. crbug.com/1015321
     const ignoredHeaders = new Set<string>(['accept-encoding', 'host', 'method', 'path', 'scheme', 'version']);
 
     function escapeStringWin(str: string): string {
-      /* If there are no new line characters do not escape the " characters
-         since it only uglifies the command.
+      /* Always escape the " characters so that we can use caret escaping.
 
          Because cmd.exe parser and MS Crt arguments parsers use some of the
          same escape characters, they can interact with each other in
@@ -2080,11 +2079,11 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
          new line is there to enact the escape command the second is the character
          to escape (in this case new line).
         */
-      const encapsChars = /[\r\n]/.test(str) ? '^"' : '"';
+      const encapsChars = '^"';
       return encapsChars +
           str.replace(/\\/g, '\\\\')
               .replace(/"/g, '\\"')
-              .replace(/[^a-zA-Z0-9\s_\-:=+~'\/.',?;()*`&]/g, '^$&')
+              .replace(/[^a-zA-Z0-9\s_\-:=+~'\/.',?;()*`]/g, '^$&')
               .replace(/%(?=[a-zA-Z0-9_])/g, '%^')
               .replace(/\r?\n/g, '^\n\n') +
           encapsChars;
@@ -2156,7 +2155,7 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
     return 'curl ' + command.join(command.length >= 3 ? (platform === 'win' ? ' ^\n  ' : ' \\\n  ') : ' ');
   }
 
-  private async generateAllCurlCommand(requests: SDK.NetworkRequest.NetworkRequest[], platform: string):
+  private async generateAllCurlCommand(requests: SDK.NetworkRequest.NetworkRequest[], platform: 'unix'|'win'):
       Promise<string> {
     const nonBlobRequests = this.filterOutBlobRequests(requests);
     const commands = await Promise.all(nonBlobRequests.map(request => this.generateCurlCommand(request, platform)));
