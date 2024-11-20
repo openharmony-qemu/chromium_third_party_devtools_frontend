@@ -2144,7 +2144,7 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
       return encapsChars +
           str.replace(/\\/g, '\\\\')
               .replace(/"/g, '\\"')
-              .replace(/[^a-zA-Z0-9\s_\-:=+~'\/.',?;()*`&]/g, '^$&')
+              .replace(/[^a-zA-Z0-9\s_\-:=+~'\/.',?;()*`]/g, '^$&')
               .replace(/%(?=[a-zA-Z0-9_])/g, '%^')
               .replace(/\r?\n/g, '^\n\n') +
           encapsChars;
