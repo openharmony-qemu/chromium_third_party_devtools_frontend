@@ -7,6 +7,10 @@ import * as UI from '../../legacy.js';
 
 import type * as QuickOpen from './quick_open.js';
 
+// #ifdef OHOS_DEVTOOLS
+const adaptForOhos = true;
+// #endif OHOS_DEVTOOLS
+
 const UIStrings = {
   /**
    *@description Title of action that opens a file
@@ -29,39 +33,45 @@ async function loadQuickOpenModule(): Promise<typeof QuickOpen> {
   return loadedQuickOpenModule;
 }
 
-UI.ActionRegistration.registerActionExtension({
-  actionId: 'commandMenu.show',
-  category: UI.ActionRegistration.ActionCategory.GLOBAL,
-  title: i18nLazyString(UIStrings.runCommand),
-  async loadActionDelegate() {
-    const QuickOpen = await loadQuickOpenModule();
-    return QuickOpen.CommandMenu.ShowActionDelegate.instance();
-  },
-  bindings: [
-    {
-      platform: UI.ActionRegistration.Platforms.WindowsLinux,
-      shortcut: 'Ctrl+Shift+P',
-      keybindSets: [
-        UI.ActionRegistration.KeybindSet.DEVTOOLS_DEFAULT,
-        UI.ActionRegistration.KeybindSet.VS_CODE,
-      ],
+// #ifdef OHOS_DEVTOOLS
+if (adaptForOhos) {
+  // arkweb doesn't support command.
+} else {
+  UI.ActionRegistration.registerActionExtension({
+    actionId: 'commandMenu.show',
+    category: UI.ActionRegistration.ActionCategory.GLOBAL,
+    title: i18nLazyString(UIStrings.runCommand),
+    async loadActionDelegate() {
+      const QuickOpen = await loadQuickOpenModule();
+      return QuickOpen.CommandMenu.ShowActionDelegate.instance();
     },
-    {
-      platform: UI.ActionRegistration.Platforms.Mac,
-      shortcut: 'Meta+Shift+P',
-      keybindSets: [
-        UI.ActionRegistration.KeybindSet.DEVTOOLS_DEFAULT,
-        UI.ActionRegistration.KeybindSet.VS_CODE,
-      ],
-    },
-    {
-      shortcut: 'F1',
-      keybindSets: [
-        UI.ActionRegistration.KeybindSet.VS_CODE,
-      ],
-    },
-  ],
-});
+    bindings: [
+      {
+        platform: UI.ActionRegistration.Platforms.WindowsLinux,
+        shortcut: 'Ctrl+Shift+P',
+        keybindSets: [
+          UI.ActionRegistration.KeybindSet.DEVTOOLS_DEFAULT,
+          UI.ActionRegistration.KeybindSet.VS_CODE,
+        ],
+      },
+      {
+        platform: UI.ActionRegistration.Platforms.Mac,
+        shortcut: 'Meta+Shift+P',
+        keybindSets: [
+          UI.ActionRegistration.KeybindSet.DEVTOOLS_DEFAULT,
+          UI.ActionRegistration.KeybindSet.VS_CODE,
+        ],
+      },
+      {
+        shortcut: 'F1',
+        keybindSets: [
+          UI.ActionRegistration.KeybindSet.VS_CODE,
+        ],
+      },
+    ],
+  });
+}
+// #endif OHOS_DEVTOOLS
 
 UI.ActionRegistration.registerActionExtension({
   actionId: 'quickOpen.show',
@@ -108,11 +118,17 @@ UI.ActionRegistration.registerActionExtension({
   ],
 });
 
-UI.ContextMenu.registerItem({
-  location: UI.ContextMenu.ItemLocation.MAIN_MENU_DEFAULT,
-  actionId: 'commandMenu.show',
-  order: undefined,
-});
+// #ifdef OHOS_DEVTOOLS
+if (adaptForOhos) {
+  // arkweb doesn't support command.
+} else {
+  UI.ContextMenu.registerItem({
+    location: UI.ContextMenu.ItemLocation.MAIN_MENU_DEFAULT,
+    actionId: 'commandMenu.show',
+    order: undefined,
+  });
+}
+// #endif OHOS_DEVTOOLS
 
 UI.ContextMenu.registerItem({
   location: UI.ContextMenu.ItemLocation.MAIN_MENU_DEFAULT,

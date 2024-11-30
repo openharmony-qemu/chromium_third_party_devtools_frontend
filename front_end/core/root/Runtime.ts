@@ -319,4 +319,7 @@ export enum ExperimentName {
 export enum ConditionName {
   CAN_DOCK = 'can_dock',
   NOT_SOURCES_HIDE_ADD_FOLDER = '!sources.hide_add_folder',
+  // #ifdef OHOS_DEVTOOLS
+  USE_ORIGNAL = 'use_orignal',
+  // #endif OHOS_DEVTOOLS
 }

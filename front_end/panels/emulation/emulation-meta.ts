@@ -81,7 +81,10 @@ UI.ActionRegistration.registerActionExtension({
     const Emulation = await loadEmulationModule();
     return Emulation.DeviceModeWrapper.ActionDelegate.instance();
   },
-  condition: Root.Runtime.ConditionName.CAN_DOCK,
+  // #ifdef OHOS_DEVTOOLS
+  //condition: Root.Runtime.ConditionName.CAN_DOCK,
+  condition: Root.Runtime.ConditionName.USE_ORIGNAL,
+  // #endif OHOS_DEVTOOLS
   title: i18nLazyString(UIStrings.toggleDeviceToolbar),
   iconClass: UI.ActionRegistration.IconClass.LARGEICON_PHONE,
   bindings: [
@@ -185,7 +188,10 @@ Common.Settings.registerSettingExtension({
 
 UI.Toolbar.registerToolbarItem({
   actionId: 'emulation.toggle-device-mode',
-  condition: Root.Runtime.ConditionName.CAN_DOCK,
+  // #ifdef OHOS_DEVTOOLS
+  //condition: Root.Runtime.ConditionName.CAN_DOCK,
+  condition: Root.Runtime.ConditionName.USE_ORIGNAL,
+  // #endif OHOS_DEVTOOLS
   location: UI.Toolbar.ToolbarItemLocation.MAIN_TOOLBAR_LEFT,
   order: 1,
   showLabel: undefined,

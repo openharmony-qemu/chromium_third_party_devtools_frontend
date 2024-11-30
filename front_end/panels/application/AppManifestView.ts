@@ -425,7 +425,14 @@ export class AppManifestView extends UI.Widget.VBox implements SDK.TargetManager
         .addChangeListener(this.updateManifest.bind(this, true));
 
     this.emptyView = emptyView;
-    this.emptyView.appendLink('https://web.dev/add-manifest/' as Platform.DevToolsPath.UrlString);
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
+      this.emptyView.appendLink('https://web.dev/add-manifest/' as Platform.DevToolsPath.UrlString);
+    }
+    // #endif OHOS_DEVTOOLS
 
     this.emptyView.show(this.contentElement);
     this.emptyView.hideWidget();
@@ -604,8 +611,15 @@ export class AppManifestView extends UI.Widget.VBox implements SDK.TargetManager
       helpIcon.tabIndex = 0;
       appIdField.appendChild(helpIcon);
 
-      appIdField.appendChild(UI.XLink.XLink.create(
+      // #ifdef OHOS_DEVTOOLS
+      const adaptForOhos = true;
+      if (adaptForOhos) {
+        // ohos doesn't support external links
+      } else {
+        appIdField.appendChild(UI.XLink.XLink.create(
           'https://developer.chrome.com/blog/pwa-manifest-id/', i18nString(UIStrings.learnMore), 'learn-more'));
+      }
+      // #endif OHOS_DEVTOOLS
 
       if (!stringProperty('id')) {
         const suggestedIdNote = appIdField.createChild('div', 'multiline-value');
@@ -732,10 +746,17 @@ export class AppManifestView extends UI.Widget.VBox implements SDK.TargetManager
       this.iconsSection.setIconMasked(setIconMaskedCheckbox.checkboxElement.checked);
     });
     this.iconsSection.appendRow().appendChild(setIconMaskedCheckbox);
-    const documentationLink =
-        UI.XLink.XLink.create('https://web.dev/maskable-icon/', i18nString(UIStrings.documentationOnMaskableIcons));
-    this.iconsSection.appendRow().appendChild(
-        i18n.i18n.getFormatLocalizedString(str_, UIStrings.needHelpReadOurS, {PH1: documentationLink}));
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
+      const documentationLink =
+          UI.XLink.XLink.create('https://web.dev/maskable-icon/', i18nString(UIStrings.documentationOnMaskableIcons));
+      this.iconsSection.appendRow().appendChild(
+          i18n.i18n.getFormatLocalizedString(str_, UIStrings.needHelpReadOurS, {PH1: documentationLink}));
+    }
+    // #endif OHOS_DEVTOOLS
 
     let squareSizedIconAvailable = false;
     for (const icon of icons) {

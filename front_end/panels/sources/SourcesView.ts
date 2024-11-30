@@ -25,6 +25,10 @@ import {
 } from './TabbedEditorContainer.js';
 import {Events as UISourceCodeFrameEvents, UISourceCodeFrame} from './UISourceCodeFrame.js';
 
+// #ifdef OHOS_DEVTOOLS
+const adaptForOhos = true;
+// #endif OHOS_DEVTOOLS
+
 const UIStrings = {
   /**
    *@description Text to open a file
@@ -145,11 +149,20 @@ export class SourcesView extends Common.ObjectWrapper.eventMixin<EventTypes, typ
   private placeholderElement(): Element {
     this.placeholderOptionArray = [];
 
-    const shortcuts = [
+    let shortcuts = [
       {actionId: 'quickOpen.show', description: i18nString(UIStrings.openFile)},
       {actionId: 'commandMenu.show', description: i18nString(UIStrings.runCommand)},
       {actionId: 'sources.add-folder-to-workspace', description: i18nString(UIStrings.dropInAFolderToAddToWorkspace)},
     ];
+
+    // #ifdef OHOS_DEVTOOLS
+    if (adaptForOhos) {
+      shortcuts = [
+        {actionId: 'quickOpen.show', description: i18nString(UIStrings.openFile)},
+        {actionId: 'sources.add-folder-to-workspace', description: i18nString(UIStrings.dropInAFolderToAddToWorkspace)},
+      ];
+    }
+    // #ifdef OHOS_DEVTOOLS
 
     const element = document.createElement('div');
     const list = element.createChild('div', 'tabbed-pane-placeholder');
@@ -182,9 +195,14 @@ export class SourcesView extends Common.ObjectWrapper.eventMixin<EventTypes, typ
       }
     }
 
-    element.appendChild(
-        UI.XLink.XLink.create('https://developer.chrome.com/docs/devtools/workspaces/', 'Learn more about Workspaces'));
-
+    // #ifdef OHOS_DEVTOOLS
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
+      element.appendChild(
+          UI.XLink.XLink.create('https://developer.chrome.com/docs/devtools/workspaces/', 'Learn more about Workspaces'));
+    }
+    // #endif OHOS_DEVTOOLS
     return element;
   }
 

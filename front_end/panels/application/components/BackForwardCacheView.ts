@@ -289,6 +289,40 @@ export class BackForwardCacheView extends HTMLElement {
     // Prevent running BFCache test on the DevTools window itself via DevTools on DevTools
     const isTestingForbidden = Common.ParsedURL.schemeIs(this.#frame.url, 'devtools:');
     // clang-format off
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      return LitHtml.html`
+      ${this.#renderBackForwardCacheStatus(this.#frame.backForwardCacheDetails.restoredFromCache)}
+      <div class="report-line">
+        <div class="report-key">
+          ${i18nString(UIStrings.url)}
+        </div>
+        <div class="report-value" title=${this.#frame.url}>
+          ${this.#frame.url}
+        </div>
+      </div>
+      ${this.#maybeRenderFrameTree(this.#frame.backForwardCacheDetails.explanationsTree)}
+      <${ReportView.ReportView.ReportSection.litTagName}>
+        <${Buttons.Button.Button.litTagName}
+          aria-label=${i18nString(UIStrings.runTest)}
+          .disabled=${isTestRunning || isTestingForbidden}
+          .spinner=${isTestRunning}
+          .variant=${Buttons.Button.Variant.PRIMARY}
+          @click=${this.#navigateAwayAndBack}>
+          ${isTestRunning ? LitHtml.html`
+            ${i18nString(UIStrings.runningTest)}`:`
+            ${i18nString(UIStrings.runTest)}
+          `}
+        </${Buttons.Button.Button.litTagName}>
+      </${ReportView.ReportView.ReportSection.litTagName}>
+      <${ReportView.ReportView.ReportSectionDivider.litTagName}>
+      </${ReportView.ReportView.ReportSectionDivider.litTagName}>
+      ${this.#maybeRenderExplanations(this.#frame.backForwardCacheDetails.explanations,
+          this.#frame.backForwardCacheDetails.explanationsTree)}
+    `;
+    }
+    // #endif OHOS_DEVTOOLS
     return LitHtml.html`
       ${this.#renderBackForwardCacheStatus(this.#frame.backForwardCacheDetails.restoredFromCache)}
       <div class="report-line">
@@ -594,13 +628,20 @@ export class BackForwardCacheView extends HTMLElement {
   }
 
   #maybeRenderDeepLinkToUnload(explanation: Protocol.Page.BackForwardCacheNotRestoredExplanation): LitHtml.LitTemplate {
-    if (explanation.reason === Protocol.Page.BackForwardCacheNotRestoredReason.UnloadHandlerExistsInMainFrame ||
-        explanation.reason === Protocol.Page.BackForwardCacheNotRestoredReason.UnloadHandlerExistsInSubFrame) {
-      return LitHtml.html`
-        <x-link href="https://web.dev/bfcache/#never-use-the-unload-event" class="link">
-          ${i18nString(UIStrings.neverUseUnload)}
-        </x-link>`;
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
+      if (explanation.reason === Protocol.Page.BackForwardCacheNotRestoredReason.UnloadHandlerExistsInMainFrame ||
+          explanation.reason === Protocol.Page.BackForwardCacheNotRestoredReason.UnloadHandlerExistsInSubFrame) {
+        return LitHtml.html`
+          <x-link href="https://web.dev/bfcache/#never-use-the-unload-event" class="link">
+            ${i18nString(UIStrings.neverUseUnload)}
+          </x-link>`;
+      }
     }
+    // #endif OHOS_DEVTOOLS
     return LitHtml.nothing;
   }
 
