@@ -74,6 +74,10 @@ import {
   type NetworkTimeCalculator,
 } from './NetworkTimeCalculator.js';
 
+// #ifdef OHOS_DEVTOOLS
+const adaptForOhos = true;
+// #endif OHOS_DEVTOOLS
+
 const UIStrings = {
   /**
    *@description Text in Network Log View of the Network panel
@@ -944,10 +948,17 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
       hintText.appendChild(
           i18n.i18n.getFormatLocalizedString(str_, UIStrings.recordToDisplayNetworkActivity, {PH1: recordNode}));
     }
-    hintText.createChild('br');
-    hintText.appendChild(UI.XLink.XLink.create(
-        'https://developer.chrome.com/docs/devtools/network/?utm_source=devtools&utm_campaign=2019Q1',
-        i18nString(UIStrings.learnMore)));
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
+      hintText.createChild('br');
+      hintText.appendChild(UI.XLink.XLink.create(
+          'https://developer.chrome.com/docs/devtools/network/?utm_source=devtools&utm_campaign=2019Q1',
+          i18nString(UIStrings.learnMore)));
+    }
+    // #endif OHOS_DEVTOOLS
 
     this.setHidden(true);
   }
@@ -1453,7 +1464,8 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
 
   private onRequestUpdated(event: Common.EventTarget.EventTargetEvent<SDK.NetworkRequest.NetworkRequest>): void {
     const request = event.data;
-    if (SDK.TargetManager.TargetManager.instance().isInScope(SDK.NetworkManager.NetworkManager.forRequest(request))) {
+    const networkManager = SDK.NetworkManager.NetworkManager.forRequest(request);
+    if (!networkManager || SDK.TargetManager.TargetManager.instance().isInScope(networkManager)) {
       this.refreshRequest(request);
     }
   }
@@ -1629,12 +1641,22 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
         patterns.push({enabled: true, url: url as Platform.DevToolsPath.UrlString});
         manager.setBlockedPatterns(patterns);
         manager.setBlockingEnabled(true);
+        // #ifdef OHOS_DEVTOOLS
+        if (adaptForOhos) {
+          return;
+        }
+        // #endif OHOS_DEVTOOLS
         void UI.ViewManager.ViewManager.instance().showView('network.blocked-urls');
       }
 
       function removeBlockedURL(url: string): void {
         patterns = patterns.filter(pattern => pattern.url !== url);
         manager.setBlockedPatterns(patterns);
+        // #ifdef OHOS_DEVTOOLS
+        if (adaptForOhos) {
+          return;
+        }
+        // #endif OHOS_DEVTOOLS
         void UI.ViewManager.ViewManager.instance().showView('network.blocked-urls');
       }
 

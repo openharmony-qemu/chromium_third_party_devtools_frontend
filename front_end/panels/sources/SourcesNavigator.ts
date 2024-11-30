@@ -170,12 +170,20 @@ export class FilesNavigatorView extends NavigatorView {
     super();
     const placeholder = new UI.EmptyWidget.EmptyWidget('');
     this.setPlaceholder(placeholder);
-    placeholder.appendParagraph().appendChild(UI.Fragment.html`
-  <div>${i18nString(UIStrings.syncChangesInDevtoolsWithThe)}</div><br />
-  ${
-        UI.XLink.XLink.create(
-            'https://developer.chrome.com/docs/devtools/workspaces/', i18nString(UIStrings.learnMoreAboutWorkspaces))}
-  `);
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      placeholder.appendParagraph().appendChild(UI.Fragment.html`
+        <div>${i18nString(UIStrings.syncChangesInDevtoolsWithThe)}</div>`);
+    } else {
+      placeholder.appendParagraph().appendChild(UI.Fragment.html`
+        <div>${i18nString(UIStrings.syncChangesInDevtoolsWithThe)}</div><br />
+        ${
+              UI.XLink.XLink.create(
+                  'https://developer.chrome.com/docs/devtools/workspaces/', i18nString(UIStrings.learnMoreAboutWorkspaces))}
+        `);
+    }
+    // #endif OHOS_DEVTOOLS
 
     const toolbar = new UI.Toolbar.Toolbar('navigator-toolbar');
     void toolbar.appendItemsAtLocation('files-navigator-toolbar').then(() => {
@@ -213,12 +221,20 @@ export class OverridesNavigatorView extends NavigatorView {
     super();
     const placeholder = new UI.EmptyWidget.EmptyWidget('');
     this.setPlaceholder(placeholder);
-    placeholder.appendParagraph().appendChild(UI.Fragment.html`
-  <div>${i18nString(UIStrings.overridePageAssetsWithFilesFromA)}</div><br />
-  ${
-        UI.XLink.XLink.create(
-            'https://developers.google.com/web/updates/2018/01/devtools#overrides', i18nString(UIStrings.learnMore))}
-  `);
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      placeholder.appendParagraph().appendChild(UI.Fragment.html`
+        <div>${i18nString(UIStrings.overridePageAssetsWithFilesFromA)}</div>`);
+    } else {
+      placeholder.appendParagraph().appendChild(UI.Fragment.html`
+        <div>${i18nString(UIStrings.overridePageAssetsWithFilesFromA)}</div><br />
+        ${
+              UI.XLink.XLink.create(
+                  'https://developers.google.com/web/updates/2018/01/devtools#overrides', i18nString(UIStrings.learnMore))}
+        `);
+    }
+    // #endif OHOS_DEVTOOLS
 
     this.toolbar = new UI.Toolbar.Toolbar('navigator-toolbar');
 
@@ -305,10 +321,18 @@ export class ContentScriptsNavigatorView extends NavigatorView {
     super();
     const placeholder = new UI.EmptyWidget.EmptyWidget('');
     this.setPlaceholder(placeholder);
-    placeholder.appendParagraph().appendChild(UI.Fragment.html`
-  <div>${i18nString(UIStrings.contentScriptsServedByExtensions)}</div><br />
-  ${UI.XLink.XLink.create('https://developer.chrome.com/extensions/content_scripts', i18nString(UIStrings.learnMore))}
-  `);
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      placeholder.appendParagraph().appendChild(UI.Fragment.html`
+        <div>${i18nString(UIStrings.contentScriptsServedByExtensions)}</div>`);
+    } else {
+      placeholder.appendParagraph().appendChild(UI.Fragment.html`
+        <div>${i18nString(UIStrings.contentScriptsServedByExtensions)}</div><br />
+        ${UI.XLink.XLink.create('https://developer.chrome.com/extensions/content_scripts', i18nString(UIStrings.learnMore))}
+        `);
+    }
+    // #endif OHOS_DEVTOOLS
   }
 
   static instance(opts: {
@@ -334,12 +358,20 @@ export class SnippetsNavigatorView extends NavigatorView {
     super();
     const placeholder = new UI.EmptyWidget.EmptyWidget('');
     this.setPlaceholder(placeholder);
-    placeholder.appendParagraph().appendChild(UI.Fragment.html`
-  <div>${i18nString(UIStrings.createAndSaveCodeSnippetsFor)}</div><br />
-  ${
-        UI.XLink.XLink.create(
-            'https://developer.chrome.com/docs/devtools/javascript/snippets/', i18nString(UIStrings.learnMore))}
-  `);
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      placeholder.appendParagraph().appendChild(UI.Fragment.html`
+        <div>${i18nString(UIStrings.createAndSaveCodeSnippetsFor)}</div>`);
+    } else {
+      placeholder.appendParagraph().appendChild(UI.Fragment.html`
+        <div>${i18nString(UIStrings.createAndSaveCodeSnippetsFor)}</div><br />
+        ${
+              UI.XLink.XLink.create(
+                  'https://developer.chrome.com/docs/devtools/javascript/snippets/', i18nString(UIStrings.learnMore))}
+        `);
+    }
+    // #endif OHOS_DEVTOOLS
 
     const toolbar = new UI.Toolbar.Toolbar('navigator-toolbar');
     const newButton =

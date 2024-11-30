@@ -193,6 +193,10 @@ export class InspectorView extends VBox implements ViewLocationResolver {
     // the Device mode button is not added and so the allocated space is smaller.
     const allocatedSpace = Root.Runtime.Runtime.queryParam(Root.Runtime.ConditionName.CAN_DOCK) ? '69px' : '41px';
     this.tabbedPane.leftToolbar().element.style.minWidth = allocatedSpace;
+    // #ifdef OHOS_DEVTOOLS
+    this.tabbedPane.leftToolbar().element.style.minWidth =
+        Root.Runtime.Runtime.queryParam(Root.Runtime.ConditionName.USE_ORIGNAL) ? allocatedSpace : '41px';
+    // #endif OHOS_DEVTOOLS
     this.tabbedPane.registerRequiredCSS(inspectorViewTabbedPaneStyles);
     this.tabbedPane.addEventListener(TabbedPaneEvents.TabSelected, this.tabSelected, this);
     this.tabbedPane.setAccessibleName(i18nString(UIStrings.panels));
@@ -494,7 +498,14 @@ export class InspectorView extends VBox implements ViewLocationResolver {
 }
 
 function getDisableLocaleInfoBarSetting(): Common.Settings.Setting<boolean> {
-  return Common.Settings.Settings.instance().createSetting('disableLocaleInfoBar', false);
+  // #ifdef OHOS_DEVTOOLS
+  const disableLocaleInfoBarAsDefault = true;
+  if (disableLocaleInfoBarAsDefault) {
+    return Common.Settings.Settings.instance().createSetting('disableLocaleInfoBar', true);
+  } else {
+    return Common.Settings.Settings.instance().createSetting('disableLocaleInfoBar', false);
+  }
+  // #endif
 }
 
 function shouldShowLocaleInfobar(): boolean {

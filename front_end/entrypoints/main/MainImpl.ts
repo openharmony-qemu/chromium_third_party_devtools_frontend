@@ -280,23 +280,42 @@ export class MainImpl {
     Root.Runtime.experiments.register(
         'ignoreListJSFramesOnTimeline', 'Ignore List for JavaScript frames on Timeline', true);
     Root.Runtime.experiments.register('liveHeapProfile', 'Live heap profile', true);
-    Root.Runtime.experiments.register(
-        'protocolMonitor', 'Protocol Monitor', undefined,
-        'https://developer.chrome.com/blog/new-in-devtools-92/#protocol-monitor');
-    Root.Runtime.experiments.register('developerResourcesView', 'Show developer resources view');
-    Root.Runtime.experiments.register(
-        'cspViolationsView', 'Show CSP Violations view', undefined,
-        'https://developer.chrome.com/blog/new-in-devtools-89/#csp');
-    Root.Runtime.experiments.register('samplingHeapProfilerTimeline', 'Sampling heap profiler timeline', true);
-    Root.Runtime.experiments.register(
-        'showOptionToExposeInternalsInHeapSnapshot', 'Show option to expose internals in heap snapshots');
-    Root.Runtime.experiments.register(
-        'sourceOrderViewer', 'Source order viewer', undefined,
-        'https://developer.chrome.com/blog/new-in-devtools-92/#source-order');
-    Root.Runtime.experiments.register('webauthnPane', 'WebAuthn Pane');
-    Root.Runtime.experiments.register(
-        'keyboardShortcutEditor', 'Enable keyboard shortcut editor', false,
-        'https://developer.chrome.com/blog/new-in-devtools-88/#keyboard-shortcuts');
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      Root.Runtime.experiments.register(
+          'protocolMonitor', 'Protocol Monitor');
+      Root.Runtime.experiments.register('developerResourcesView', 'Show developer resources view');
+      Root.Runtime.experiments.register(
+          'cspViolationsView', 'Show CSP Violations view');
+      Root.Runtime.experiments.register('samplingHeapProfilerTimeline', 'Sampling heap profiler timeline', true);
+      Root.Runtime.experiments.register(
+          'showOptionToExposeInternalsInHeapSnapshot', 'Show option to expose internals in heap snapshots');
+      Root.Runtime.experiments.register(
+          'sourceOrderViewer', 'Source order viewer');
+      Root.Runtime.experiments.register('webauthnPane', 'WebAuthn Pane');
+      Root.Runtime.experiments.register(
+          'keyboardShortcutEditor', 'Enable keyboard shortcut editor');
+    } else {
+      Root.Runtime.experiments.register(
+          'protocolMonitor', 'Protocol Monitor', undefined,
+          'https://developer.chrome.com/blog/new-in-devtools-92/#protocol-monitor');
+      Root.Runtime.experiments.register('developerResourcesView', 'Show developer resources view');
+      Root.Runtime.experiments.register(
+          'cspViolationsView', 'Show CSP Violations view', undefined,
+          'https://developer.chrome.com/blog/new-in-devtools-89/#csp');
+      Root.Runtime.experiments.register('samplingHeapProfilerTimeline', 'Sampling heap profiler timeline', true);
+      Root.Runtime.experiments.register(
+          'showOptionToExposeInternalsInHeapSnapshot', 'Show option to expose internals in heap snapshots');
+      Root.Runtime.experiments.register(
+          'sourceOrderViewer', 'Source order viewer', undefined,
+          'https://developer.chrome.com/blog/new-in-devtools-92/#source-order');
+      Root.Runtime.experiments.register('webauthnPane', 'WebAuthn Pane');
+      Root.Runtime.experiments.register(
+          'keyboardShortcutEditor', 'Enable keyboard shortcut editor', false,
+          'https://developer.chrome.com/blog/new-in-devtools-88/#keyboard-shortcuts');
+    }
+    // #endif OHOS_DEVTOOLS
 
     // Back/forward cache
     Root.Runtime.experiments.register(
@@ -312,56 +331,101 @@ export class MainImpl {
         'timelineAsConsoleProfileResultPanel', 'View console.profile() results in the Performance panel for Node.js',
         true);
 
-    // JS Profiler
-    Root.Runtime.experiments.register(
+    // #ifdef OHOS_DEVTOOLS
+    if (adaptForOhos) {
+      // JS Profiler
+      Root.Runtime.experiments.register(
+          'jsProfilerTemporarilyEnable', 'Enable JavaScript Profiler temporarily');
+
+      // Debugging
+      Root.Runtime.experiments.register(
+          'wasmDWARFDebugging', 'WebAssembly Debugging: Enable DWARF support');
+      Root.Runtime.experiments.register(
+          'evaluateExpressionsWithSourceMaps', 'Console: Resolve variable names in expressions using source maps',
+          undefined);
+      Root.Runtime.experiments.register('instrumentationBreakpoints', 'Enable instrumentation breakpoints', true);
+
+      // Dual-screen
+      Root.Runtime.experiments.register(
+          'dualScreenSupport', 'Emulation: Support dual screen mode');
+      Root.Runtime.experiments.setEnabled('dualScreenSupport', true);
+
+      // Advanced Perceptual Contrast Algorithm.
+      Root.Runtime.experiments.register(
+          'APCA',
+          'Enable new Advanced Perceptual Contrast Algorithm (APCA) replacing previous contrast ratio and AA/AAA guidelines');
+
+      // Full Accessibility Tree
+      Root.Runtime.experiments.register(
+          'fullAccessibilityTree', 'Enable full accessibility tree view in the Elements panel');
+
+      // Font Editor
+      Root.Runtime.experiments.register(
+          'fontEditor', 'Enable new Font Editor tool within the Styles Pane.');
+
+      // Contrast issues reported via the Issues panel.
+      Root.Runtime.experiments.register(
+          'contrastIssues', 'Enable automatic contrast issue reporting via the Issues panel');
+
+      // New cookie features.
+      Root.Runtime.experiments.register('experimentalCookieFeatures', 'Enable experimental cookie features');
+
+      // CSS <length> authoring tool.
+      Root.Runtime.experiments.register(
+          'cssTypeComponentLength', 'Enable CSS <length> authoring tool in the Styles pane');
+    } else {
+      // JS Profiler
+      Root.Runtime.experiments.register(
         'jsProfilerTemporarilyEnable', 'Enable JavaScript Profiler temporarily', /* unstable= */ false,
         'https://developer.chrome.com/blog/js-profiler-deprecation/',
         'https://bugs.chromium.org/p/chromium/issues/detail?id=1354548');
 
-    // Debugging
-    Root.Runtime.experiments.register(
-        'wasmDWARFDebugging', 'WebAssembly Debugging: Enable DWARF support', undefined,
-        'https://developer.chrome.com/blog/wasm-debugging-2020/');
-    Root.Runtime.experiments.register(
-        'evaluateExpressionsWithSourceMaps', 'Console: Resolve variable names in expressions using source maps',
-        undefined);
-    Root.Runtime.experiments.register('instrumentationBreakpoints', 'Enable instrumentation breakpoints', true);
+      // Debugging
+      Root.Runtime.experiments.register(
+          'wasmDWARFDebugging', 'WebAssembly Debugging: Enable DWARF support', undefined,
+          'https://developer.chrome.com/blog/wasm-debugging-2020/');
+      Root.Runtime.experiments.register(
+          'evaluateExpressionsWithSourceMaps', 'Console: Resolve variable names in expressions using source maps',
+          undefined);
+      Root.Runtime.experiments.register('instrumentationBreakpoints', 'Enable instrumentation breakpoints', true);
 
-    // Dual-screen
-    Root.Runtime.experiments.register(
-        'dualScreenSupport', 'Emulation: Support dual screen mode', undefined,
-        'https://developer.chrome.com/blog/new-in-devtools-89#dual-screen');
-    Root.Runtime.experiments.setEnabled('dualScreenSupport', true);
+      // Dual-screen
+      Root.Runtime.experiments.register(
+          'dualScreenSupport', 'Emulation: Support dual screen mode', undefined,
+          'https://developer.chrome.com/blog/new-in-devtools-89#dual-screen');
+      Root.Runtime.experiments.setEnabled('dualScreenSupport', true);
 
-    // Advanced Perceptual Contrast Algorithm.
-    Root.Runtime.experiments.register(
-        'APCA',
-        'Enable new Advanced Perceptual Contrast Algorithm (APCA) replacing previous contrast ratio and AA/AAA guidelines',
-        undefined, 'https://developer.chrome.com/blog/new-in-devtools-89/#apca');
+      // Advanced Perceptual Contrast Algorithm.
+      Root.Runtime.experiments.register(
+          'APCA',
+          'Enable new Advanced Perceptual Contrast Algorithm (APCA) replacing previous contrast ratio and AA/AAA guidelines',
+          undefined, 'https://developer.chrome.com/blog/new-in-devtools-89/#apca');
 
-    // Full Accessibility Tree
-    Root.Runtime.experiments.register(
-        'fullAccessibilityTree', 'Enable full accessibility tree view in the Elements panel', undefined,
-        'https://developer.chrome.com/blog/new-in-devtools-90/#accesibility-tree',
-        'https://g.co/devtools/a11y-tree-feedback');
+      // Full Accessibility Tree
+      Root.Runtime.experiments.register(
+          'fullAccessibilityTree', 'Enable full accessibility tree view in the Elements panel', undefined,
+          'https://developer.chrome.com/blog/new-in-devtools-90/#accesibility-tree',
+          'https://g.co/devtools/a11y-tree-feedback');
 
-    // Font Editor
-    Root.Runtime.experiments.register(
-        'fontEditor', 'Enable new Font Editor tool within the Styles Pane.', undefined,
-        'https://developer.chrome.com/blog/new-in-devtools-89/#font');
+      // Font Editor
+      Root.Runtime.experiments.register(
+          'fontEditor', 'Enable new Font Editor tool within the Styles Pane.', undefined,
+          'https://developer.chrome.com/blog/new-in-devtools-89/#font');
 
-    // Contrast issues reported via the Issues panel.
-    Root.Runtime.experiments.register(
-        'contrastIssues', 'Enable automatic contrast issue reporting via the Issues panel', undefined,
-        'https://developer.chrome.com/blog/new-in-devtools-90/#low-contrast');
+      // Contrast issues reported via the Issues panel.
+      Root.Runtime.experiments.register(
+          'contrastIssues', 'Enable automatic contrast issue reporting via the Issues panel', undefined,
+          'https://developer.chrome.com/blog/new-in-devtools-90/#low-contrast');
 
-    // New cookie features.
-    Root.Runtime.experiments.register('experimentalCookieFeatures', 'Enable experimental cookie features');
+      // New cookie features.
+      Root.Runtime.experiments.register('experimentalCookieFeatures', 'Enable experimental cookie features');
 
-    // CSS <length> authoring tool.
-    Root.Runtime.experiments.register(
-        'cssTypeComponentLength', 'Enable CSS <length> authoring tool in the Styles pane', undefined,
-        'https://developer.chrome.com/blog/new-in-devtools-96/#length', 'https://g.co/devtools/length-feedback');
+      // CSS <length> authoring tool.
+      Root.Runtime.experiments.register(
+          'cssTypeComponentLength', 'Enable CSS <length> authoring tool in the Styles pane', undefined,
+          'https://developer.chrome.com/blog/new-in-devtools-96/#length', 'https://g.co/devtools/length-feedback');
+    }
+    // #endif OHOS_DEVTOOLS
 
     // Display precise changes in the Changes tab.
     Root.Runtime.experiments.register(
@@ -385,10 +449,18 @@ export class MainImpl {
     Root.Runtime.experiments.register(
         Root.Runtime.ExperimentName.EYEDROPPER_COLOR_PICKER, 'Enable color picking outside the browser window');
 
-    // Change grouping of sources panel to use Authored/Deployed trees
-    Root.Runtime.experiments.register(
-        Root.Runtime.ExperimentName.AUTHORED_DEPLOYED_GROUPING, 'Group sources into Authored and Deployed trees',
-        undefined, 'https://goo.gle/authored-deployed', 'https://goo.gle/authored-deployed-feedback');
+    // #ifdef OHOS_DEVTOOLS
+    if (adaptForOhos) {
+      // Change grouping of sources panel to use Authored/Deployed trees
+      Root.Runtime.experiments.register(
+          Root.Runtime.ExperimentName.AUTHORED_DEPLOYED_GROUPING, 'Group sources into Authored and Deployed trees');
+    } else {
+      // Change grouping of sources panel to use Authored/Deployed trees
+      Root.Runtime.experiments.register(
+          Root.Runtime.ExperimentName.AUTHORED_DEPLOYED_GROUPING, 'Group sources into Authored and Deployed trees',
+          undefined, 'https://goo.gle/authored-deployed', 'https://goo.gle/authored-deployed-feedback');
+    }
+    // #endif OHOS_DEVTOOLS
 
     // Hide third party code (as determined by ignore lists or source maps)
     Root.Runtime.experiments.register(
@@ -915,9 +987,16 @@ export class MainMenuItem implements UI.Toolbar.Provider {
       right.setToggled(UI.DockController.DockController.instance().dockSide() === UI.DockController.DockState.RIGHT);
       left.setToggled(UI.DockController.DockController.instance().dockSide() === UI.DockController.DockState.LEFT);
       dockItemToolbar.appendToolbarItem(undock);
-      dockItemToolbar.appendToolbarItem(left);
-      dockItemToolbar.appendToolbarItem(bottom);
-      dockItemToolbar.appendToolbarItem(right);
+      // #ifdef OHOS_DEVTOOLS
+      const onlySupportUndock = true;
+      if (onlySupportUndock) {
+        // ohos doesn't support dock side.
+      } else {
+        dockItemToolbar.appendToolbarItem(left);
+        dockItemToolbar.appendToolbarItem(bottom);
+        dockItemToolbar.appendToolbarItem(right);
+      }
+      // #endif OHOS_DEVTOOLS
       dockItemElement.addEventListener('keydown', event => {
         let dir = 0;
         if (event.key === 'ArrowLeft') {
@@ -931,6 +1010,14 @@ export class MainMenuItem implements UI.Toolbar.Provider {
         } else {
           return;
         }
+
+        // #ifdef OHOS_DEVTOOLS
+        const onlySupportUndock = true;
+        if (onlySupportUndock) {
+          // ohos doesn't support dock side.
+          dir = 0;
+        }
+        // #endif OHOS_DEVTOOLS
 
         const buttons = [undock, left, bottom, right];
         let index = buttons.findIndex(button => button.element.hasFocus());
@@ -1007,8 +1094,15 @@ export class MainMenuItem implements UI.Toolbar.Provider {
       });
     }
 
-    const helpSubMenu = contextMenu.footerSection().appendSubMenuItem(i18nString(UIStrings.help));
-    helpSubMenu.appendItemsAtLocation('mainMenuHelp');
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
+      const helpSubMenu = contextMenu.footerSection().appendSubMenuItem(i18nString(UIStrings.help));
+      helpSubMenu.appendItemsAtLocation('mainMenuHelp');
+    }
+    // #endif OHOS_DEVTOOLS
   }
 }
 

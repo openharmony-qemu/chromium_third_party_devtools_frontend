@@ -13,6 +13,9 @@ import type * as InspectorMain from '../inspector_main/inspector_main.js';
 import type * as Main from './main.js';
 
 import * as i18n from '../../core/i18n/i18n.js';
+// #ifdef OHOS_DEVTOOLS
+const adaptForOhos = true;
+// #endif OHOS_DEVTOOLS
 const UIStrings = {
   /**
    *@description Text in Main
@@ -730,7 +733,9 @@ Common.Settings.registerSettingExtension({
   category: Common.Settings.SettingCategory.GLOBAL,
   settingName: 'currentDockState',
   settingType: Common.Settings.SettingType.ENUM,
-  defaultValue: 'right',
+  // DevTools stage 1 : use 'undocked' as default.
+  defaultValue: 'undocked',
+  // defaultValue: 'right',
   options: [
     {
       value: 'right',
@@ -920,18 +925,24 @@ UI.Toolbar.registerToolbarItem({
   experiment: Root.Runtime.ExperimentName.OUTERMOST_TARGET_SELECTOR,
 });
 
-UI.Toolbar.registerToolbarItem({
-  async loadItem() {
-    const Main = await loadMainModule();
-    return Main.MainImpl.SettingsButtonProvider.instance();
-  },
-  order: 99,
-  location: UI.Toolbar.ToolbarItemLocation.MAIN_TOOLBAR_RIGHT,
-  showLabel: undefined,
-  condition: undefined,
-  separator: undefined,
-  actionId: undefined,
-});
+// #ifdef OHOS_DEVTOOLS
+if (adaptForOhos) {
+  // arkweb does't support settings.
+} else {
+  UI.Toolbar.registerToolbarItem({
+    async loadItem() {
+      const Main = await loadMainModule();
+      return Main.MainImpl.SettingsButtonProvider.instance();
+    },
+    order: 99,
+    location: UI.Toolbar.ToolbarItemLocation.MAIN_TOOLBAR_RIGHT,
+    showLabel: undefined,
+    condition: undefined,
+    separator: undefined,
+    actionId: undefined,
+  });
+}
+// #endif OHOS_DEVTOOLS
 
 UI.Toolbar.registerToolbarItem({
   async loadItem() {

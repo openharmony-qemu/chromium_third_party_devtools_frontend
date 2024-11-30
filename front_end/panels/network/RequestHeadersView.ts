@@ -630,10 +630,17 @@ export class RequestHeadersView extends UI.Widget.VBox {
       cautionElement.createChild('div', 'caution').textContent = cautionText;
       const cautionTreeElement = new UI.TreeOutline.TreeElement(cautionElement);
 
-      cautionElement.createChild('div', 'learn-more')
-          .appendChild(UI.XLink.XLink.create(
-              'https://developer.chrome.com/docs/devtools/network/reference/#provisional-headers',
-              i18nString(UIStrings.learnMore)));
+      // #ifdef OHOS_DEVTOOLS
+      const adaptForOhos = true;
+      if (adaptForOhos) {
+        // ohos doesn't support external links
+      } else {
+        cautionElement.createChild('div', 'learn-more')
+            .appendChild(UI.XLink.XLink.create(
+                'https://developer.chrome.com/docs/devtools/network/reference/#provisional-headers',
+                i18nString(UIStrings.learnMore)));
+      }
+      // #endif OHOS_DEVTOOLS
 
       headersTreeElement.appendChild(cautionTreeElement);
     }
