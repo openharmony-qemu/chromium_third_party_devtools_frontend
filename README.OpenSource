@@ -1,0 +1,11 @@
+[
+    {
+        "Name": "devtools-frontend",
+        "License": "BSD-3-Clause",
+        "License File": "LICENSE",
+        "Version Number": "1655fc6e5b1b7db015e2b0fc9dfe75f6b0034388",
+        "Owner": "liujixin@huawei.com",
+        "Upstream URL": "https://chromium.googlesource.com/devtools/devtools-frontend@1655fc6e5b1b7db015e2b0fc9dfe75f6b0034388",
+        "Description": "调试器前端"
+    }
+]
