@@ -46,6 +46,8 @@ import * as PerfUI from '../../ui/legacy/components/perf_ui/perf_ui.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import * as MobileThrottling from '../mobile_throttling/mobile_throttling.js';
 
+import * as Bindings from '../../models/bindings/bindings.js';
+
 import historyToolbarButtonStyles from './historyToolbarButton.css.js';
 import timelinePanelStyles from './timelinePanel.css.js';
 import timelineStatusDialogStyles from './timelineStatusDialog.css.js';
@@ -657,6 +659,25 @@ export class TimelinePanel extends UI.Panel.Panel implements Client, TimelineMod
       fileName = `Trace-${traceStart}.json` as Platform.DevToolsPath.RawPathString;
     }
 
+    // #ifdef OHOS_DEVTOOLS
+    const supportShowSaveFilePicker = false;
+    if (!supportShowSaveFilePicker) {
+      const stream = new Bindings.FileUtils.FileOutputStream();
+      if (!await stream.open(fileName)) {
+        console.error(`open ${fileName} failed`);
+        return;
+      }
+      const formattedTraceIter = traceJsonGenerator(traceEvents, metadata);
+      const traceAsString = Array.from(formattedTraceIter).join('');
+      const chunkSize = 100000;
+      for (let i = 0; i < traceAsString.length; i += chunkSize) {
+        const chunk = traceAsString.substr(i, chunkSize);
+        await stream.write(chunk);
+      }
+      void stream.close();
+      return;
+    }
+    // #endif OHOS_DEVTOOLS
     try {
       const handler = await window.showSaveFilePicker({
         suggestedName: fileName,
@@ -1141,8 +1162,16 @@ export class TimelinePanel extends UI.Panel.Panel implements Client, TimelineMod
     centered.createChild('p').appendChild(i18n.i18n.getFormatLocalizedString(
         str_, UIStrings.clickTheReloadButtonSOrHitSTo, {PH1: reloadButton, PH2: reloadKey}));
 
-    centered.createChild('p').appendChild(i18n.i18n.getFormatLocalizedString(
-        str_, UIStrings.afterRecordingSelectAnAreaOf, {PH1: navigateNode, PH2: learnMoreNode}));
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      centered.createChild('p').appendChild(i18n.i18n.getFormatLocalizedString(
+          str_, UIStrings.afterRecordingSelectAnAreaOf, {PH1: navigateNode}));
+    } else {
+      centered.createChild('p').appendChild(i18n.i18n.getFormatLocalizedString(
+          str_, UIStrings.afterRecordingSelectAnAreaOf, {PH1: navigateNode, PH2: learnMoreNode}));
+    }
+    // #endif OHOS_DEVTOOLS
 
     if (isNode) {
       const previewSection = new PanelFeedback.PanelFeedback.PanelFeedback();

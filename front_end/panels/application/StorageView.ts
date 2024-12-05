@@ -195,11 +195,18 @@ export class StorageView extends UI.ThrottledWidget.ThrottledWidget {
     const quota = this.reportView.appendSection(i18nString(UIStrings.usage));
     this.quotaRow = quota.appendSelectableRow();
     this.quotaRow.classList.add('quota-usage-row');
-    const learnMoreRow = quota.appendRow();
-    const learnMore = UI.XLink.XLink.create(
-        'https://developer.chrome.com/docs/devtools/progressive-web-apps#opaque-responses',
-        i18nString(UIStrings.learnMore));
-    learnMoreRow.appendChild(learnMore);
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
+      const learnMoreRow = quota.appendRow();
+      const learnMore = UI.XLink.XLink.create(
+          'https://developer.chrome.com/docs/devtools/progressive-web-apps#opaque-responses',
+          i18nString(UIStrings.learnMore));
+      learnMoreRow.appendChild(learnMore);
+    }
+    // #endif OHOS_DEVTOOLS
     this.quotaUsage = null;
     this.pieChart = new PerfUI.PieChart.PieChart();
     this.populatePieChart(0, []);

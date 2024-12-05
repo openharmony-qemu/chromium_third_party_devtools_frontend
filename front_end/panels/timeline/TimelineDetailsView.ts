@@ -151,14 +151,21 @@ export class TimelineDetailsView extends UI.Widget.VBox {
       const isEstimate = estimated ? ` (${i18nString(UIStrings.estimated)})` : '';
       const message = i18nString(UIStrings.totalBlockingTimeSmss, {PH1: time.toFixed(2), PH2: isEstimate});
 
-      const warning = document.createElement('span');
-      const clsLink = UI.XLink.XLink.create('https://web.dev/tbt/', i18nString(UIStrings.learnMore));
-      // Prevent focus ring from being cut off.
-      clsLink.style.margin = '3px';
-      warning.appendChild(clsLink);
-
-      this.additionalMetricsToolbar.appendText(message);
-      this.additionalMetricsToolbar.appendToolbarItem(new UI.Toolbar.ToolbarItem(warning));
+      // #ifdef OHOS_DEVTOOLS
+      const adaptForOhos = true;
+      if (adaptForOhos) {
+        this.additionalMetricsToolbar.appendText(message);
+      } else {
+        const warning = document.createElement('span');
+        const clsLink = UI.XLink.XLink.create('https://web.dev/tbt/', i18nString(UIStrings.learnMore));
+        // Prevent focus ring from being cut off.
+        clsLink.style.margin = '3px';
+        warning.appendChild(clsLink);
+  
+        this.additionalMetricsToolbar.appendText(message);
+        this.additionalMetricsToolbar.appendToolbarItem(new UI.Toolbar.ToolbarItem(warning));
+      }
+      // #endif OHOS_DEVTOOLS
     }
   }
 

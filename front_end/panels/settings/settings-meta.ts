@@ -10,6 +10,10 @@ import * as UI from '../../ui/legacy/legacy.js';
 
 import type * as Settings from './settings.js';
 
+// #ifdef OHOS_DEVTOOLS
+const adaptForOhos = true;
+// #endif OHOS_DEVTOOLS
+
 const UIStrings = {
   /**
    *@description Text for keyboard shortcuts
@@ -114,41 +118,47 @@ UI.ViewManager.registerViewExtension({
   },
 });
 
-UI.ActionRegistration.registerActionExtension({
-  category: UI.ActionRegistration.ActionCategory.SETTINGS,
-  actionId: 'settings.show',
-  title: i18nLazyString(UIStrings.settings),
-  async loadActionDelegate() {
-    const Settings = await loadSettingsModule();
-    return Settings.SettingsScreen.ActionDelegate.instance();
-  },
-  iconClass: UI.ActionRegistration.IconClass.LARGEICON_SETTINGS_GEAR,
-  bindings: [
-    {
-      shortcut: 'F1',
-      keybindSets: [
-        UI.ActionRegistration.KeybindSet.DEVTOOLS_DEFAULT,
-      ],
+// #ifdef OHOS_DEVTOOLS
+if (adaptForOhos) {
+  // arkweb does't support settings.
+} else {
+  UI.ActionRegistration.registerActionExtension({
+    category: UI.ActionRegistration.ActionCategory.SETTINGS,
+    actionId: 'settings.show',
+    title: i18nLazyString(UIStrings.settings),
+    async loadActionDelegate() {
+      const Settings = await loadSettingsModule();
+      return Settings.SettingsScreen.ActionDelegate.instance();
     },
-    {
-      shortcut: 'Shift+?',
-    },
-    {
-      platform: UI.ActionRegistration.Platforms.WindowsLinux,
-      shortcut: 'Ctrl+,',
-      keybindSets: [
-        UI.ActionRegistration.KeybindSet.VS_CODE,
-      ],
-    },
-    {
-      platform: UI.ActionRegistration.Platforms.Mac,
-      shortcut: 'Meta+,',
-      keybindSets: [
-        UI.ActionRegistration.KeybindSet.VS_CODE,
-      ],
-    },
-  ],
-});
+    iconClass: UI.ActionRegistration.IconClass.LARGEICON_SETTINGS_GEAR,
+    bindings: [
+      {
+        shortcut: 'F1',
+        keybindSets: [
+          UI.ActionRegistration.KeybindSet.DEVTOOLS_DEFAULT,
+        ],
+      },
+      {
+        shortcut: 'Shift+?',
+      },
+      {
+        platform: UI.ActionRegistration.Platforms.WindowsLinux,
+        shortcut: 'Ctrl+,',
+        keybindSets: [
+          UI.ActionRegistration.KeybindSet.VS_CODE,
+        ],
+      },
+      {
+        platform: UI.ActionRegistration.Platforms.Mac,
+        shortcut: 'Meta+,',
+        keybindSets: [
+          UI.ActionRegistration.KeybindSet.VS_CODE,
+        ],
+      },
+    ],
+  });
+}
+// #endif OHOS_DEVTOOLS
 
 UI.ActionRegistration.registerActionExtension({
   category: UI.ActionRegistration.ActionCategory.SETTINGS,
@@ -160,31 +170,38 @@ UI.ActionRegistration.registerActionExtension({
   },
 });
 
-UI.ActionRegistration.registerActionExtension({
-  category: UI.ActionRegistration.ActionCategory.SETTINGS,
-  actionId: 'settings.shortcuts',
-  title: i18nLazyString(UIStrings.shortcuts),
-  async loadActionDelegate() {
-    const Settings = await loadSettingsModule();
-    return Settings.SettingsScreen.ActionDelegate.instance();
-  },
-  bindings: [
-    {
-      platform: UI.ActionRegistration.Platforms.WindowsLinux,
-      shortcut: 'Ctrl+K Ctrl+S',
-      keybindSets: [
-        UI.ActionRegistration.KeybindSet.VS_CODE,
-      ],
+// #ifdef OHOS_DEVTOOLS
+if (adaptForOhos) {
+  // arkweb doesn't support shortcuts.
+} else {
+  UI.ActionRegistration.registerActionExtension({
+    category: UI.ActionRegistration.ActionCategory.SETTINGS,
+    actionId: 'settings.shortcuts',
+    title: i18nLazyString(UIStrings.shortcuts),
+    async loadActionDelegate() {
+      const Settings = await loadSettingsModule();
+      return Settings.SettingsScreen.ActionDelegate.instance();
     },
-    {
-      platform: UI.ActionRegistration.Platforms.Mac,
-      shortcut: 'Meta+K Meta+S',
-      keybindSets: [
-        UI.ActionRegistration.KeybindSet.VS_CODE,
-      ],
-    },
-  ],
-});
+    bindings: [
+      {
+        platform: UI.ActionRegistration.Platforms.WindowsLinux,
+        shortcut: 'Ctrl+K Ctrl+S',
+        keybindSets: [
+          UI.ActionRegistration.KeybindSet.VS_CODE,
+        ],
+      },
+      {
+        platform: UI.ActionRegistration.Platforms.Mac,
+        shortcut: 'Meta+K Meta+S',
+        keybindSets: [
+          UI.ActionRegistration.KeybindSet.VS_CODE,
+        ],
+      },
+    ],
+  });
+}
+// #endif OHOS_DEVTOOLS
+
 
 UI.ViewManager.registerLocationResolver({
   name: UI.ViewManager.ViewLocationValues.SETTINGS_VIEW,
@@ -209,11 +226,17 @@ Common.Revealer.registerRevealer({
   destination: undefined,
 });
 
-UI.ContextMenu.registerItem({
-  location: UI.ContextMenu.ItemLocation.MAIN_MENU_FOOTER,
-  actionId: 'settings.shortcuts',
-  order: undefined,
-});
+// #ifdef OHOS_DEVTOOLS
+if (adaptForOhos) {
+  // arkweb doesn't support shortcuts.
+} else {
+  UI.ContextMenu.registerItem({
+    location: UI.ContextMenu.ItemLocation.MAIN_MENU_FOOTER,
+    actionId: 'settings.shortcuts',
+    order: undefined,
+  });
+}
+// #endif OHOS_DEVTOOLS
 
 UI.ContextMenu.registerItem({
   location: UI.ContextMenu.ItemLocation.MAIN_MENU_HELP_DEFAULT,

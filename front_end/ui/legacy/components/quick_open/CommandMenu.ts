@@ -12,6 +12,10 @@ import * as UI from '../../legacy.js';
 import {FilteredListWidget, Provider, registerProvider} from './FilteredListWidget.js';
 import {QuickOpenImpl} from './QuickOpen.js';
 
+// #ifdef OHOS_DEVTOOLS
+const adaptForOhos = true;
+// #endif OHOS_DEVTOOLS
+
 const UIStrings = {
   /**
    * @description Message to display if a setting change requires a reload of DevTools
@@ -422,11 +426,17 @@ export class ShowActionDelegate implements UI.ActionRegistration.ActionDelegate 
   }
 }
 
-registerProvider({
-  prefix: '>',
-  iconName: 'chevron-right',
-  iconWidth: '20px',
-  provider: () => Promise.resolve(new CommandMenuProvider()),
-  titlePrefix: (): Common.UIString.LocalizedString => i18nString(UIStrings.run),
-  titleSuggestion: (): Common.UIString.LocalizedString => i18nString(UIStrings.command),
-});
+// #ifdef OHOS_DEVTOOLS
+if (adaptForOhos) {
+  // arkweb doesn't support command.
+} else {
+  registerProvider({
+    prefix: '>',
+    iconName: 'chevron-right',
+    iconWidth: '20px',
+    provider: () => Promise.resolve(new CommandMenuProvider()),
+    titlePrefix: (): Common.UIString.LocalizedString => i18nString(UIStrings.run),
+    titleSuggestion: (): Common.UIString.LocalizedString => i18nString(UIStrings.command),
+  });
+}
+// #endif OHOS_DEVTOOLS

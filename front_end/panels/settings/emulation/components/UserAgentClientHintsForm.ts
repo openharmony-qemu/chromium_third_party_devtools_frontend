@@ -728,7 +728,9 @@ export class UserAgentClientHintsForm extends HTMLElement {
     // clang-format on
 
     // clang-format off
-    const output = LitHtml.html`
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    let output = LitHtml.html`
       <section class="root">
         <div
           class="tree-title"
@@ -787,6 +789,49 @@ export class UserAgentClientHintsForm extends HTMLElement {
         <div aria-live="polite" aria-label=${this.#useragentModifiedAriaMessage}></div>
       </section>
     `;
+    if (adaptForOhos) {
+      output = LitHtml.html`
+        <section class="root">
+          <div
+            class="tree-title"
+            role="button"
+            @click=${this.#handleTreeClick}
+            tabindex="0"
+            @keydown=${this.#handleTreeExpand}
+            aria-expanded=${this.#isFormOpened}
+            aria-controls="form-container"
+            @disabled=${this.#isFormDisabled}
+            aria-disabled=${this.#isFormDisabled}
+            aria-label=${i18nString(UIStrings.title)}
+          >
+            <${IconButton.Icon.Icon.litTagName}
+              class=${this.#isFormOpened ? 'rotate-icon' : ''}
+              .data=${{
+                color: 'var(--icon-default)',
+                iconName: 'triangle-right',
+                width: '14px',
+              } as IconButton.Icon.IconData}
+            ></${IconButton.Icon.Icon.litTagName}>
+            ${i18nString(UIStrings.title)}
+          </div>
+          <form
+            id="form-container"
+            class="form-container ${this.#isFormOpened ? '' : 'hide-container'}"
+            @submit=${this.#handleSubmit}
+          >
+            ${useragentSection}
+            ${fullVersionListSection}
+            ${fullBrowserInput}
+            ${platformSection}
+            ${architectureInput}
+            ${deviceModelSection}
+            ${submitButton}
+          </form>
+          <div aria-live="polite" aria-label=${this.#useragentModifiedAriaMessage}></div>
+        </section>
+      `;
+    }
+    // #endif OHOS_DEVTOOLS
     // clang-format on
     LitHtml.render(output, this.#shadow, {host: this});
   }

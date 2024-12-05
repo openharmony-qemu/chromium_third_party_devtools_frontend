@@ -745,6 +745,22 @@ export class FrameDetailsReportView extends HTMLElement {
       return LitHtml.nothing;
     }
 
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      return LitHtml.html`
+        <${ReportView.ReportView.ReportSectionHeader.litTagName}>${i18nString(UIStrings.apiAvailability)}</${
+          ReportView.ReportView.ReportSectionHeader.litTagName}>
+        <div class="span-cols">
+          ${i18nString(UIStrings.availabilityOfCertainApisDepends)}
+        </div>
+        ${this.#renderSharedArrayBufferAvailability()}
+        ${this.#renderMeasureMemoryAvailability()}
+        <${ReportView.ReportView.ReportSectionDivider.litTagName}></${
+          ReportView.ReportView.ReportSectionDivider.litTagName}>
+      `;
+    }
+    // #endif OHOS_DEVTOOLS
     return LitHtml.html`
       <${ReportView.ReportView.ReportSectionHeader.litTagName}>${i18nString(UIStrings.apiAvailability)}</${
         ReportView.ReportView.ReportSectionHeader.litTagName}>
@@ -816,6 +832,19 @@ export class FrameDetailsReportView extends HTMLElement {
           measureMemoryAvailable ? i18nString(UIStrings.available) : i18nString(UIStrings.unavailable);
       const tooltipText = measureMemoryAvailable ? i18nString(UIStrings.thePerformanceAPI) :
                                                    i18nString(UIStrings.thePerformancemeasureuseragentspecificmemory);
+      // #ifdef OHOS_DEVTOOLS
+      const adaptForOhos = true;
+      if (adaptForOhos) {
+        return LitHtml.html`
+          <${ReportView.ReportView.ReportKey.litTagName}>${i18nString(UIStrings.measureMemory)}</${
+            ReportView.ReportView.ReportKey.litTagName}>
+          <${ReportView.ReportView.ReportValue.litTagName}>
+            <span title=${tooltipText}>${
+            availabilityText}</span>
+          </${ReportView.ReportView.ReportValue.litTagName}>
+        `;
+      }
+      // #endif OHOS_DEVTOOLS
       return LitHtml.html`
         <${ReportView.ReportView.ReportKey.litTagName}>${i18nString(UIStrings.measureMemory)}</${
           ReportView.ReportView.ReportKey.litTagName}>
