@@ -68,26 +68,23 @@ used to filter file path.
                 <policyitem type="compatibility" name="Apache-2.0" path="front_end/third_party/.*README.chromium" desc="经法务确认为宽松型许可证" />
                 <policyitem type="compatibility" name="Apache-2.0" path="third_party/typescript/README.chromium" desc="经法务确认为宽松型许可证" />
                 <policyitem type="compatibility" name="Apache-2.0" path="third_party/pyjson5/README.chromium" desc="经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="BSD-3-Clause" path="node_modules/diff/LICENSE" desc="经法务确认为宽松型许可证" />
+
                 <policyitem type="compatibility" name="BSD-3-Clause" path="node_modules/istanbul-lib-report/lib/.*" desc="经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="BSD-3-Clause" path="node_modules/@babel/generator/node_modules/source-map/LICENSE" desc="经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="BSD-3-Clause" path="node_modules/css-what/LICENSE" desc="经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="BSD-3-Clause" path="node_modules/license-checker/.*" desc="经法务确认为宽松型许可证" />
+
                 <policyitem type="compatibility" name="BSD-3-Clause" path="node_modules/sinon/pkg/.*" desc="经法务确认为宽松型许可证" />
                 <policyitem type="compatibility" name="BSD-3-Clause" path="front_end/third_party/lit-html/README.chromium" desc="经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="BSD-3-Clause" path="node_modules/qs/LICENSE" desc="经法务确认为宽松型许可证" />
+
                 <policyitem type="compatibility" name="BSD-2-Clause" path="front_end/ui/legacy/components/data_grid/DataGrid.ts" desc="经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="BSD-2-Clause-Views" path="node_modules/uri-js/LICENSE" desc="经法务确认为宽松型许可证" />
+
                 <policyitem type="compatibility" name="MIT" path="front_end/third_party/marked/package/bin/.*" desc="经法务确认为宽松型许可证" />
                 <policyitem type="compatibility" name="BSD-3-Clause" path="front_end/third_party/intl-messageformat、.*" desc="经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="CC0-1.0" path="node_modules/mdn-data/LICENSE" desc="经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="Python-2.0" path="node_modules/argparse/LICENSE" desc="经法务确认为宽松型许可证" />
+
                 <policyitem type="compatibility" name="BSDStyleLicense" path="front_end/panels/network/ResourceWebSocketFrameView.ts" desc="经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="CC-BY-4.0" path="node_modules/caniuse-lite/LICENSE" desc="经法务确认为宽松型许可证" />
+
                 <policyitem type="compatibility" name="MPL-2.0" path="front_end/third_party/axe-core/.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-                <policyitem type="compatibility" name="MPL-2.0" path="node_modules/axe-core/LICENSE" desc="经法务确认,涉及文件在render下进行了隔离" />
+
                 <policyitem type="compatibility" name="MPL-1.0" path="node_modules/html-minifier/.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-                <policyitem type="compatibility" name="GPLStyleLicense" path="node_modules/argparse/LICENSE" desc="经法务确认,涉及文件在render下进行了隔离" />
+
                 <policyitem type="compatibility" name="LGPLStyleLicense" path="front_end/panels/network/ResourceWebSocketFrameView.ts" desc="经法务确认,涉及文件在render下进行了隔离" />
             </policy>
         </policylist>
@@ -128,7 +125,6 @@ used to filter file path.
                     desc="chromium原生文件无license" />
                 <filteritem type="filepath" name="third_party/i18n/README.chromium"
                     desc="chromium原生文件无license" />
-
                 <filteritem type="filepath" name="node_modules/atob/LICENSE.DOCS"
                     desc="chromium原生文件无license" />
                 <filteritem type="filepath" name="front_end/third_party/puppeteer/README.chromium"
@@ -147,6 +143,10 @@ used to filter file path.
 
             <filefilter name="defaultFilter">
                 <filteritem type="filepath" name="README.OpenSource" desc="Filter readme.opensource files" />
+                <filteritem type="filepath" name="node_modules/mdn-data/LICENSE" desc="版权声明文件" />
+                <filteritem type="filepath" name="node_modules/argparse/LICENSE" desc="版权声明文件" />
+                <filteritem type="filepath" name="node_modules/axe-core/LICENSE" desc="版权声明文件" />
+                <filteritem type="filepath" name="node_modules/caniuse-lite/LICENSE" desc="版权声明文件" />
             </filefilter>
             <filefilter name="binaryFileTypePolicyFilter">
                 <filteritem type="filename" name="*.png"

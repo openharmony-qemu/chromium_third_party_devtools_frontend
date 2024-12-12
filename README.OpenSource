@@ -6,6 +6,6 @@
         "Version Number": "1655fc6e5b1b7db015e2b0fc9dfe75f6b0034388",
         "Owner": "liujixin@huawei.com",
         "Upstream URL": "https://chromium.googlesource.com/devtools/devtools-frontend@1655fc6e5b1b7db015e2b0fc9dfe75f6b0034388",
-        "Description": "调试器前端"
+        "Description": "devtools-frontend是Chrome DevTools的开源客户端项目，提供运行DevTools网页应用所需的TypeScript和CSS代码。"
     }
 ]
