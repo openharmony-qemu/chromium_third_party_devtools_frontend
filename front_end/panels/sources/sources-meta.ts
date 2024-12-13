@@ -15,6 +15,10 @@ import * as UI from '../../ui/legacy/legacy.js';
 
 import type * as Sources from './sources.js';
 
+// #ifdef OHOS_DEVTOOLS
+const adaptForOhos = true;
+// #endif OHOS_DEVTOOLS
+
 const UIStrings = {
   /**
    *@description Command for showing the 'Sources' tool
@@ -478,18 +482,25 @@ UI.ViewManager.registerViewExtension({
   },
 });
 
-UI.ViewManager.registerViewExtension({
-  location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
-  id: 'sources.quick',
-  commandPrompt: i18nLazyString(UIStrings.showQuickSource),
-  title: i18nLazyString(UIStrings.quickSource),
-  persistence: UI.ViewManager.ViewPersistence.CLOSEABLE,
-  order: 1000,
-  async loadView() {
-    const Sources = await loadSourcesModule();
-    return Sources.SourcesPanel.WrapperView.instance();
-  },
-});
+
+// #ifdef OHOS_DEVTOOLS
+if (adaptForOhos) {
+  // arkweb does't support quick source.
+} else {
+  UI.ViewManager.registerViewExtension({
+    location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
+    id: 'sources.quick',
+    commandPrompt: i18nLazyString(UIStrings.showQuickSource),
+    title: i18nLazyString(UIStrings.quickSource),
+    persistence: UI.ViewManager.ViewPersistence.CLOSEABLE,
+    order: 1000,
+    async loadView() {
+      const Sources = await loadSourcesModule();
+      return Sources.SourcesPanel.WrapperView.instance();
+    },
+  });
+}
+// #endif OHOS_DEVTOOLS
 
 UI.ViewManager.registerViewExtension({
   id: 'sources.threads',

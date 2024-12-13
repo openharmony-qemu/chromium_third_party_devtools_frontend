@@ -8,6 +8,9 @@ import * as UI from '../../ui/legacy/legacy.js';
 import type * as Sensors from './sensors.js';
 
 import * as i18n from '../../core/i18n/i18n.js';
+// #ifdef OHOS_DEVTOOLS
+const adaptForOhos = true;
+// #endif OHOS_DEVTOOLS
 const UIStrings = {
   /**
    * @description Title of the Sensors tool. The sensors tool contains GPS, orientation sensors, touch
@@ -106,26 +109,32 @@ async function loadEmulationModule(): Promise<typeof Sensors> {
   return loadedSensorsModule;
 }
 
-UI.ViewManager.registerViewExtension({
-  location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
-  commandPrompt: i18nLazyString(UIStrings.showSensors),
-  title: i18nLazyString(UIStrings.sensors),
-  id: 'sensors',
-  persistence: UI.ViewManager.ViewPersistence.CLOSEABLE,
-  order: 100,
-  async loadView() {
-    const Sensors = await loadEmulationModule();
-    return Sensors.SensorsView.SensorsView.instance();
-  },
-  tags: [
-    i18nLazyString(UIStrings.geolocation),
-    i18nLazyString(UIStrings.timezones),
-    i18nLazyString(UIStrings.locale),
-    i18nLazyString(UIStrings.locales),
-    i18nLazyString(UIStrings.accelerometer),
-    i18nLazyString(UIStrings.deviceOrientation),
-  ],
-});
+// #ifdef OHOS_DEVTOOLS
+if (adaptForOhos) {
+  // arkweb does't support network request sensors.
+} else {
+  UI.ViewManager.registerViewExtension({
+    location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
+    commandPrompt: i18nLazyString(UIStrings.showSensors),
+    title: i18nLazyString(UIStrings.sensors),
+    id: 'sensors',
+    persistence: UI.ViewManager.ViewPersistence.CLOSEABLE,
+    order: 100,
+    async loadView() {
+      const Sensors = await loadEmulationModule();
+      return Sensors.SensorsView.SensorsView.instance();
+    },
+    tags: [
+      i18nLazyString(UIStrings.geolocation),
+      i18nLazyString(UIStrings.timezones),
+      i18nLazyString(UIStrings.locale),
+      i18nLazyString(UIStrings.locales),
+      i18nLazyString(UIStrings.accelerometer),
+      i18nLazyString(UIStrings.deviceOrientation),
+    ],
+  });
+}
+// #endif OHOS_DEVTOOLS
 
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.SETTINGS_VIEW,

@@ -105,6 +105,27 @@ export class RequestHeaderSection extends HTMLElement {
     }
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      return html`
+      <div class="call-to-action">
+        <div class="call-to-action-body">
+          <div class="explanation" title=${cautionTitle}>
+            <${IconButton.Icon.Icon.litTagName} class="inline-icon" .data=${{
+                iconName: 'warning-filled',
+                color: 'var(--icon-warning)',
+                width: '16px',
+                height: '16px',
+              } as IconButton.Icon.IconData}>
+            </${IconButton.Icon.Icon.litTagName}>
+            ${cautionText}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    // #endif OHOS_DEVTOOLS
     return html`
       <div class="call-to-action">
         <div class="call-to-action-body">

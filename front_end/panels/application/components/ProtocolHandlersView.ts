@@ -170,17 +170,29 @@ export class ProtocolHandlersView extends HTMLElement {
   }
 
   #render(): void {
-    const protocolDocLink =
-        UI.XLink.XLink.create(PROTOCOL_DOCUMENT_URL, i18nString(UIStrings.protocolHandlerRegistrations));
-    // clang-format off
-    LitHtml.render(LitHtml.html`
-      ${this.#renderStatusMessage()}
-      <div class="protocol-handlers-row">
-          ${i18n.i18n.getFormatLocalizedString(str_, UIStrings.needHelpReadOur, {PH1: protocolDocLink})}
-      </div>
-      ${this.#renderProtocolTest()}
-    `, this.#shadow, {host: this});
-    // clang-format on
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // clang-format off
+      LitHtml.render(LitHtml.html`
+        ${this.#renderStatusMessage()}
+        ${this.#renderProtocolTest()}
+      `, this.#shadow, {host: this});
+      // clang-format on
+    } else {
+      const protocolDocLink =
+          UI.XLink.XLink.create(PROTOCOL_DOCUMENT_URL, i18nString(UIStrings.protocolHandlerRegistrations));
+      // clang-format off
+      LitHtml.render(LitHtml.html`
+        ${this.#renderStatusMessage()}
+        <div class="protocol-handlers-row">
+            ${i18n.i18n.getFormatLocalizedString(str_, UIStrings.needHelpReadOur, {PH1: protocolDocLink})}
+        </div>
+        ${this.#renderProtocolTest()}
+      `, this.#shadow, {host: this});
+      // clang-format on
+    }
+    // #endif OHOS_DEVTOOLS
   }
 }
 

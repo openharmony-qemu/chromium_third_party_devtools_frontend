@@ -554,6 +554,12 @@ export class ActionDelegate implements UI.ActionRegistration.ActionDelegate {
         void SettingsScreen.showSettingsScreen({focusTabHeader: true} as ShowSettingsScreenOptions);
         return true;
       case 'settings.documentation':
+        // #ifdef OHOS_DEVTOOLS
+        const adaptForOhos = true;
+        if (adaptForOhos) {
+          return true;
+        }
+        // #endif OHOS_DEVTOOLS
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.openInNewTab(UI.UIUtils.addReferrerToURL(
             'https://developer.chrome.com/docs/devtools/' as Platform.DevToolsPath.UrlString));
         return true;

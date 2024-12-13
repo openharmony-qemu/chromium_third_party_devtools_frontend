@@ -345,24 +345,45 @@ export class HeadersViewComponent extends HTMLElement {
     }
 
     // clang-format off
-    LitHtml.render(LitHtml.html`
-      ${this.#headerOverrides.map((headerOverride, blockIndex) =>
-        LitHtml.html`
-          ${this.#renderApplyToRow(headerOverride.applyTo, blockIndex)}
-          ${headerOverride.headers.map((header, headerIndex) =>
-            LitHtml.html`
-              ${this.#renderHeaderRow(header, blockIndex, headerIndex)}
-            `,
-          )}
-        `,
-      )}
-      <${Buttons.Button.Button.litTagName} .variant=${Buttons.Button.Variant.SECONDARY} class="add-block">
-        ${i18nString(UIStrings.addOverrideRule)}
-      </${Buttons.Button.Button.litTagName}>
-      <div class="learn-more-row">
-        <x-link href="https://goo.gle/devtools-override" class="link">${i18nString(UIStrings.learnMore)}</x-link>
-      </div>
-    `, this.#shadow, {host: this});
+    // #ifdef OHOS_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      LitHtml.render(LitHtml.html`
+        ${this.#headerOverrides.map((headerOverride, blockIndex) =>
+          LitHtml.html`
+            ${this.#renderApplyToRow(headerOverride.applyTo, blockIndex)}
+            ${headerOverride.headers.map((header, headerIndex) =>
+              LitHtml.html`
+                ${this.#renderHeaderRow(header, blockIndex, headerIndex)}
+              `,
+            )}
+          `,
+        )}
+        <${Buttons.Button.Button.litTagName} .variant=${Buttons.Button.Variant.SECONDARY} class="add-block">
+          ${i18nString(UIStrings.addOverrideRule)}
+        </${Buttons.Button.Button.litTagName}>
+      `, this.#shadow, {host: this});
+    } else {
+      LitHtml.render(LitHtml.html`
+        ${this.#headerOverrides.map((headerOverride, blockIndex) =>
+          LitHtml.html`
+            ${this.#renderApplyToRow(headerOverride.applyTo, blockIndex)}
+            ${headerOverride.headers.map((header, headerIndex) =>
+              LitHtml.html`
+                ${this.#renderHeaderRow(header, blockIndex, headerIndex)}
+              `,
+            )}
+          `,
+        )}
+        <${Buttons.Button.Button.litTagName} .variant=${Buttons.Button.Variant.SECONDARY} class="add-block">
+          ${i18nString(UIStrings.addOverrideRule)}
+        </${Buttons.Button.Button.litTagName}>
+        <div class="learn-more-row">
+          <x-link href="https://goo.gle/devtools-override" class="link">${i18nString(UIStrings.learnMore)}</x-link>
+        </div>
+      `, this.#shadow, {host: this});
+    }
+    // #endif OHOS_DEVTOOLS
     // clang-format on
 
     if (this.#focusElement) {

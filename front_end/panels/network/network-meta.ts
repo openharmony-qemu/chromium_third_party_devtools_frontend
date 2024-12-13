@@ -11,6 +11,10 @@ import * as UI from '../../ui/legacy/legacy.js';
 
 import type * as Network from './network.js';
 
+// #ifdef OHOS_DEVTOOLS
+const adaptForOhos = true;
+// #endif OHOS_DEVTOOLS
+
 const UIStrings = {
   /**
    *@description Command for showing the 'Network' tool
@@ -139,18 +143,24 @@ UI.ViewManager.registerViewExtension({
   },
 });
 
-UI.ViewManager.registerViewExtension({
-  location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
-  id: 'network.blocked-urls',
-  commandPrompt: i18nLazyString(UIStrings.showNetworkRequestBlocking),
-  title: i18nLazyString(UIStrings.networkRequestBlocking),
-  persistence: UI.ViewManager.ViewPersistence.CLOSEABLE,
-  order: 60,
-  async loadView() {
-    const Network = await loadNetworkModule();
-    return Network.BlockedURLsPane.BlockedURLsPane.instance();
-  },
-});
+// #ifdef OHOS_DEVTOOLS
+if (adaptForOhos) {
+  // arkweb does't support network request blocking.
+} else {
+  UI.ViewManager.registerViewExtension({
+    location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
+    id: 'network.blocked-urls',
+    commandPrompt: i18nLazyString(UIStrings.showNetworkRequestBlocking),
+    title: i18nLazyString(UIStrings.networkRequestBlocking),
+    persistence: UI.ViewManager.ViewPersistence.CLOSEABLE,
+    order: 60,
+    async loadView() {
+      const Network = await loadNetworkModule();
+      return Network.BlockedURLsPane.BlockedURLsPane.instance();
+    },
+  });
+}
+// #endif OHOS_DEVTOOLS
 
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,

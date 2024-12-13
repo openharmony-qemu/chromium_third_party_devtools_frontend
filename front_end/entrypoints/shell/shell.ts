@@ -8,11 +8,15 @@ import '../../core/dom_extension/dom_extension.js';
 import '../../panels/sources/sources-meta.js';
 import '../../panels/profiler/profiler-meta.js';
 import '../../panels/console/console-meta.js';
-import '../../panels/coverage/coverage-meta.js';
-import '../../panels/changes/changes-meta.js';
-import '../../ui/components/linear_memory_inspector/linear_memory_inspector-meta.js';
+// #ifdef OHOS_DEVTOOLS
+//import '../../panels/coverage/coverage-meta.js';
+//import '../../panels/changes/changes-meta.js';
+//import '../../ui/components/linear_memory_inspector/linear_memory_inspector-meta.js';
+// #endif OHOS_DEVTOOLS
 import '../../panels/settings/settings-meta.js';
-import '../../panels/protocol_monitor/protocol_monitor-meta.js';
+// #ifdef OHOS_DEVTOOLS
+//import '../../panels/protocol_monitor/protocol_monitor-meta.js';
+// #endif OHOS_DEVTOOLS
 import '../../models/persistence/persistence-meta.js';
 import '../../models/logs/logs-meta.js';
 import '../main/main-meta.js';
