@@ -24,7 +24,7 @@ import '../../panels/issues/issues-meta.js';
 // #ifdef OHOS_DEVTOOLS
 //import '../../panels/layers/layers-meta.js';
 // #endif OHOS_DEVTOOLS
-import '../../panels/lighthouse/lighthouse-meta.js';
+//import '../../panels/lighthouse/lighthouse-meta.js';
 // #ifdef OHOS_DEVTOOLS
 //import '../../panels/media/media-meta.js';
 // #endif OHOS_DEVTOOLS
