@@ -709,11 +709,13 @@ Common.Settings.registerSettingExtension({
   title: i18nLazyString(UIStrings.language),
   defaultValue: 'en-US',
   options: [
-    {
-      value: 'browserLanguage',
-      title: i18nLazyString(UIStrings.browserLanguage),
-      text: i18nLazyString(UIStrings.browserLanguage),
-    },
+  // #ifdef OHOS_DEVTOOLS
+    //{
+      //value: 'browserLanguage',
+      //title: i18nLazyString(UIStrings.browserLanguage),
+      //text: i18nLazyString(UIStrings.browserLanguage),
+    //},
+  // #endif OHOS_DEVTOOLS
     ...i18n.i18n.getAllSupportedDevToolsLocales().sort().map(locale => createOptionForLocale(locale)),
   ],
   reloadRequired: true,

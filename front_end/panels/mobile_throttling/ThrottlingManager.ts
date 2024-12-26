@@ -20,6 +20,10 @@ import {
   type NetworkThrottlingConditionsGroup,
 } from './ThrottlingPresets.js';
 
+// #ifdef OHOS_DEVTOOLS
+const adaptForOhos = true;
+// #endif OHOS_DEVTOOLS
+
 const UIStrings = {
   /**
    *@description Text with two placeholders separated by a colon
@@ -146,6 +150,11 @@ export class ThrottlingManager {
       options = [];
       for (let i = 0; i < groups.length; ++i) {
         const group = groups[i];
+        // #ifdef OHOS_DEVTOOLS
+        if (adaptForOhos && group.title === 'Custom') {
+          continue;
+        }
+        // #endif OHOS_DEVTOOLS
         const groupElement = selectElement.createChild('optgroup') as HTMLOptGroupElement;
         groupElement.label = group.title;
         for (const conditions of group.items) {
@@ -167,14 +176,23 @@ export class ThrottlingManager {
     }
 
     function optionSelected(): void {
-      if (selectElement.selectedIndex === selectElement.options.length - 1) {
-        selector.revealAndUpdate();
+      // #ifdef OHOS_DEVTOOLS
+      if (adaptForOhos) {
+         const option = options[selectElement.selectedIndex];
+         if (option) {
+           selector.optionSelected(option);
+         }
       } else {
-        const option = options[selectElement.selectedIndex];
-        if (option) {
-          selector.optionSelected(option);
+        if (selectElement.selectedIndex === selectElement.options.length - 1) {
+          selector.revealAndUpdate();
+        } else {
+          const option = options[selectElement.selectedIndex];
+          if (option) {
+            selector.optionSelected(option);
+          }
         }
-      }
+       }
+      // #endif OHOS_DEVTOOLS
     }
 
     function select(index: number): void {
