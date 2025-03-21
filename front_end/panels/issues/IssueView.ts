@@ -314,7 +314,8 @@ export class IssueView extends UI.TreeOutline.TreeElement {
       view.update();
     }
 
-    this.#createReadMoreLinks();
+    /* OHOS_DEVTOOLS */
+    // this.#createReadMoreLinks();
     this.updateAffectedResourceVisibility();
     this.#contentCreated = true;
   }
@@ -417,32 +418,34 @@ export class IssueView extends UI.TreeOutline.TreeElement {
     this.appendChild(messageElement);
   }
 
-  #createReadMoreLinks(): void {
-    if (this.#description.links.length === 0) {
-      return;
-    }
-
-    const linkWrapper = new UI.TreeOutline.TreeElement();
-    linkWrapper.setCollapsible(false);
-    linkWrapper.listItemElement.classList.add('link-wrapper');
-
-    const linkList = linkWrapper.listItemElement.createChild('ul', 'link-list');
-    for (const description of this.#description.links) {
-      const link = UI.Fragment.html`<x-link class="link devtools-link" tabindex="0" href=${description.link}>${
-                       i18nString(UIStrings.learnMoreS, {PH1: description.linkTitle})}</x-link>` as UI.XLink.XLink;
-      const linkIcon = new IconButton.Icon.Icon();
-      linkIcon.data = {iconName: 'open-externally', color: 'var(--icon-link)', width: '16px', height: '16px'};
-      linkIcon.classList.add('link-icon');
-      link.prepend(linkIcon);
-      link.addEventListener('x-link-invoke', () => {
-        Host.userMetrics.issuesPanelResourceOpened(this.#issue.getCategory(), AffectedItem.LearnMore);
-      });
-
-      const linkListItem = linkList.createChild('li');
-      linkListItem.appendChild(link);
-    }
-    this.appendChild(linkWrapper);
-  }
+  // #if defined(OHOS_DEVTOOLS)
+  // #createReadMoreLinks(): void {
+  //   if (this.#description.links.length === 0) {
+  //     return;
+  //   }
+ 
+  //   const linkWrapper = new UI.TreeOutline.TreeElement();
+  //   linkWrapper.setCollapsible(false);
+  //   linkWrapper.listItemElement.classList.add('link-wrapper');
+ 
+  //   const linkList = linkWrapper.listItemElement.createChild('ul', 'link-list');
+  //   for (const description of this.#description.links) {
+  //     const link = UI.Fragment.html`<x-link class="link devtools-link" tabindex="0" href=${description.link}>${
+  //                      i18nString(UIStrings.learnMoreS, {PH1: description.linkTitle})}</x-link>` as UI.XLink.XLink;
+  //     const linkIcon = new IconButton.Icon.Icon();
+  //     linkIcon.data = {iconName: 'open-externally', color: 'var(--icon-link)', width: '16px', height: '16px'};
+  //     linkIcon.classList.add('link-icon');
+  //     link.prepend(linkIcon);
+  //     link.addEventListener('x-link-invoke', () => {
+  //       Host.userMetrics.issuesPanelResourceOpened(this.#issue.getCategory(), AffectedItem.LearnMore);
+  //     });
+ 
+  //     const linkListItem = linkList.createChild('li');
+  //     linkListItem.appendChild(link);
+  //   }
+  //   this.appendChild(linkWrapper);
+  // }
+  // #endif  // OHOS_DEVTOOLS
 
   #doUpdate(): void {
     if (this.expanded) {

@@ -420,7 +420,7 @@
     "message": "Saltzaileek puntuazioa emateko fasearen hasiera"
   },
   "core/sdk/NetworkManager.ts | crossoriginReadBlockingCorb": {
-    "message": "{PH2} MIME mota duen jatorri anitzeko {PH1} erantzuna blokeatu da jatorri anitzeko irakurketa blokeatzean. Xehetasun gehiagorako, joan https://www.chromestatus.com/feature/5629709824032768 helbidera."
+    "message": "{PH2} MIME mota duen jatorri anitzeko {PH1} erantzuna blokeatu da jatorri anitzeko irakurketa blokeatzean."
   },
   "core/sdk/NetworkManager.ts | fastG": {
     "message": "3G bizkorra"
@@ -531,7 +531,7 @@
     "message": "Cookie bat Set-Cookie goiburu baten bidez ezartzeko saiakera blokeatu egin da \"SameParty\" atributua izan arren eskaera domeinuen artekoa zelako. Domeinuen arteko gisa hartzen da eskaera, baliabidearen URLa eta baliabidea inguratzen duten markoak edo dokumentuak ez direlako domeinu multzo propioaren jabeak, ezta kideak ere."
   },
   "core/sdk/NetworkRequest.ts | thisSetcookieWasBlockedBecauseItHadTheSamepartyAttribute": {
-    "message": "Cookie bat Set-Cookie goiburu baten bidez ezartzeko saiakera blokeatu egin da \"SameParty\" atributua izan arren bestelako atributu gatazkatsuak zituelako. \"SameParty\" atributua erabiltzen duten cookieek \"Secure\" atributua ere izatea eta \"SameSite=Strict\" egoerara mugatuta ez egotea behar du Chrome-k."
+    "message": "Cookie bat Set-Cookie goiburu baten bidez ezartzeko saiakera blokeatu egin da \"SameParty\" atributua izan arren bestelako atributu gatazkatsuak zituelako. \"SameParty\" atributua erabiltzen duten cookieek \"Secure\" atributua ere izatea eta \"SameSite=Strict\" egoerara mugatuta ez egotea behar du ArkWeb-k."
   },
   "core/sdk/NetworkRequest.ts | thisSetcookieWasBlockedBecauseItHadTheSamesiteStrictLax": {
     "message": "Cookie bat Set-Cookie goiburu baten bidez ezartzeko saiakera blokeatu egin da \"{PH1}\" atributua izan arren webguneen arteko erantzun batetik zetorrelako, eta hori ez da goi-mailako nabigazioari dagokion erantzuna. Webguneen arteko erantzun gisa hartzen da, URLaren eta webgune honen eskemak desberdinak baitira."
@@ -1281,22 +1281,22 @@
     "message": "Jatorri anitzeko iframe-etatik window.confirm abiarazteko aukera zaharkituta dago eta kendu egingo da etorkizunean."
   },
   "generated/Deprecation.ts | DocumentDomainSettingWithoutOriginAgentClusterHeader": {
-    "message": "document.domain ezartzearen ondorioz jatorri bereko gidalerroa erlaxatzeko aukera zaharkituta dago eta desgaitu egingo da modu lehenetsian. Eginbidea erabiltzen jarraitzeko, aukeratu jatorrian oinarritutako agente multzoak ez erabiltzea HTTP erantzunarekin batera Origin-Agent-Cluster: ?0 goiburu bat bidalita dokumenturako eta markorako. Xehetasun gehiago ikusteko, joan https://developer.chrome.com/blog/immutable-document-domain/ helbidera."
+    "message": "document.domain ezartzearen ondorioz jatorri bereko gidalerroa erlaxatzeko aukera zaharkituta dago eta desgaitu egingo da modu lehenetsian. Eginbidea erabiltzen jarraitzeko, aukeratu jatorrian oinarritutako agente multzoak ez erabiltzea HTTP erantzunarekin batera Origin-Agent-Cluster: ?0 goiburu bat bidalita dokumenturako eta markorako."
   },
   "generated/Deprecation.ts | EventPath": {
     "message": "Event.path zaharkituta dago eta kendu egingo da. Haren ordez, erabili Event.composedPath()."
   },
   "generated/Deprecation.ts | ExpectCTHeader": {
-    "message": "Expect-CT goiburua zaharkituta dago, eta kendu egingo da. Chrome-k ziurtagiri-gardentasuna eskatzen die publikoki fidagarritzat hartzen diren ziurtagiri guztiei (2018ko apirilaren 30a ezkero jaulkitakoak)."
+    "message": "Expect-CT goiburua zaharkituta dago, eta kendu egingo da. ArkWeb-k ziurtagiri-gardentasuna eskatzen die publikoki fidagarritzat hartzen diren ziurtagiri guztiei (2018ko apirilaren 30a ezkero jaulkitakoak)."
   },
   "generated/Deprecation.ts | GeolocationInsecureOrigin": {
-    "message": "getCurrentPosition() eta watchPosition() metodoek jada ez dute funtzionatzen jatorri ez-seguruetan. Eginbidea erabiltzeko, aplikazioa jatorri seguru batera eramatea gomendatzen dugu (adibidez, HTTPSra). Xehetasun gehiago ikusteko, joan https://goo.gle/chrome-insecure-origins helbidera."
+    "message": "getCurrentPosition() eta watchPosition() metodoek jada ez dute funtzionatzen jatorri ez-seguruetan. Eginbidea erabiltzeko, aplikazioa jatorri seguru batera eramatea gomendatzen dugu (adibidez, HTTPSra)."
   },
   "generated/Deprecation.ts | GeolocationInsecureOriginDeprecatedNotRemoved": {
-    "message": "getCurrentPosition() eta watchPosition() zaharkituta daude jatorri ez-seguruetan. Eginbidea erabiltzeko, aplikazioa jatorri seguru batera eramatea gomendatzen dugu (adibidez, HTTPSra). Xehetasun gehiago ikusteko, joan https://goo.gle/chrome-insecure-origins helbidera."
+    "message": "getCurrentPosition() eta watchPosition() zaharkituta daude jatorri ez-seguruetan. Eginbidea erabiltzeko, aplikazioa jatorri seguru batera eramatea gomendatzen dugu (adibidez, HTTPSra)."
   },
   "generated/Deprecation.ts | GetUserMediaInsecureOrigin": {
-    "message": "getUserMedia() metodoak jada ez du funtzionatzen jatorri ez-seguruetan. Eginbidea erabiltzeko, aplikazioa jatorri seguru batera eramatea gomendatzen dugu (adibidez, HTTPSra). Xehetasun gehiago ikusteko, joan https://goo.gle/chrome-insecure-origins helbidera."
+    "message": "getUserMedia() metodoak jada ez du funtzionatzen jatorri ez-seguruetan. Eginbidea erabiltzeko, aplikazioa jatorri seguru batera eramatea gomendatzen dugu (adibidez, HTTPSra)."
   },
   "generated/Deprecation.ts | HostCandidateAttributeGetter": {
     "message": "RTCPeerConnectionIceErrorEvent.hostCandidate zaharkituta dago. Haren ordez, erabili RTCPeerConnectionIceErrorEvent.address edo RTCPeerConnectionIceErrorEvent.port."
@@ -1305,7 +1305,7 @@
     "message": "Saltzailearen jatorria eta canmakepayment zerbitzuko langilearen gertaeraren datu arbitrarioak zaharkituta daude eta kendu egingo dira: topOrigin, paymentRequestOrigin, methodData, modifiers."
   },
   "generated/Deprecation.ts | InsecurePrivateNetworkSubresourceRequest": {
-    "message": "Erabiltzaileen sareko posizio pribilegiatuarengatik soilik atzi zezakeen sare bateko azpibaliabide bat eskatu du webguneak. Eskaera horiek publikoak ez diren gailuak eta zerbitzariak ikusgai ezartzen dituzte Interneten. Hala, beste webgune baten eskaera faltsifikatuta (CSRF) eraso egiteko eta/edo informazio-ihes bat egoteko arriskua areagotzen da. Arriskuok murrizteko, publikoak ez diren azpibaliabideei egiten zaizkien eskaerak zaharkitzen ditu Chrome-k (testuinguru ez-seguruetatik egin badira) eta haiek blokeatzen hasten da."
+    "message": "Erabiltzaileen sareko posizio pribilegiatuarengatik soilik atzi zezakeen sare bateko azpibaliabide bat eskatu du webguneak. Eskaera horiek publikoak ez diren gailuak eta zerbitzariak ikusgai ezartzen dituzte Interneten. Hala, beste webgune baten eskaera faltsifikatuta (CSRF) eraso egiteko eta/edo informazio-ihes bat egoteko arriskua areagotzen da. Arriskuok murrizteko, publikoak ez diren azpibaliabideei egiten zaizkien eskaerak zaharkitzen ditu ArkWeb-k (testuinguru ez-seguruetatik egin badira) eta haiek blokeatzen hasten da."
   },
   "generated/Deprecation.ts | InterestGroupDailyUpdateUrl": {
     "message": "InterestGroups egituraren dailyUpdateUrl eremua joinAdInterestGroup() egiturara eraman da, eta izena aldatu zaio (updateUrl), haren portaera hobeto azaltzeko."
@@ -1326,7 +1326,7 @@
     "message": "Estandarizatu gabeko shadowroot atributu zaharragoa zaharkituta dago eta jada ez dabil M119 bertsioan. Haren ordez, erabili shadowrootmode atributu berri eta estandarizatua."
   },
   "generated/Deprecation.ts | NotificationInsecureOrigin": {
-    "message": "Hemendik aurrera, agian ezingo duzu erabili Notification APIa jatorri ez-seguruekin. Aplikazioa jatorri seguru batera aldatzea gomendatzen dugu (adibidez, HTTPSra). Xehetasun gehiago ikusteko, joan https://goo.gle/chrome-insecure-origins helbidera."
+    "message": "Hemendik aurrera, agian ezingo duzu erabili Notification APIa jatorri ez-seguruekin. Aplikazioa jatorri seguru batera aldatzea gomendatzen dugu (adibidez, HTTPSra)."
   },
   "generated/Deprecation.ts | NotificationPermissionRequestedIframe": {
     "message": "Baliteke Notification APIrako baimena jatorri anitzeko iframe batetik ez eskatzea jada. Baimena goi-mailako marko batetik eskatzea edo beste leiho bat irekitzea gomendatzen dugu."
@@ -1377,7 +1377,7 @@
     "message": "HTMLVideoElement.webkitSupportsFullscreen zaharkituta dago. Haren ordez, erabili Document.fullscreenEnabled."
   },
   "generated/Deprecation.ts | PrivacySandboxExtensionsAPI": {
-    "message": "chrome.privacy.websites.privacySandboxEnabled APIa zaharkituta geldituko da, baina M113 bertsiora arte aktibo egongo da, aurreko bertsioekiko bateragarritasuna lortzeko. Horren ordez, erabili chrome.privacy.websites.topicsEnabled, chrome.privacy.websites.fledgeEnabled eta chrome.privacy.websites.adMeasurementEnabled. Joan https://developer.chrome.com/docs/extensions/reference/privacy/#property-websites-privacySandboxEnabled helbidera."
+    "message": "chrome.privacy.websites.privacySandboxEnabled APIa zaharkituta geldituko da, baina M113 bertsiora arte aktibo egongo da, aurreko bertsioekiko bateragarritasuna lortzeko. Horren ordez, erabili chrome.privacy.websites.topicsEnabled, chrome.privacy.websites.fledgeEnabled eta chrome.privacy.websites.adMeasurementEnabled."
   },
   "generated/Deprecation.ts | RTCConstraintEnableDtlsSrtpFalse": {
     "message": "DtlsSrtpKeyAgreement murrizketa kenduta dago. false balioa zehaztu duzu murrizketa horretarako, eta kendutako SDES key negotiation metodoa erabiltzeko saiakera gisa interpretatu da balio hori. Funtzio hori kenduta dago. Haren ordez, erabili DTLS key negotiation onartzen duen zerbitzu bat."
@@ -1398,13 +1398,13 @@
     "message": "rtcpMuxPolicy aukera zaharkituta dago eta kendu egingo da."
   },
   "generated/Deprecation.ts | SharedArrayBufferConstructedWithoutIsolation": {
-    "message": "SharedArrayBuffer objektuak jatorri anitzeko isolamendua beharko du. Xehetasun gehiago ikusteko, joan https://developer.chrome.com/blog/enabling-shared-array-buffer/ helbidera."
+    "message": "SharedArrayBuffer objektuak jatorri anitzeko isolamendua beharko du."
   },
   "generated/Deprecation.ts | TextToSpeech_DisallowedByAutoplay": {
     "message": "Erabiltzailearen aktibaziorik gabe speechSynthesis.speak() metodoari deitzeko aukera zaharkituta dago eta kendu egingo da."
   },
   "generated/Deprecation.ts | V8SharedArrayBufferConstructedInExtensionWithoutIsolation": {
-    "message": "SharedArrayBuffer erabiltzen jarraitzeko, jatorri anitzeko isolamenduaren aukera gaitu behar dute luzapenek. Joan https://developer.chrome.com/docs/extensions/mv3/cross-origin-isolation/ helbidera."
+    "message": "SharedArrayBuffer erabiltzen jarraitzeko, jatorri anitzeko isolamenduaren aukera gaitu behar dute luzapenek. "
   },
   "generated/Deprecation.ts | WindowPlacementPermissionDescriptorUsed": {
     "message": "window-placement baimen-deskribatzailea zaharkituta dago. Erabili window-management horren ordez. Laguntza gehiago jasotzeko, joan https://bit.ly/window-placement-rename helbidera."
@@ -1587,7 +1587,7 @@
     "message": "Iragarkien esku-hartze astunak kudeatzea"
   },
   "models/issues_manager/Issue.ts | breakingChangeIssue": {
-    "message": "Hutsegiteak sor ditzakeen aldaketak eragindako arazoa: litekeena da orriak funtzionatzeari uztea Chrome-ren bertsio berriarekin"
+    "message": "Hutsegiteak sor ditzakeen aldaketak eragindako arazoa: litekeena da orriak funtzionatzeari uztea ArkWeb-ren bertsio berriarekin"
   },
   "models/issues_manager/Issue.ts | breakingChanges": {
     "message": "Hutsegiteak sor ditzaketen aldaketak"
@@ -2400,7 +2400,7 @@
     "message": "Orriak ez du funtzionatzen ez bazaude konektatuta Internetera"
   },
   "panels/application/AppManifestView.ts | pageDoesNotWorkOfflineThePage": {
-    "message": "Orriak ez du funtzionatzen ez bazaude konektatuta Internetera. Chrome 93 bertsiotik aurrera, instalatzeko irizpidea aldatu egingo da, eta ezingo da instalatu webgune hau. Informazio gehiago lortzeko, joan {PH1} helbidera."
+    "message": "Orriak ez du funtzionatzen ez bazaude konektatuta Internetera. ArkWeb 93 bertsiotik aurrera, instalatzeko irizpidea aldatu egingo da, eta ezingo da instalatu webgune hau. Informazio gehiago lortzeko, joan {PH1} helbidera."
   },
   "panels/application/AppManifestView.ts | pageHasNoManifestLinkUrl": {
     "message": "Orriak ez du manifesturik <esteka> URL"
@@ -3216,7 +3216,7 @@
     "message": "2XX egoera-kodea duten orriak bakarrik gorde daitezke cachean."
   },
   "panels/application/components/BackForwardCacheStrings.ts | JavaScriptExecution": {
-    "message": "Chrome-k JavaScript exekutatzeko saiakera bat hauteman du cachean gordeta zegoen bitartean."
+    "message": "ArkWeb-k JavaScript exekutatzeko saiakera bat hauteman du cachean gordeta zegoen bitartean."
   },
   "panels/application/components/BackForwardCacheStrings.ts | appBanner": {
     "message": "Une honetan, aurreko orria cachean gordetzeko eginbidea ez dago erabilgarri AppBanner bat eskatu duten orrietan."
@@ -3300,7 +3300,7 @@
     "message": "Orritik irtetean, aplikazioaren goiburuko mezu bat zegoen."
   },
   "panels/application/components/BackForwardCacheStrings.ts | embedderChromePasswordManagerClientBindCredentialManager": {
-    "message": "Orritik irtetean, Chrome-ren Pasahitz-kudeatzailea zegoen."
+    "message": "Orritik irtetean, ArkWeb-ren Pasahitz-kudeatzailea zegoen."
   },
   "panels/application/components/BackForwardCacheStrings.ts | embedderDomDistillerSelfDeletingRequestDelegate": {
     "message": "Orritik irtetean, DOMaren destilazioa abian zen."
@@ -3399,7 +3399,7 @@
     "message": "Orria aurreko orria cachean gordetzeko eginbidearen bidez leheneratu aurretik, bertan behera utzi da nabigazioa."
   },
   "panels/application/components/BackForwardCacheStrings.ts | networkExceedsBufferLimit": {
-    "message": "Orria cachetik kendu da, sareko konexio aktibo batek datu gehiegi jaso dituelako. Chrome-k mugatu egiten du orri batek cachean gordeta dagoen bitartean jaso dezakeen datu kopurua."
+    "message": "Orria cachetik kendu da, sareko konexio aktibo batek datu gehiegi jaso dituelako. ArkWeb-k mugatu egiten du orri batek cachean gordeta dagoen bitartean jaso dezakeen datu kopurua."
   },
   "panels/application/components/BackForwardCacheStrings.ts | networkRequestDatapipeDrainedAsBytesConsumer": {
     "message": "Une honetan, aurreko orria cachean gordetzeko eginbidea ez dago erabilgarri fetch() edo XHR abian duten orrietan."
@@ -3408,7 +3408,7 @@
     "message": "Aurreko orria cachean gordetzeko eginbidetik kendu da orria, sareko eskaera aktibo batek birbideratze bat eragin duelako."
   },
   "panels/application/components/BackForwardCacheStrings.ts | networkRequestTimeout": {
-    "message": "Orria cachetik kendu da sareko konexio bat luzaroegi egon delako irekita. Chrome-k mugatu egiten du orri batek cachean gordeta dagoen bitartean datuak jasotzeko duen denbora."
+    "message": "Orria cachetik kendu da sareko konexio bat luzaroegi egon delako irekita. ArkWeb-k mugatu egiten du orri batek cachean gordeta dagoen bitartean datuak jasotzeko duen denbora."
   },
   "panels/application/components/BackForwardCacheStrings.ts | noResponseHead": {
     "message": "Aurreko orria cachean gordetzeko eginbidea ez dago erabilgarri balio duen erantzun-goibururik ez duten orrietan."
@@ -3489,7 +3489,7 @@
     "message": "Service worker-aren aktibazio bat dela eta, aurreko orria cachean gordetzeko eginbidetik kendu da orria."
   },
   "panels/application/components/BackForwardCacheStrings.ts | sessionRestored": {
-    "message": "Chrome berrabiarazi egin da, eta aurreko orria cachean gordetzeko eginbidearen sarrerak garbitu ditu."
+    "message": "ArkWeb berrabiarazi egin da, eta aurreko orria cachean gordetzeko eginbidearen sarrerak garbitu ditu."
   },
   "panels/application/components/BackForwardCacheStrings.ts | sharedWorker": {
     "message": "Une honetan, aurreko orria cachean gordetzeko eginbidea ez dago erabilgarri SharedWorker erabiltzen duten orrietan."
@@ -3594,7 +3594,7 @@
     "message": "Lortu informazio gehiago: ez erabili inoiz deskarga-kudeatzailea"
   },
   "panels/application/components/BackForwardCacheView.ts | normalNavigation": {
-    "message": "Ez da leheneratu aurreko orria cachean gordetzeko eginbidetik: aurreko orria cachean gordetzeko eginbidea abiarazteko, erabili Chrome-ren aurrera eta atzera egiteko botoiak, edo erabili proba egiteko beheko botoia orritik automatikoki atera eta itzul dadin."
+    "message": "Ez da leheneratu aurreko orria cachean gordetzeko eginbidetik: aurreko orria cachean gordetzeko eginbidea abiarazteko, erabili ArkWeb-ren aurrera eta atzera egiteko botoiak, edo erabili proba egiteko beheko botoia orritik automatikoki atera eta itzul dadin."
   },
   "panels/application/components/BackForwardCacheView.ts | pageSupportNeeded": {
     "message": "Arazoa konpontzeko ekintza gauza daiteke"
@@ -3615,7 +3615,7 @@
     "message": "Laguntza jasotzeko zain dago"
   },
   "panels/application/components/BackForwardCacheView.ts | supportPendingExplanation": {
-    "message": "Arrazoi hauekiko bateragarritasuna zain dago Chrome-n; hau da, arrazoiek ez dute eragotziko aurreko orria cachean gordetzeko eginbidea Chrome-ren hurrengo bertsio batean erabilgarri egotea."
+    "message": "Arrazoi hauekiko bateragarritasuna zain dago ArkWeb-n; hau da, arrazoiek ez dute eragotziko aurreko orria cachean gordetzeko eginbidea ArkWeb-ren hurrengo bertsio batean erabilgarri egotea."
   },
   "panels/application/components/BackForwardCacheView.ts | unavailable": {
     "message": "ez dago erabilgarri"
@@ -3897,10 +3897,10 @@
     "message": "Deskargak desgaituta daude errendatzearen aurreko prozesuan."
   },
   "panels/application/components/Prerender2.ts | EmbedderTriggeredAndCrossOriginRedirected": {
-    "message": "Chrome-k abiarazitako errendatzearen aurreko prozesua (adibidez, arakatzaileko barra aurrez errendatzeko aukera) bertan behera utzi da, nabigazioa jatorri anitzeko beste orri batera birbideratzen delako."
+    "message": "ArkWeb-k abiarazitako errendatzearen aurreko prozesua (adibidez, arakatzaileko barra aurrez errendatzeko aukera) bertan behera utzi da, nabigazioa jatorri anitzeko beste orri batera birbideratzen delako."
   },
   "panels/application/components/Prerender2.ts | EmbedderTriggeredAndSameOriginRedirected": {
-    "message": "Chrome-k abiarazitako errendatzearen aurreko prozesua (adibidez, arakatzaileko barra aurrez errendatzeko aukera) bertan behera utzi da, nabigazioa jatorri bereko beste orri batera birbideratzen delako."
+    "message": "ArkWeb-k abiarazitako errendatzearen aurreko prozesua (adibidez, arakatzaileko barra aurrez errendatzeko aukera) bertan behera utzi da, nabigazioa jatorri bereko beste orri batera birbideratzen delako."
   },
   "panels/application/components/Prerender2.ts | FailToGetMemoryUsage": {
     "message": "Ezin izan da lortu memoriaren erabilera"
@@ -6495,7 +6495,7 @@
     "message": "Jardunbide egokiak"
   },
   "panels/lighthouse/LighthouseController.ts | canOnlyAuditHttphttpsPagesAnd": {
-    "message": "HTTP/HTTPS moduko orriak eta Chrome-ren luzapenak soilik audita daitezke. Auditatzen hasteko, joan beste orri batera."
+    "message": "HTTP/HTTPS moduko orriak eta ArkWeb-ren luzapenak soilik audita daitezke. Auditatzen hasteko, joan beste orri batera."
   },
   "panels/lighthouse/LighthouseController.ts | clearStorage": {
     "message": "Garbitu memoria"
@@ -6738,7 +6738,7 @@
     "message": "Erabiltzaileen gailuen batez besteko kostua 200 USD baino gutxiagokoa da. [Iturburua: International Data Corporation]"
   },
   "panels/lighthouse/LighthouseStatusView.ts | tryToNavigateToTheUrlInAFresh": {
-    "message": "Joan URLra Chrome-ko profil berri batean beste inolako fitxa edo luzapenak irekita eduki gabe, eta saiatu berriro."
+    "message": "Joan URLra ArkWeb-ko profil berri batean beste inolako fitxa edo luzapenak irekita eduki gabe, eta saiatu berriro."
   },
   "panels/lighthouse/LighthouseStatusView.ts | walmartSawAIncreaseInRevenueFor": {
     "message": "Walmart-en diru-sarrerak % 1 igo ziren haren webguneko orriak kargatzeko abiadura 100 ms hobetu zen bakoitzean. [Iturburua: WPO Stats]"
@@ -7218,10 +7218,10 @@
     "message": "Erabiltzaile-agentea"
   },
   "panels/network/NetworkDataGridNode.ts | alternativeJobWonRace": {
-    "message": "Chrome-k HTTP/3 konexio bat erabili du Alt-Svc goiburu baten eraginarengatik, HTTP protokoloaren beste bertsioak baino bizkorragoa delako."
+    "message": "ArkWeb-k HTTP/3 konexio bat erabili du Alt-Svc goiburu baten eraginarengatik, HTTP protokoloaren beste bertsioak baino bizkorragoa delako."
   },
   "panels/network/NetworkDataGridNode.ts | alternativeJobWonWithoutRace": {
-    "message": "Chrome-k HTTP/3 konexio bat erabili du Alt-Svc goiburu baten eraginarengatik, eta ez du alderatu haren abiadura HTTP protokoloaren beste bertsio batenarekin."
+    "message": "ArkWeb-k HTTP/3 konexio bat erabili du Alt-Svc goiburu baten eraginarengatik, eta ez du alderatu haren abiadura HTTP protokoloaren beste bertsio batenarekin."
   },
   "panels/network/NetworkDataGridNode.ts | blockedTooltip": {
     "message": "Eskaera blokeatu egin da erantzun-goiburuak oker konfiguratuta daudelako. Egin klik hemen goiburuak ikusteko."
@@ -7230,7 +7230,7 @@
     "message": "(blokeatuta: {PH1})"
   },
   "panels/network/NetworkDataGridNode.ts | broken": {
-    "message": "Chrome ez da saiatu HTTP/3 konexio bat ezartzen, hondatutako gisa markatuta baitzegoen."
+    "message": "ArkWeb ez da saiatu HTTP/3 konexio bat ezartzen, hondatutako gisa markatuta baitzegoen."
   },
   "panels/network/NetworkDataGridNode.ts | canceled": {
     "message": "(bertan behera utzita)"
@@ -7254,10 +7254,10 @@
     "message": "(disko-cachea)"
   },
   "panels/network/NetworkDataGridNode.ts | dnsAlpnH3JobWonRace": {
-    "message": "Chrome-k HTTP/3 konexio bat erabili du, DNS record bidez HTTP/3 onartzen dela adierazi baita, eta protokolo hori HTTP protokoloaren beste bertsioak baino bizkorragoa baita."
+    "message": "ArkWeb-k HTTP/3 konexio bat erabili du, DNS record bidez HTTP/3 onartzen dela adierazi baita, eta protokolo hori HTTP protokoloaren beste bertsioak baino bizkorragoa baita."
   },
   "panels/network/NetworkDataGridNode.ts | dnsAlpnH3JobWonWithoutRace": {
-    "message": "Chrome-k HTTP/3 konexio bat erabili du, DNS record bidez HTTP/3 onartzen dela adierazi baita. Ez da alderatu haren abiadura HTTP protokoloaren beste bertsio batenarekin."
+    "message": "ArkWeb-k HTTP/3 konexio bat erabili du, DNS record bidez HTTP/3 onartzen dela adierazi baita. Ez da alderatu haren abiadura HTTP protokoloaren beste bertsio batenarekin."
   },
   "panels/network/NetworkDataGridNode.ts | failed": {
     "message": "(huts egin du)"
@@ -7272,10 +7272,10 @@
     "message": "1. maila"
   },
   "panels/network/NetworkDataGridNode.ts | mainJobWonRace": {
-    "message": "Chrome-k protokolo hau erabili du, HTTP/3 bidezko konexioa baino bizkorragoa delako."
+    "message": "ArkWeb-k protokolo hau erabili du, HTTP/3 bidezko konexioa baino bizkorragoa delako."
   },
   "panels/network/NetworkDataGridNode.ts | mappingMissing": {
-    "message": "Chrome-k ez du erabili HTTP protokoloaren ordezko bertsiorik, ordezko protokoloei buruzko informaziorik ez zegoelako eskaera bidaltzean, baina Alt-Svc goiburu bat zegoen erantzunean."
+    "message": "ArkWeb-k ez du erabili HTTP protokoloaren ordezko bertsiorik, ordezko protokoloei buruzko informaziorik ez zegoelako eskaera bidaltzean, baina Alt-Svc goiburu bat zegoen erantzunean."
   },
   "panels/network/NetworkDataGridNode.ts | memoryCache": {
     "message": "(memoria-cachea)"
@@ -9345,7 +9345,7 @@
     "message": "Ziurtagiri-gardentasuna"
   },
   "panels/security/SecurityPanel.ts | chromeHasDeterminedThatThisSiteS": {
-    "message": "Webgune hau agian faltsua edo iruzurrezkoa dela zehaztu du Chrome-k."
+    "message": "Webgune hau agian faltsua edo iruzurrezkoa dela zehaztu du ArkWeb-k."
   },
   "panels/security/SecurityPanel.ts | cipher": {
     "message": "Enkriptatze-katea"
@@ -9567,13 +9567,13 @@
     "message": "Orri hau susmagarria da"
   },
   "panels/security/SecurityPanel.ts | thisPageIsSuspiciousFlaggedBy": {
-    "message": "Orri hau susmagarria da (Chrome-ren ustez)."
+    "message": "Orri hau susmagarria da (ArkWeb-ren ustez)."
   },
   "panels/security/SecurityPanel.ts | thisRequestCompliesWithChromes": {
-    "message": "Eskaerak Chrome-ren ziurtagiri-gardentasunari buruzko gidalerroak gordetzen ditu."
+    "message": "Eskaerak ArkWeb-ren ziurtagiri-gardentasunari buruzko gidalerroak gordetzen ditu."
   },
   "panels/security/SecurityPanel.ts | thisRequestDoesNotComplyWith": {
-    "message": "Eskaerak ez ditu gordetzen Chrome-ren ziurtagiri-gardentasunari buruzko gidalerroak."
+    "message": "Eskaerak ez ditu gordetzen ArkWeb-ren ziurtagiri-gardentasunari buruzko gidalerroak."
   },
   "panels/security/SecurityPanel.ts | thisResponseWasLoadedFromCache": {
     "message": "Cachetik kargatu da erantzuna. Baliteke segurtasun-xehetasun batzuk falta izatea."
@@ -9981,16 +9981,16 @@
     "message": "ABISUA:"
   },
   "panels/settings/components/SyncSection.ts | preferencesSyncDisabled": {
-    "message": "Ezarpen hau aktibatzeko, lehenik, ezarpenen sinkronizazioa gaitu behar duzu Chrome-n."
+    "message": "Ezarpen hau aktibatzeko, lehenik, ezarpenen sinkronizazioa gaitu behar duzu ArkWeb-n."
   },
   "panels/settings/components/SyncSection.ts | settings": {
     "message": "Joan ezarpenetara"
   },
   "panels/settings/components/SyncSection.ts | signedIn": {
-    "message": "Kontu honekin hasi duzu saioa Chrome-n:"
+    "message": "Kontu honekin hasi duzu saioa ArkWeb-n:"
   },
   "panels/settings/components/SyncSection.ts | syncDisabled": {
-    "message": "Ezarpen hau aktibatzeko, Chrome-ren sinkronizazioa gaitu behar duzu."
+    "message": "Ezarpen hau aktibatzeko, ArkWeb-ren sinkronizazioa gaitu behar duzu."
   },
   "panels/settings/emulation/DevicesSettingsTab.ts | addCustomDevice": {
     "message": "Gehitu gailu pertsonalizatua…"
@@ -11346,7 +11346,7 @@
     "message": "Jarduerak"
   },
   "panels/timeline/TimelineTreeView.ts | chromeExtensionsOverhead": {
-    "message": "[Chrome luzapenen gainkarga]"
+    "message": "[ArkWeb luzapenen gainkarga]"
   },
   "panels/timeline/TimelineTreeView.ts | filter": {
     "message": "Iragazi"
@@ -12198,7 +12198,7 @@
     "message": "Sistema"
   },
   "panels/timeline/timeline-meta.ts | hideChromeFrameInLayersView": {
-    "message": "Ezkutatu chrome markoa geruzen ikuspegian"
+    "message": "Ezkutatu ArkWeb markoa geruzen ikuspegian"
   },
   "panels/timeline/timeline-meta.ts | javascriptProfiler": {
     "message": "JavaScript-en errendimendu-analizatzailea"
@@ -12639,7 +12639,7 @@
     "message": "Hautatu ordeztutako fitxategiak gordetzeko karpeta bat."
   },
   "ui/legacy/InspectorView.ts | setToBrowserLanguage": {
-    "message": "Aukeratu beti Chrome-n erabiltzen den hizkuntza bera"
+    "message": "Aukeratu beti ArkWeb-n erabiltzen den hizkuntza bera"
   },
   "ui/legacy/InspectorView.ts | setToSpecificLanguage": {
     "message": "Aukeratu {PH1} garatzaileentzako tresnak erabiltzeko"

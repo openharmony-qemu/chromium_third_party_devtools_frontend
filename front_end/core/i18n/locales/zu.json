@@ -11346,7 +11346,7 @@
     "message": "Umsebenzi"
   },
   "panels/timeline/TimelineTreeView.ts | chromeExtensionsOverhead": {
-    "message": "[Chrome izandiso ngaphezulu]"
+    "message": "[ArkWeb izandiso ngaphezulu]"
   },
   "panels/timeline/TimelineTreeView.ts | filter": {
     "message": "Hlunga"

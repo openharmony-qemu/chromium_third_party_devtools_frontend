@@ -65,7 +65,7 @@ const UIStrings = {
   /**
    *@description Text in Timeline Tree View of the Performance panel
    */
-  chromeExtensionsOverhead: '[`Chrome` extensions overhead]',
+  chromeExtensionsOverhead: '[`ArkWeb` extensions overhead]',
   /**
    * @description Text in Timeline Tree View of the Performance panel. The text is presented
    * when developers investigate the performance of a page. 'V8 Runtime' labels the time

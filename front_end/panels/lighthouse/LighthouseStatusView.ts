@@ -54,7 +54,7 @@ const UIStrings = {
    *@description Text in Lighthouse Status View
    */
   tryToNavigateToTheUrlInAFresh:
-      'Try to navigate to the URL in a fresh `Chrome` profile without any other tabs or extensions open and try again.',
+      'Try to navigate to the URL in a fresh `ArkWeb` profile without any other tabs or extensions open and try again.',
   /**
    *@description Text of a DOM element in Lighthouse Status View
    */

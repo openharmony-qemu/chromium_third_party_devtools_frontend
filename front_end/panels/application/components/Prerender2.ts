@@ -124,12 +124,12 @@ const UIStrings = {
    *@description  Description text for Prerender2 cancellation status EmbedderTriggeredAndSameOriginRedirected.
    */
   EmbedderTriggeredAndSameOriginRedirected:
-      'Prerendering triggered by Chrome internal (e.g., Omnibox prerendering) is canceled because the navigation is redirected to another same-origin page.',
+      'Prerendering triggered by ArkWeb internal (e.g., Omnibox prerendering) is canceled because the navigation is redirected to another same-origin page.',
   /**
    *@description  Description text for Prerender2 cancellation status EmbedderTriggeredAndCrossOriginRedirected.
    */
   EmbedderTriggeredAndCrossOriginRedirected:
-      'Prerendering triggered by Chrome internal (e.g., Omnibox prerendering) is is canceled because the navigation is redirected to another cross-origin page.',
+      'Prerendering triggered by ArkWeb internal (e.g., Omnibox prerendering) is is canceled because the navigation is redirected to another cross-origin page.',
   /**
    *@description  Description text for Prerender2 cancellation status MemoryLimitExceeded.
    */
