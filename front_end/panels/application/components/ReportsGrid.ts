@@ -52,16 +52,21 @@ export class ReportsGridStatusHeader extends HTMLElement {
   #render(): void {
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
+    // #if defined(OHOS_DEVTOOLS)
+    // render(html`
+    //   ${i18nString(UIStrings.status)}
+    //   <x-link href="https://web.dev/reporting-api/#report-status">
+    //     <${IconButton.Icon.Icon.litTagName} class="inline-icon" .data=${{
+    //       iconName: 'help',
+    //       color: 'var(--icon-link)',
+    //       width: '16px',
+    //       height: '16px',
+    //       } as IconButton.Icon.IconData}></${IconButton.Icon.Icon.litTagName}>
+    //   </x-link>
+    // `, this.#shadow, {host: this});
+    // #endif  // OHOS_DEVTOOLS
     render(html`
       ${i18nString(UIStrings.status)}
-      <x-link href="https://web.dev/reporting-api/#report-status">
-        <${IconButton.Icon.Icon.litTagName} class="inline-icon" .data=${{
-          iconName: 'help',
-          color: 'var(--icon-link)',
-          width: '16px',
-          height: '16px',
-          } as IconButton.Icon.IconData}></${IconButton.Icon.Icon.litTagName}>
-      </x-link>
     `, this.#shadow, {host: this});
     // clang-format on
   }

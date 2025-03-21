@@ -70,7 +70,7 @@ const UIStrings = {
   /**
    *@description Title of a setting under the Performance category in Settings
    */
-  hideChromeFrameInLayersView: 'Hide `chrome` frame in Layers view',
+  hideChromeFrameInLayersView: 'Hide `ArkWeb` frame in Layers view',
   /**
    *@description Text in the Shortcuts page to explain a keyboard shortcut (start/stop recording performance)
    */
