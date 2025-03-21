@@ -420,7 +420,7 @@
     "message": "卖方打分阶段开始"
   },
   "core/sdk/NetworkManager.ts | crossoriginReadBlockingCorb": {
-    "message": "Cross-Origin Read Blocking (CORB) 已屏蔽 MIME 类型为 {PH2} 的跨域响应 {PH1}。如需了解详情，请参阅 https://www.chromestatus.com/feature/5629709824032768。"
+    "message": "Cross-Origin Read Blocking (CORB) 已屏蔽 MIME 类型为 {PH2} 的跨域响应 {PH1}。"
   },
   "core/sdk/NetworkManager.ts | fastG": {
     "message": "高速 3G"
@@ -531,7 +531,7 @@
     "message": "尝试通过 Set-Cookie 标头设置 Cookie 的操作被禁止了，因为此标头具有“SameParty”属性，但相应请求是跨多方请求。该请求之所以被视为跨多方，是因为资源网址的网域和资源所属框架/文档的网域不是同一 First-Party Set 的所有者或成员。"
   },
   "core/sdk/NetworkRequest.ts | thisSetcookieWasBlockedBecauseItHadTheSamepartyAttribute": {
-    "message": "尝试通过 Set-Cookie 标头设置 Cookie 的操作被禁止了，因为此标头既具有“SameParty”属性又具有与该属性冲突的其他属性。Chrome 要求那些使用“SameParty”属性的 Cookie 也使用“Secure”属性且不受“SameSite=Strict”限制。"
+    "message": "尝试通过 Set-Cookie 标头设置 Cookie 的操作被禁止了，因为此标头既具有“SameParty”属性又具有与该属性冲突的其他属性。ArkWeb 要求那些使用“SameParty”属性的 Cookie 也使用“Secure”属性且不受“SameSite=Strict”限制。"
   },
   "core/sdk/NetworkRequest.ts | thisSetcookieWasBlockedBecauseItHadTheSamesiteStrictLax": {
     "message": "尝试通过 Set-Cookie 标头设置 Cookie 的操作被禁止了，因为此标头具有“{PH1}”属性但来自一个跨网站响应，而该响应并不是对顶级导航操作的响应。该响应之所以被视为跨网站，是因为网址架构与当前网站的架构不同。"
@@ -1281,22 +1281,22 @@
     "message": "从跨源 iframe 触发 window.confirm 的功能已被弃用，日后将被移除。"
   },
   "generated/Deprecation.ts | DocumentDomainSettingWithoutOriginAgentClusterHeader": {
-    "message": "通过设置 document.domain 放宽同源政策的功能已被弃用，并将默认处于停用状态。若要继续使用此功能，请通过发送 Origin-Agent-Cluster: ?0 标头以及文档和框架的 HTTP 响应来选择停用以源为键的代理集群。如需了解详情，请访问 https://developer.chrome.com/blog/immutable-document-domain/。"
+    "message": "通过设置 document.domain 放宽同源政策的功能已被弃用，并将默认处于停用状态。若要继续使用此功能，请通过发送 Origin-Agent-Cluster: ?0 标头以及文档和框架的 HTTP 响应来选择停用以源为键的代理集群。"
   },
   "generated/Deprecation.ts | EventPath": {
     "message": "Event.path 已被弃用，并将被移除。请改用 Event.composedPath()。"
   },
   "generated/Deprecation.ts | ExpectCTHeader": {
-    "message": "Expect-CT 标头已被弃用，并将被移除。Chrome 要求，在 2018 年 4 月 30 日之后颁发的所有受大众信任的证书均须遵守证书透明度政策。"
+    "message": "Expect-CT 标头已被弃用，并将被移除。ArkWeb 要求，在 2018 年 4 月 30 日之后颁发的所有受大众信任的证书均须遵守证书透明度政策。"
   },
   "generated/Deprecation.ts | GeolocationInsecureOrigin": {
-    "message": "getCurrentPosition() 和 watchPosition() 不再适用于不安全的源。若要使用此功能，您应考虑将您的应用转移到安全的源，例如 HTTPS。如需了解详情，请访问 https://goo.gle/chrome-insecure-origins。"
+    "message": "getCurrentPosition() 和 watchPosition() 不再适用于不安全的源。"
   },
   "generated/Deprecation.ts | GeolocationInsecureOriginDeprecatedNotRemoved": {
-    "message": "getCurrentPosition() 和 watchPosition() 不再适用于不安全的源。若要使用此功能，您应考虑将您的应用转移到安全的源，例如 HTTPS。如需了解详情，请访问 https://goo.gle/chrome-insecure-origins。"
+    "message": "getCurrentPosition() 和 watchPosition() 不再适用于不安全的源。"
   },
   "generated/Deprecation.ts | GetUserMediaInsecureOrigin": {
-    "message": "getUserMedia() 不再适用于不安全的源。若要使用此功能，您应考虑将您的应用转移到安全的源，例如 HTTPS。如需了解详情，请访问 https://goo.gle/chrome-insecure-origins。"
+    "message": "getUserMedia() 不再适用于不安全的源。"
   },
   "generated/Deprecation.ts | HostCandidateAttributeGetter": {
     "message": "RTCPeerConnectionIceErrorEvent.hostCandidate 已被弃用。请改用 RTCPeerConnectionIceErrorEvent.address 或 RTCPeerConnectionIceErrorEvent.port。"
@@ -1305,7 +1305,7 @@
     "message": "canmakepayment Service Worker 事件中的商家源和任意数据已被弃用，并将被移除：topOrigin、paymentRequestOrigin、methodData、modifiers。"
   },
   "generated/Deprecation.ts | InsecurePrivateNetworkSubresourceRequest": {
-    "message": "该网站向网络请求了一项子资源，而且仅仅因为其用户的特权网络位置而能够访问此项资源。此类请求会向互联网公开非公用设备和服务器，这会增加跨站请求伪造 (CSRF) 攻击和/或信息泄露的风险。为降低这类风险，Chrome 不再支持从非安全上下文发起针对非公用子资源的请求，并将开始阻止此类请求。"
+    "message": "该网站向网络请求了一项子资源，而且仅仅因为其用户的特权网络位置而能够访问此项资源。此类请求会向互联网公开非公用设备和服务器，这会增加跨站请求伪造 (CSRF) 攻击和/或信息泄露的风险。为降低这类风险，ArkWeb 不再支持从非安全上下文发起针对非公用子资源的请求，并将开始阻止此类请求。"
   },
   "generated/Deprecation.ts | InterestGroupDailyUpdateUrl": {
     "message": "向 joinAdInterestGroup() 传递的 InterestGroups 所含 dailyUpdateUrl 字段已被重命名为 updateUrl，以便更准确地反映其行为。"
@@ -1326,7 +1326,7 @@
     "message": "较旧的非标准化 shadowroot 属性已被弃用，自 M119 起将*不再起作用*。请改用新的标准化 shadowrootmode 属性。"
   },
   "generated/Deprecation.ts | NotificationInsecureOrigin": {
-    "message": "无法再从不安全的源使用 Notification API。您应考虑将您的应用转移到安全的源，例如 HTTPS。如需了解详情，请访问 https://goo.gle/chrome-insecure-origins。"
+    "message": "无法再从不安全的源使用 Notification API。您应考虑将您的应用转移到安全的源，例如 HTTPS。"
   },
   "generated/Deprecation.ts | NotificationPermissionRequestedIframe": {
     "message": "无法再从跨源 iframe 中请求 Notification API 权限。您应考虑改为从顶级框架中请求权限，或者打开一个新窗口。"
@@ -1377,7 +1377,7 @@
     "message": "HTMLVideoElement.webkitSupportsFullscreen 已被弃用。请改用 Document.fullscreenEnabled。"
   },
   "generated/Deprecation.ts | PrivacySandboxExtensionsAPI": {
-    "message": "我们即将弃用 API chrome.privacy.websites.privacySandboxEnabled，但为了保持向后兼容性，该 API 可持续使用到 M113 版。届时，请改用 chrome.privacy.websites.topicsEnabled、chrome.privacy.websites.fledgeEnabled 和 chrome.privacy.websites.adMeasurementEnabled。请参阅 https://developer.chrome.com/docs/extensions/reference/privacy/#property-websites-privacySandboxEnabled。"
+    "message": "我们即将弃用 API chrome.privacy.websites.privacySandboxEnabled，但为了保持向后兼容性，该 API 可持续使用到 M113 版。届时，请改用 chrome.privacy.websites.topicsEnabled、chrome.privacy.websites.fledgeEnabled 和 chrome.privacy.websites.adMeasurementEnabled。"
   },
   "generated/Deprecation.ts | RTCConstraintEnableDtlsSrtpFalse": {
     "message": "约束条件 DtlsSrtpKeyAgreement 已被移除。您已为此约束条件指定 false 值，系统会将这种情况解读为尝试使用已被移除的 SDES key negotiation 方法。此功能已被移除；请改用支持 DTLS key negotiation的服务。"
@@ -1398,13 +1398,13 @@
     "message": "rtcpMuxPolicy 选项已被弃用，并将被移除。"
   },
   "generated/Deprecation.ts | SharedArrayBufferConstructedWithoutIsolation": {
-    "message": "SharedArrayBuffer 将要求进行跨域隔离。如需了解详情，请访问 https://developer.chrome.com/blog/enabling-shared-array-buffer/。"
+    "message": "SharedArrayBuffer 将要求进行跨域隔离。"
   },
   "generated/Deprecation.ts | TextToSpeech_DisallowedByAutoplay": {
     "message": "无需用户激活的 speechSynthesis.speak() 已被弃用，并将被移除。"
   },
   "generated/Deprecation.ts | V8SharedArrayBufferConstructedInExtensionWithoutIsolation": {
-    "message": "扩展程序应选择启用跨域隔离，以便继续使用 SharedArrayBuffer。请参阅 https://developer.chrome.com/docs/extensions/mv3/cross-origin-isolation/。"
+    "message": "扩展程序应选择启用跨域隔离，以便继续使用 SharedArrayBuffer。"
   },
   "generated/Deprecation.ts | WindowPlacementPermissionDescriptorUsed": {
     "message": "权限描述符 window-placement 已被弃用。请改用 window-management。如需更多帮助，请访问 https://bit.ly/window-placement-rename。"
@@ -1587,7 +1587,7 @@
     "message": "针对消耗过多资源的广告的干预措施"
   },
   "models/issues_manager/Issue.ts | breakingChangeIssue": {
-    "message": "破坏性更改问题：网页在即将发布的 Chrome 版本中可能无法正常运行"
+    "message": "破坏性更改问题：网页在即将发布的 ArkWeb 版本中可能无法正常运行"
   },
   "models/issues_manager/Issue.ts | breakingChanges": {
     "message": "重大变更"
@@ -2400,7 +2400,7 @@
     "message": "该网页无法离线使用"
   },
   "panels/application/AppManifestView.ts | pageDoesNotWorkOfflineThePage": {
-    "message": "该网页无法离线使用。从 Chrome 93 开始，可安装性标准已发生变化，与该网站对应的应用将不再可安装。如需了解详情，请参阅 {PH1}。"
+    "message": "该网页无法离线使用。从 ArkWeb 93 开始，可安装性标准已发生变化，与该网站对应的应用将不再可安装。如需了解详情，请参阅 {PH1}。"
   },
   "panels/application/AppManifestView.ts | pageHasNoManifestLinkUrl": {
     "message": "网页没有清单 <link> URL"
@@ -3216,7 +3216,7 @@
     "message": "只有状态代码为 2XX 的网页才能被缓存。"
   },
   "panels/application/components/BackForwardCacheStrings.ts | JavaScriptExecution": {
-    "message": "Chrome 检测到一项在储存于缓存期间执行 JavaScript 的意图。"
+    "message": "ArkWeb 检测到一项在储存于缓存期间执行 JavaScript 的意图。"
   },
   "panels/application/components/BackForwardCacheStrings.ts | appBanner": {
     "message": "已请求 AppBanner 的网页目前无法储存至往返缓存。"
@@ -3300,7 +3300,7 @@
     "message": "用户离开网页时，系统显示了应用横幅。"
   },
   "panels/application/components/BackForwardCacheStrings.ts | embedderChromePasswordManagerClientBindCredentialManager": {
-    "message": "用户离开网页时，系统显示了 Chrome 密码管理器。"
+    "message": "用户离开网页时，系统显示了 ArkWeb 密码管理器。"
   },
   "panels/application/components/BackForwardCacheStrings.ts | embedderDomDistillerSelfDeletingRequestDelegate": {
     "message": "用户离开网页时，DOM 提取正在进行。"
@@ -3399,7 +3399,7 @@
     "message": "该网页还没从往返缓存中恢复时导航就被取消了。"
   },
   "panels/application/components/BackForwardCacheStrings.ts | networkExceedsBufferLimit": {
-    "message": "该网页被逐出了缓存，因为有一项使用中的网络连接收到了太多数据。Chrome 会限制网页在缓存期间可接收的数据量。"
+    "message": "该网页被逐出了缓存，因为有一项使用中的网络连接收到了太多数据。ArkWeb 会限制网页在缓存期间可接收的数据量。"
   },
   "panels/application/components/BackForwardCacheStrings.ts | networkRequestDatapipeDrainedAsBytesConsumer": {
     "message": "包含传输中的 fetch() 或 XHR 的网页目前无法储存至往返缓存。"
@@ -3408,7 +3408,7 @@
     "message": "该网页被逐出了往返缓存，因为有一项使用中的网络请求涉及了重定向。"
   },
   "panels/application/components/BackForwardCacheStrings.ts | networkRequestTimeout": {
-    "message": "该网页被逐出了缓存，因为有一项网络连接处于开放状态的时间太长。Chrome 会限制网页在缓存期间可接收数据的时长。"
+    "message": "该网页被逐出了缓存，因为有一项网络连接处于开放状态的时间太长。ArkWeb 会限制网页在缓存期间可接收数据的时长。"
   },
   "panels/application/components/BackForwardCacheStrings.ts | noResponseHead": {
     "message": "不含有效响应标头的网页无法储存至往返缓存。"
@@ -3489,7 +3489,7 @@
     "message": "该网页被逐出了往返缓存，因为有一个 Service Worker 被启用了。"
   },
   "panels/application/components/BackForwardCacheStrings.ts | sessionRestored": {
-    "message": "Chrome 重启了，因而清除了往返缓存条目。"
+    "message": "ArkWeb 重启了，因而清除了往返缓存条目。"
   },
   "panels/application/components/BackForwardCacheStrings.ts | sharedWorker": {
     "message": "使用 SharedWorker 的网页目前无法储存至往返缓存。"
@@ -3594,7 +3594,7 @@
     "message": "了解详情：一律不使用卸载处理程序"
   },
   "panels/application/components/BackForwardCacheView.ts | normalNavigation": {
-    "message": "不是从往返缓存中恢复的：若要触发往返缓存，请使用 Chrome 的“后退”/“前进”按钮，或者使用下面的“测试”按钮自动离开并返回。"
+    "message": "不是从往返缓存中恢复的：若要触发往返缓存，请使用 ArkWeb 的“后退”/“前进”按钮，或者使用下面的“测试”按钮自动离开并返回。"
   },
   "panels/application/components/BackForwardCacheView.ts | pageSupportNeeded": {
     "message": "有待解决"
@@ -3615,7 +3615,7 @@
     "message": "尚不支持"
   },
   "panels/application/components/BackForwardCacheView.ts | supportPendingExplanation": {
-    "message": "Chrome 将会针对这些原因提供应对支持，即：在 Chrome 的某个未来版本中，这些原因将不会阻止该网页储存至往返缓存。"
+    "message": "ArkWeb 将会针对这些原因提供应对支持，即：在 ArkWeb 的某个未来版本中，这些原因将不会阻止该网页储存至往返缓存。"
   },
   "panels/application/components/BackForwardCacheView.ts | unavailable": {
     "message": "不可用"
@@ -3897,10 +3897,10 @@
     "message": "禁止在预渲染模式下进行下载。"
   },
   "panels/application/components/Prerender2.ts | EmbedderTriggeredAndCrossOriginRedirected": {
-    "message": "Chrome 自身触发的预渲染（例如多功能框预渲染）被取消了，因为导航会重定向到另一个跨源网页。"
+    "message": "ArkWeb 自身触发的预渲染（例如多功能框预渲染）被取消了，因为导航会重定向到另一个跨源网页。"
   },
   "panels/application/components/Prerender2.ts | EmbedderTriggeredAndSameOriginRedirected": {
-    "message": "Chrome 自身触发的预渲染（例如多功能框预渲染）被取消了，因为导航会重定向到另一个同源网页。"
+    "message": "ArkWeb 自身触发的预渲染（例如多功能框预渲染）被取消了，因为导航会重定向到另一个同源网页。"
   },
   "panels/application/components/Prerender2.ts | FailToGetMemoryUsage": {
     "message": "未能获取内存用量"
@@ -6495,7 +6495,7 @@
     "message": "最佳做法"
   },
   "panels/lighthouse/LighthouseController.ts | canOnlyAuditHttphttpsPagesAnd": {
-    "message": "只能审核 HTTP/HTTPS 网页和 Chrome 扩展程序。转到其他网页以开始审核。"
+    "message": "只能审核 HTTP/HTTPS 网页和 ArkWeb 扩展程序。转到其他网页以开始审核。"
   },
   "panels/lighthouse/LighthouseController.ts | clearStorage": {
     "message": "清除存储数据"
@@ -6738,7 +6738,7 @@
     "message": "用户设备平均成本低于 200 美元。[来源：International Data Corporation]"
   },
   "panels/lighthouse/LighthouseStatusView.ts | tryToNavigateToTheUrlInAFresh": {
-    "message": "尝试在新的 Chrome 个人资料名下转到相应网址，并且不打开任何其他标签页或扩展程序，然后重试。"
+    "message": "尝试在新的 ArkWeb 个人资料名下转到相应网址，并且不打开任何其他标签页或扩展程序，然后重试。"
   },
   "panels/lighthouse/LighthouseStatusView.ts | walmartSawAIncreaseInRevenueFor": {
     "message": "Walmart 发现，网页加载用时每减少 100 毫秒，收入就会增加 1% [来源：WPO Stats]"
@@ -7218,10 +7218,10 @@
     "message": "用户代理"
   },
   "panels/network/NetworkDataGridNode.ts | alternativeJobWonRace": {
-    "message": "Chrome 使用了由“Alt-Svc”标头引发的 HTTP/3 连接，因为该连接在与使用不同 HTTP 版本建立的连接竞争时胜出。"
+    "message": "ArkWeb 使用了由“Alt-Svc”标头引发的 HTTP/3 连接，因为该连接在与使用不同 HTTP 版本建立的连接竞争时胜出。"
   },
   "panels/network/NetworkDataGridNode.ts | alternativeJobWonWithoutRace": {
-    "message": "Chrome 使用了由“Alt-Svc”标头引发的 HTTP/3 连接，该连接未与使用不同 HTTP 版本建立的连接发生竞争。"
+    "message": "ArkWeb 使用了由“Alt-Svc”标头引发的 HTTP/3 连接，该连接未与使用不同 HTTP 版本建立的连接发生竞争。"
   },
   "panels/network/NetworkDataGridNode.ts | blockedTooltip": {
     "message": "此请求因配置有误的响应标头而被屏蔽，点击即可查看这些标头"
@@ -7230,7 +7230,7 @@
     "message": "（已屏蔽：{PH1}）"
   },
   "panels/network/NetworkDataGridNode.ts | broken": {
-    "message": "Chrome 未尝试建立 HTTP/3 连接，因为该连接已被标记为损坏。"
+    "message": "ArkWeb 未尝试建立 HTTP/3 连接，因为该连接已被标记为损坏。"
   },
   "panels/network/NetworkDataGridNode.ts | canceled": {
     "message": "（已取消）"
@@ -7254,10 +7254,10 @@
     "message": "(disk cache)"
   },
   "panels/network/NetworkDataGridNode.ts | dnsAlpnH3JobWonRace": {
-    "message": "Chrome 使用了 HTTP/3 连接，因为 DNS record表明支持 HTTP/3，该连接在与使用不同 HTTP 版本建立的连接竞争时胜出。"
+    "message": "ArkWeb 使用了 HTTP/3 连接，因为 DNS record表明支持 HTTP/3，该连接在与使用不同 HTTP 版本建立的连接竞争时胜出。"
   },
   "panels/network/NetworkDataGridNode.ts | dnsAlpnH3JobWonWithoutRace": {
-    "message": "Chrome 使用了 HTTP/3 连接，因为 DNS record表明支持 HTTP/3。该连接未与使用不同 HTTP 版本建立的连接发生竞争。"
+    "message": "ArkWeb 使用了 HTTP/3 连接，因为 DNS record表明支持 HTTP/3。该连接未与使用不同 HTTP 版本建立的连接发生竞争。"
   },
   "panels/network/NetworkDataGridNode.ts | failed": {
     "message": "（失败）"
@@ -7272,10 +7272,10 @@
     "message": "级别 1"
   },
   "panels/network/NetworkDataGridNode.ts | mainJobWonRace": {
-    "message": "Chrome 使用了该协议，因为它在与使用 HTTP/3 建立的连接竞争时胜出。"
+    "message": "ArkWeb 使用了该协议，因为它在与使用 HTTP/3 建立的连接竞争时胜出。"
   },
   "panels/network/NetworkDataGridNode.ts | mappingMissing": {
-    "message": "Chrome 未使用替代 HTTP 版本，因为在发出请求时没有任何可用的替代协议信息，但响应包含“Alt-Svc”标头。"
+    "message": "ArkWeb 未使用替代 HTTP 版本，因为在发出请求时没有任何可用的替代协议信息，但响应包含“Alt-Svc”标头。"
   },
   "panels/network/NetworkDataGridNode.ts | memoryCache": {
     "message": "（内存缓存）"
@@ -9345,7 +9345,7 @@
     "message": "证书透明度"
   },
   "panels/security/SecurityPanel.ts | chromeHasDeterminedThatThisSiteS": {
-    "message": "Chrome 已确定此网站可能是虚假网站或欺诈性网站。"
+    "message": "ArkWeb 已确定此网站可能是虚假网站或欺诈性网站。"
   },
   "panels/security/SecurityPanel.ts | cipher": {
     "message": "加密算法"
@@ -9567,13 +9567,13 @@
     "message": "此网页可疑"
   },
   "panels/security/SecurityPanel.ts | thisPageIsSuspiciousFlaggedBy": {
-    "message": "此网页可疑（已被 Chrome 标记）。"
+    "message": "此网页可疑（已被 ArkWeb 标记）。"
   },
   "panels/security/SecurityPanel.ts | thisRequestCompliesWithChromes": {
-    "message": "此请求符合 Chrome 的证书透明度政策。"
+    "message": "此请求符合 ArkWeb 的证书透明度政策。"
   },
   "panels/security/SecurityPanel.ts | thisRequestDoesNotComplyWith": {
-    "message": "此请求不符合 Chrome 的证书透明度政策。"
+    "message": "此请求不符合 ArkWeb 的证书透明度政策。"
   },
   "panels/security/SecurityPanel.ts | thisResponseWasLoadedFromCache": {
     "message": "此响应是从缓存加载的。可能缺少一些安全性详细信息。"
@@ -9981,16 +9981,16 @@
     "message": "警告："
   },
   "panels/settings/components/SyncSection.ts | preferencesSyncDisabled": {
-    "message": "若要开启此设置，您必须先在 Chrome 中启用设置同步。"
+    "message": "若要开启此设置，您必须先在 ArkWeb 中启用设置同步。"
   },
   "panels/settings/components/SyncSection.ts | settings": {
     "message": "转到“设置”"
   },
   "panels/settings/components/SyncSection.ts | signedIn": {
-    "message": "登录 Chrome 时使用的帐号："
+    "message": "登录 ArkWeb 时使用的帐号："
   },
   "panels/settings/components/SyncSection.ts | syncDisabled": {
-    "message": "若要开启此设置，您必须先启用 Chrome 同步。"
+    "message": "若要开启此设置，您必须先启用 ArkWeb 同步。"
   },
   "panels/settings/emulation/DevicesSettingsTab.ts | addCustomDevice": {
     "message": "添加自定义设备…"
@@ -11346,7 +11346,7 @@
     "message": "活动"
   },
   "panels/timeline/TimelineTreeView.ts | chromeExtensionsOverhead": {
-    "message": "[Chrome 扩展程序开销]"
+    "message": "[ArkWeb 扩展程序开销]"
   },
   "panels/timeline/TimelineTreeView.ts | filter": {
     "message": "过滤"
@@ -12198,7 +12198,7 @@
     "message": "系统"
   },
   "panels/timeline/timeline-meta.ts | hideChromeFrameInLayersView": {
-    "message": "在“图层”视图中隐藏 chrome 框架"
+    "message": "在“图层”视图中隐藏 ArkWeb 框架"
   },
   "panels/timeline/timeline-meta.ts | javascriptProfiler": {
     "message": "JavaScript 性能剖析器"
@@ -12639,7 +12639,7 @@
     "message": "选择要用来存储替换文件的文件夹。"
   },
   "ui/legacy/InspectorView.ts | setToBrowserLanguage": {
-    "message": "始终以 Chrome 所用的语言显示"
+    "message": "始终以 ArkWeb 所用的语言显示"
   },
   "ui/legacy/InspectorView.ts | setToSpecificLanguage": {
     "message": "将 DevTools 切换为{PH1}版"

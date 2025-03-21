@@ -23,10 +23,11 @@ export interface PreviewToggleData {
 }
 
 const UIStrings = {
-  /**
-   *@description Link text the user can click to provide feedback to the team.
-   */
-  previewTextFeedbackLink: 'Send us your feedback.',
+  /* OHOS_DEVTOOLS */
+  // /**
+  //  *@description Link text the user can click to provide feedback to the team.
+  //  */
+  //  previewTextFeedbackLink: 'Send us your feedback.',
   /**
    *@description Link text the user can click to provide feedback to the team.
    */
@@ -91,7 +92,7 @@ export class PreviewToggle extends HTMLElement {
           : nothing}
         <div class="helper">
           ${this.#helperText && this.#feedbackURL
-            ? html`<p>${this.#helperText} <x-link class="x-link" href=${this.#feedbackURL}>${i18nString(UIStrings.previewTextFeedbackLink)}</x-link></p>`
+            ? html`<p>${this.#helperText} </p>`
             : nothing}
         </div>
       </div>`,

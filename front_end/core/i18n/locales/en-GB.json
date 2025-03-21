@@ -420,7 +420,7 @@
     "message": "Seller scoring phase start"
   },
   "core/sdk/NetworkManager.ts | crossoriginReadBlockingCorb": {
-    "message": "Cross-Origin Read Blocking (CORB) blocked cross-origin response {PH1} with MIME type {PH2}. See https://www.chromestatus.com/feature/5629709824032768 for more details."
+    "message": "Cross-Origin Read Blocking (CORB) blocked cross-origin response {PH1} with MIME type {PH2}."
   },
   "core/sdk/NetworkManager.ts | fastG": {
     "message": "Fast 3G"
@@ -531,7 +531,7 @@
     "message": "This attempt to set a cookie via a Set-Cookie header was blocked because it had the 'SameParty' attribute but the request was cross-party. The request was considered cross-party because the domain of the resource's URL and the domains of the resource's enclosing frames/documents are neither owners nor members in the same first-party set."
   },
   "core/sdk/NetworkRequest.ts | thisSetcookieWasBlockedBecauseItHadTheSamepartyAttribute": {
-    "message": "This attempt to set a cookie via a Set-Cookie header was blocked because it had the 'SameParty' attribute but also had other conflicting attributes. Chrome requires cookies that use the 'SameParty' attribute to also have the 'Secure' attribute, and not be restricted to 'SameSite=Strict'."
+    "message": "This attempt to set a cookie via a Set-Cookie header was blocked because it had the 'SameParty' attribute but also had other conflicting attributes. ArkWeb requires cookies that use the 'SameParty' attribute to also have the 'Secure' attribute, and not be restricted to 'SameSite=Strict'."
   },
   "core/sdk/NetworkRequest.ts | thisSetcookieWasBlockedBecauseItHadTheSamesiteStrictLax": {
     "message": "This attempt to set a cookie via a Set-Cookie header was blocked because it had the '{PH1}' attribute but came from a cross-site response which was not the response to a top-level navigation. This response is considered cross-site because the URL has a different scheme than the current site."
@@ -1281,22 +1281,22 @@
     "message": "Triggering window.confirm from cross-origin iframes has been deprecated and will be removed in the future."
   },
   "generated/Deprecation.ts | DocumentDomainSettingWithoutOriginAgentClusterHeader": {
-    "message": "Relaxing the same-origin policy by setting document.domain is deprecated, and will be disabled by default. To continue using this feature, please opt out of origin-keyed agent clusters by sending an Origin-Agent-Cluster: ?0 header along with the HTTP response for the document and frames. See https://developer.chrome.com/blog/immutable-document-domain/ for more details."
+    "message": "Relaxing the same-origin policy by setting document.domain is deprecated, and will be disabled by default. To continue using this feature, please opt out of origin-keyed agent clusters by sending an Origin-Agent-Cluster: ?0 header along with the HTTP response for the document and frames."
   },
   "generated/Deprecation.ts | EventPath": {
     "message": "Event.path is deprecated and will be removed. Please use Event.composedPath() instead."
   },
   "generated/Deprecation.ts | ExpectCTHeader": {
-    "message": "The Expect-CT header is deprecated and will be removed. Chrome requires Certificate Transparency for all publicly trusted certificates issued after 30 April 2018."
+    "message": "The Expect-CT header is deprecated and will be removed. ArkWeb requires Certificate Transparency for all publicly trusted certificates issued after 30 April 2018."
   },
   "generated/Deprecation.ts | GeolocationInsecureOrigin": {
-    "message": "getCurrentPosition() and watchPosition() no longer work on insecure origins. To use this feature, you should consider switching your application to a secure origin, such as HTTPS. See https://goo.gle/chrome-insecure-origins for more details."
+    "message": "getCurrentPosition() and watchPosition() no longer work on insecure origins. To use this feature, you should consider switching your application to a secure origin, such as HTTPS."
   },
   "generated/Deprecation.ts | GeolocationInsecureOriginDeprecatedNotRemoved": {
-    "message": "getCurrentPosition() and watchPosition() are deprecated on insecure origins. To use this feature, you should consider switching your application to a secure origin, such as HTTPS. See https://goo.gle/chrome-insecure-origins for more details."
+    "message": "getCurrentPosition() and watchPosition() are deprecated on insecure origins. To use this feature, you should consider switching your application to a secure origin, such as HTTPS."
   },
   "generated/Deprecation.ts | GetUserMediaInsecureOrigin": {
-    "message": "getUserMedia() no longer works on insecure origins. To use this feature, you should consider switching your application to a secure origin, such as HTTPS. See https://goo.gle/chrome-insecure-origins for more details."
+    "message": "getUserMedia() no longer works on insecure origins. To use this feature, you should consider switching your application to a secure origin, such as HTTPS."
   },
   "generated/Deprecation.ts | HostCandidateAttributeGetter": {
     "message": "RTCPeerConnectionIceErrorEvent.hostCandidate is deprecated. Please use RTCPeerConnectionIceErrorEvent.address or RTCPeerConnectionIceErrorEvent.port instead."
@@ -1305,7 +1305,7 @@
     "message": "The merchant origin and arbitrary data from the canmakepayment service worker event are deprecated and will be removed: topOrigin, paymentRequestOrigin, methodData, modifiers."
   },
   "generated/Deprecation.ts | InsecurePrivateNetworkSubresourceRequest": {
-    "message": "The website requested a subresource from a network that it could only access because of its users' privileged network position. These requests expose non-public devices and servers to the Internet, increasing the risk of a cross-site request forgery (CSRF) attack and/or information leakage. To mitigate these risks, Chrome deprecates requests to non-public subresources when initiated from non-secure contexts, and will start blocking them."
+    "message": "The website requested a subresource from a network that it could only access because of its users' privileged network position. These requests expose non-public devices and servers to the Internet, increasing the risk of a cross-site request forgery (CSRF) attack and/or information leakage. To mitigate these risks, ArkWeb deprecates requests to non-public subresources when initiated from non-secure contexts, and will start blocking them."
   },
   "generated/Deprecation.ts | InterestGroupDailyUpdateUrl": {
     "message": "The dailyUpdateUrl field of InterestGroups passed to joinAdInterestGroup() has been renamed to updateUrl, to more accurately reflect its behaviour."
@@ -1326,7 +1326,7 @@
     "message": "The older, non-standardized shadowroot attribute is deprecated and will *no longer function* in M119. Please use the new, standardised shadowrootmode attribute instead."
   },
   "generated/Deprecation.ts | NotificationInsecureOrigin": {
-    "message": "The Notification API may no longer be used from insecure origins. You should consider switching your application to a secure origin, such as HTTPS. See https://goo.gle/chrome-insecure-origins for more details."
+    "message": "The Notification API may no longer be used from insecure origins. You should consider switching your application to a secure origin, such as HTTPS."
   },
   "generated/Deprecation.ts | NotificationPermissionRequestedIframe": {
     "message": "Permission for the Notification API may no longer be requested from a cross-origin iframe. You should consider requesting permission from a top-level frame or opening a new window instead."
@@ -1377,7 +1377,7 @@
     "message": "HTMLVideoElement.webkitSupportsFullscreen is deprecated. Please use Document.fullscreenEnabled instead."
   },
   "generated/Deprecation.ts | PrivacySandboxExtensionsAPI": {
-    "message": "We're deprecating the API chrome.privacy.websites.privacySandboxEnabled, though it will remain active for backward compatibility until release M113. Instead, please use chrome.privacy.websites.topicsEnabled, chrome.privacy.websites.fledgeEnabled and chrome.privacy.websites.adMeasurementEnabled. See https://developer.chrome.com/docs/extensions/reference/privacy/#property-websites-privacySandboxEnabled."
+    "message": "We're deprecating the API chrome.privacy.websites.privacySandboxEnabled, though it will remain active for backward compatibility until release M113. Instead, please use chrome.privacy.websites.topicsEnabled, chrome.privacy.websites.fledgeEnabled and chrome.privacy.websites.adMeasurementEnabled."
   },
   "generated/Deprecation.ts | RTCConstraintEnableDtlsSrtpFalse": {
     "message": "The constraint DtlsSrtpKeyAgreement is removed. You have specified a false value for this constraint, which is interpreted as an attempt to use the removed SDES key negotiation method. This functionality is removed; use a service that supports DTLS key negotiation instead."
@@ -1398,13 +1398,13 @@
     "message": "The rtcpMuxPolicy option is deprecated and will be removed."
   },
   "generated/Deprecation.ts | SharedArrayBufferConstructedWithoutIsolation": {
-    "message": "SharedArrayBuffer will require cross-origin isolation. See https://developer.chrome.com/blog/enabling-shared-array-buffer/ for more details."
+    "message": "SharedArrayBuffer will require cross-origin isolation."
   },
   "generated/Deprecation.ts | TextToSpeech_DisallowedByAutoplay": {
     "message": "speechSynthesis.speak() without user activation is deprecated and will be removed."
   },
   "generated/Deprecation.ts | V8SharedArrayBufferConstructedInExtensionWithoutIsolation": {
-    "message": "Extensions should opt in to cross-origin isolation to continue using SharedArrayBuffer. See https://developer.chrome.com/docs/extensions/mv3/cross-origin-isolation/."
+    "message": "Extensions should opt in to cross-origin isolation to continue using SharedArrayBuffer."
   },
   "generated/Deprecation.ts | WindowPlacementPermissionDescriptorUsed": {
     "message": "The permission descriptor window-placement is deprecated. Use window-management instead. For more help, check https://bit.ly/window-placement-rename."
@@ -1587,7 +1587,7 @@
     "message": "Handling heavy ad interventions"
   },
   "models/issues_manager/Issue.ts | breakingChangeIssue": {
-    "message": "A breaking change issue: the page may stop working in an upcoming version of Chrome"
+    "message": "A breaking change issue: the page may stop working in an upcoming version of ArkWeb"
   },
   "models/issues_manager/Issue.ts | breakingChanges": {
     "message": "Breaking changes"
@@ -2400,7 +2400,7 @@
     "message": "Page does not work offline"
   },
   "panels/application/AppManifestView.ts | pageDoesNotWorkOfflineThePage": {
-    "message": "Page does not work offline. Starting in Chrome 93, the installability criteria is changing, and this site will not be installable. See {PH1} for more information."
+    "message": "Page does not work offline. Starting in ArkWeb 93, the installability criteria is changing, and this site will not be installable. See {PH1} for more information."
   },
   "panels/application/AppManifestView.ts | pageHasNoManifestLinkUrl": {
     "message": "Page has no manifest <link> URL"
@@ -3216,7 +3216,7 @@
     "message": "Only pages with a status code of 2XX can be cached."
   },
   "panels/application/components/BackForwardCacheStrings.ts | JavaScriptExecution": {
-    "message": "Chrome detected an attempt to execute JavaScript while in the cache."
+    "message": "ArkWeb detected an attempt to execute JavaScript while in the cache."
   },
   "panels/application/components/BackForwardCacheStrings.ts | appBanner": {
     "message": "Pages that requested an AppBanner are not currently eligible for back-forward cache."
@@ -3300,7 +3300,7 @@
     "message": "App banner was present upon navigating away."
   },
   "panels/application/components/BackForwardCacheStrings.ts | embedderChromePasswordManagerClientBindCredentialManager": {
-    "message": "Chrome Password Manager was present upon navigating away."
+    "message": "ArkWeb Password Manager was present upon navigating away."
   },
   "panels/application/components/BackForwardCacheStrings.ts | embedderDomDistillerSelfDeletingRequestDelegate": {
     "message": "DOM distillation was in progress upon navigating away."
@@ -3399,7 +3399,7 @@
     "message": "Navigation was cancelled before the page could be restored from back-forward cache."
   },
   "panels/application/components/BackForwardCacheStrings.ts | networkExceedsBufferLimit": {
-    "message": "The page was evicted from the cache because an active network connection received too much data. Chrome limits the amount of data that a page may receive while cached."
+    "message": "The page was evicted from the cache because an active network connection received too much data. ArkWeb limits the amount of data that a page may receive while cached."
   },
   "panels/application/components/BackForwardCacheStrings.ts | networkRequestDatapipeDrainedAsBytesConsumer": {
     "message": "Pages that have inflight fetch() or XHR are not currently eligible for back-forward cache."
@@ -3408,7 +3408,7 @@
     "message": "The page was evicted from back-forward cache because an active network request involved a redirect."
   },
   "panels/application/components/BackForwardCacheStrings.ts | networkRequestTimeout": {
-    "message": "The page was evicted from the cache because a network connection was open too long. Chrome limits the amount of time that a page may receive data while cached."
+    "message": "The page was evicted from the cache because a network connection was open too long. ArkWeb limits the amount of time that a page may receive data while cached."
   },
   "panels/application/components/BackForwardCacheStrings.ts | noResponseHead": {
     "message": "Pages that do not have a valid response head cannot enter back-forward cache."
@@ -3489,7 +3489,7 @@
     "message": "The page was evicted from back-forward cache due to a service worker activation."
   },
   "panels/application/components/BackForwardCacheStrings.ts | sessionRestored": {
-    "message": "Chrome restarted and cleared the back-forward cache entries."
+    "message": "ArkWeb restarted and cleared the back-forward cache entries."
   },
   "panels/application/components/BackForwardCacheStrings.ts | sharedWorker": {
     "message": "Pages that use SharedWorker are not currently eligible for back-forward cache."
@@ -3594,7 +3594,7 @@
     "message": "Learn more: Never use unload handler"
   },
   "panels/application/components/BackForwardCacheView.ts | normalNavigation": {
-    "message": "Not served from back/forward cache: to trigger back/forward cache, use Chrome's back/forward buttons, or use the test button below to automatically navigate away and back."
+    "message": "Not served from back/forward cache: to trigger back/forward cache, use ArkWeb's back/forward buttons, or use the test button below to automatically navigate away and back."
   },
   "panels/application/components/BackForwardCacheView.ts | pageSupportNeeded": {
     "message": "Actionable"
@@ -3615,7 +3615,7 @@
     "message": "Pending support"
   },
   "panels/application/components/BackForwardCacheView.ts | supportPendingExplanation": {
-    "message": "Chrome support for these reasons is pending i.e. they will not prevent the page from being eligible for back-forward cache in a future version of Chrome."
+    "message": "ArkWeb support for these reasons is pending i.e. they will not prevent the page from being eligible for back-forward cache in a future version of ArkWeb."
   },
   "panels/application/components/BackForwardCacheView.ts | unavailable": {
     "message": "unavailable"
@@ -3897,10 +3897,10 @@
     "message": "Download is disallowed in prerender."
   },
   "panels/application/components/Prerender2.ts | EmbedderTriggeredAndCrossOriginRedirected": {
-    "message": "Prerendering triggered by Chrome internal (e.g. Omnibox prerendering) is cancelled because the navigation is redirected to another cross-origin page."
+    "message": "Prerendering triggered by ArkWeb internal (e.g. Omnibox prerendering) is cancelled because the navigation is redirected to another cross-origin page."
   },
   "panels/application/components/Prerender2.ts | EmbedderTriggeredAndSameOriginRedirected": {
-    "message": "Prerendering triggered by Chrome internal (e.g. Omnibox prerendering) is cancelled because the navigation is redirected to another same-origin page."
+    "message": "Prerendering triggered by ArkWeb internal (e.g. Omnibox prerendering) is cancelled because the navigation is redirected to another same-origin page."
   },
   "panels/application/components/Prerender2.ts | FailToGetMemoryUsage": {
     "message": "Fail to get memory usage"
@@ -6495,7 +6495,7 @@
     "message": "Best practices"
   },
   "panels/lighthouse/LighthouseController.ts | canOnlyAuditHttphttpsPagesAnd": {
-    "message": "Can only audit HTTP/HTTPS pages and Chrome extensions. Navigate to a different page to start an audit."
+    "message": "Can only audit HTTP/HTTPS pages and ArkWeb extensions. Navigate to a different page to start an audit."
   },
   "panels/lighthouse/LighthouseController.ts | clearStorage": {
     "message": "Clear storage"
@@ -6738,7 +6738,7 @@
     "message": "The average user device costs less than 150 GBP. [Source: International Data Corporation]"
   },
   "panels/lighthouse/LighthouseStatusView.ts | tryToNavigateToTheUrlInAFresh": {
-    "message": "Try to navigate to the URL in a fresh Chrome profile without any other tabs or extensions open and try again."
+    "message": "Try to navigate to the URL in a fresh ArkWeb profile without any other tabs or extensions open and try again."
   },
   "panels/lighthouse/LighthouseStatusView.ts | walmartSawAIncreaseInRevenueFor": {
     "message": "Walmart saw a 1% increase in revenue for every 100ms improvement in page load [Source: WPO Stats]"
@@ -7218,10 +7218,10 @@
     "message": "User agent"
   },
   "panels/network/NetworkDataGridNode.ts | alternativeJobWonRace": {
-    "message": "Chrome used a HTTP/3 connection induced by an 'Alt-Svc' header because it won a race against establishing a connection using a different HTTP version."
+    "message": "ArkWeb used a HTTP/3 connection induced by an 'Alt-Svc' header because it won a race against establishing a connection using a different HTTP version."
   },
   "panels/network/NetworkDataGridNode.ts | alternativeJobWonWithoutRace": {
-    "message": "Chrome used a HTTP/3 connection induced by an 'Alt-Svc' header without racing against establishing a connection using a different HTTP version."
+    "message": "ArkWeb used a HTTP/3 connection induced by an 'Alt-Svc' header without racing against establishing a connection using a different HTTP version."
   },
   "panels/network/NetworkDataGridNode.ts | blockedTooltip": {
     "message": "This request was blocked due to misconfigured response headers; click to view the headers"
@@ -7230,7 +7230,7 @@
     "message": "(blocked: {PH1})"
   },
   "panels/network/NetworkDataGridNode.ts | broken": {
-    "message": "Chrome did not try to establish a HTTP/3 connection because it was marked as broken."
+    "message": "ArkWeb did not try to establish a HTTP/3 connection because it was marked as broken."
   },
   "panels/network/NetworkDataGridNode.ts | canceled": {
     "message": "(cancelled)"
@@ -7254,10 +7254,10 @@
     "message": "(disk cache)"
   },
   "panels/network/NetworkDataGridNode.ts | dnsAlpnH3JobWonRace": {
-    "message": "Chrome used a HTTP/3 connection due to the DNS record indicating HTTP/3 support, which won a race against establishing a connection using a different HTTP version."
+    "message": "ArkWeb used a HTTP/3 connection due to the DNS record indicating HTTP/3 support, which won a race against establishing a connection using a different HTTP version."
   },
   "panels/network/NetworkDataGridNode.ts | dnsAlpnH3JobWonWithoutRace": {
-    "message": "Chrome used a HTTP/3 connection due to the DNS record indicating HTTP/3 support. There was no race against establishing a connection using a different HTTP version."
+    "message": "ArkWeb used a HTTP/3 connection due to the DNS record indicating HTTP/3 support. There was no race against establishing a connection using a different HTTP version."
   },
   "panels/network/NetworkDataGridNode.ts | failed": {
     "message": "(failed)"
@@ -7272,10 +7272,10 @@
     "message": "level 1"
   },
   "panels/network/NetworkDataGridNode.ts | mainJobWonRace": {
-    "message": "Chrome used this protocol because it won a race against establishing a HTTP/3 connection."
+    "message": "ArkWeb used this protocol because it won a race against establishing a HTTP/3 connection."
   },
   "panels/network/NetworkDataGridNode.ts | mappingMissing": {
-    "message": "Chrome did not use an alternative HTTP version because no alternative protocol information was available when the request was issued, but an 'Alt-Svc' header was present in the response."
+    "message": "ArkWeb did not use an alternative HTTP version because no alternative protocol information was available when the request was issued, but an 'Alt-Svc' header was present in the response."
   },
   "panels/network/NetworkDataGridNode.ts | memoryCache": {
     "message": "(memory cache)"
@@ -9345,7 +9345,7 @@
     "message": "Certificate Transparency"
   },
   "panels/security/SecurityPanel.ts | chromeHasDeterminedThatThisSiteS": {
-    "message": "Chrome has determined that this site could be fake or fraudulent."
+    "message": "ArkWeb has determined that this site could be fake or fraudulent."
   },
   "panels/security/SecurityPanel.ts | cipher": {
     "message": "Cipher"
@@ -9567,13 +9567,13 @@
     "message": "This page is suspicious"
   },
   "panels/security/SecurityPanel.ts | thisPageIsSuspiciousFlaggedBy": {
-    "message": "This page is suspicious (flagged by Chrome)."
+    "message": "This page is suspicious (flagged by ArkWeb)."
   },
   "panels/security/SecurityPanel.ts | thisRequestCompliesWithChromes": {
-    "message": "This request complies with Chrome's Certificate Transparency policy."
+    "message": "This request complies with ArkWeb's Certificate Transparency policy."
   },
   "panels/security/SecurityPanel.ts | thisRequestDoesNotComplyWith": {
-    "message": "This request does not comply with Chrome's Certificate Transparency policy."
+    "message": "This request does not comply with ArkWeb's Certificate Transparency policy."
   },
   "panels/security/SecurityPanel.ts | thisResponseWasLoadedFromCache": {
     "message": "This response was loaded from cache. Some security details might be missing."
@@ -9981,16 +9981,16 @@
     "message": "WARNING:"
   },
   "panels/settings/components/SyncSection.ts | preferencesSyncDisabled": {
-    "message": "To turn this setting on, you must first enable settings sync in Chrome."
+    "message": "To turn this setting on, you must first enable settings sync in ArkWeb."
   },
   "panels/settings/components/SyncSection.ts | settings": {
     "message": "Go to Settings"
   },
   "panels/settings/components/SyncSection.ts | signedIn": {
-    "message": "Signed into Chrome as:"
+    "message": "Signed into ArkWeb as:"
   },
   "panels/settings/components/SyncSection.ts | syncDisabled": {
-    "message": "To turn this setting on, you must enable Chrome sync."
+    "message": "To turn this setting on, you must enable ArkWeb sync."
   },
   "panels/settings/emulation/DevicesSettingsTab.ts | addCustomDevice": {
     "message": "Add custom device…"
@@ -11346,7 +11346,7 @@
     "message": "Activity"
   },
   "panels/timeline/TimelineTreeView.ts | chromeExtensionsOverhead": {
-    "message": "[Chrome extensions overhead]"
+    "message": "[ArkWeb extensions overhead]"
   },
   "panels/timeline/TimelineTreeView.ts | filter": {
     "message": "Filter"
@@ -12198,7 +12198,7 @@
     "message": "System"
   },
   "panels/timeline/timeline-meta.ts | hideChromeFrameInLayersView": {
-    "message": "Hide chrome frame in layers view"
+    "message": "Hide ArkWeb frame in layers view"
   },
   "panels/timeline/timeline-meta.ts | javascriptProfiler": {
     "message": "JavaScript profiler"
@@ -12639,7 +12639,7 @@
     "message": "Select a folder to store override files in."
   },
   "ui/legacy/InspectorView.ts | setToBrowserLanguage": {
-    "message": "Always match Chrome's language"
+    "message": "Always match ArkWeb's language"
   },
   "ui/legacy/InspectorView.ts | setToSpecificLanguage": {
     "message": "Switch DevTools to {PH1}"

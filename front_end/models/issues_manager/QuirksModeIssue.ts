@@ -17,7 +17,10 @@ const UIStrings = {
 };
 const str_ = i18n.i18n.registerUIStrings('models/issues_manager/QuirksModeIssue.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
-
+// #if defined(OHOS_DEVTOOLS)
+const chromeScheme = "chrome";
+const arkwebScheme = "ArkWeb";
+// #endif  // OHOS_DEVTOOLS
 export class QuirksModeIssue extends Issue {
   #issueDetails: Protocol.Audits.QuirksModeIssueDetails;
 
@@ -29,6 +32,11 @@ export class QuirksModeIssue extends Issue {
   }
 
   primaryKey(): string {
+    // #if defined(OHOS_DEVTOOLS)
+    if (this.#issueDetails.url.startsWith(chromeScheme)) {
+      this.#issueDetails.url = this.#issueDetails.url.replace(chromeScheme, arkwebScheme);
+    }
+    // #endif  // OHOS_DEVTOOLS
     return `${this.code()}-(${this.#issueDetails.documentNodeId})-(${this.#issueDetails.url})`;
   }
 

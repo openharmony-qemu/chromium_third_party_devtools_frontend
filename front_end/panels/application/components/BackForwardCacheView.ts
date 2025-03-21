@@ -48,7 +48,7 @@ const UIStrings = {
    * the back/forward cache was not used and a normal navigation occured instead.
    */
   normalNavigation:
-      'Not served from back/forward cache: to trigger back/forward cache, use Chrome\'s back/forward buttons, or use the test button below to automatically navigate away and back.',
+      'Not served from back/forward cache: to trigger back/forward cache, use ArkWeb\'s back/forward buttons, or use the test button below to automatically navigate away and back.',
   /**
    * @description Status text for the status of the back/forward cache status indicating that
    * the back/forward cache was used to restore the page instead of reloading it.
@@ -105,7 +105,7 @@ const UIStrings = {
    * for back/forward cache.
    */
   supportPendingExplanation:
-      'Chrome support for these reasons is pending i.e. they will not prevent the page from being eligible for back/forward cache in a future version of Chrome.',
+      'ArkWeb support for these reasons is pending i.e. they will not prevent the page from being eligible for back/forward cache in a future version of ArkWeb.',
   /**
    * @description Text that precedes displaying a link to the extension which blocked the page from being eligible for back/forward cache.
    */

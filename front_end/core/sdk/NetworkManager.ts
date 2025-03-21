@@ -101,7 +101,7 @@ const UIStrings = {
    *@example {application} PH2
    */
   crossoriginReadBlockingCorb:
-      'Cross-Origin Read Blocking (CORB) blocked cross-origin response {PH1} with MIME type {PH2}. See https://www.chromestatus.com/feature/5629709824032768 for more details.',
+      'Cross-Origin Read Blocking (CORB) blocked cross-origin response {PH1} with MIME type {PH2}.',
   /**
    *@description Message in Network Manager
    *@example {XHR} PH1

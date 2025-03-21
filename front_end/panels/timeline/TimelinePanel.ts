@@ -1137,9 +1137,11 @@ export class TimelinePanel extends UI.Panel.Panel implements Client, TimelineMod
       e.textContent = contents;
       return e;
     }
-
+    /* OHOS_DEVTOOLS */
     const learnMoreNode = UI.XLink.XLink.create(
-        'https://developer.chrome.com/docs/devtools/evaluate-performance/', i18nString(UIStrings.learnmore));
+      //  'https://developer.chrome.com/docs/devtools/evaluate-performance/', i18nString(UIStrings.learnmore)
+      '', ''
+    );
 
     const recordKey = encloseWithTag(
         'b',
