@@ -23,23 +23,24 @@ const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined
 
 let loadedWebauthnModule: (typeof Webauthn|undefined);
 
-async function loadWebauthnModule(): Promise<typeof Webauthn> {
-  if (!loadedWebauthnModule) {
-    loadedWebauthnModule = await import('./webauthn.js');
-  }
-  return loadedWebauthnModule;
-}
+/* OHOS_DEVTOOLS */
+// async function loadWebauthnModule(): Promise<typeof Webauthn> {
+//   if (!loadedWebauthnModule) {
+//     loadedWebauthnModule = await import('./webauthn.js');
+//   }
+//   return loadedWebauthnModule;
+// }
 
-UI.ViewManager.registerViewExtension({
-  location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
-  id: 'webauthn-pane',
-  title: i18nLazyString(UIStrings.webauthn),
-  commandPrompt: i18nLazyString(UIStrings.showWebauthn),
-  order: 100,
-  persistence: UI.ViewManager.ViewPersistence.CLOSEABLE,
-  async loadView() {
-    const Webauthn = await loadWebauthnModule();
-    return Webauthn.WebauthnPane.WebauthnPaneImpl.instance();
-  },
-  experiment: Root.Runtime.ExperimentName.WEBAUTHN_PANE,
-});
+// UI.ViewManager.registerViewExtension({
+//   location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
+//   id: 'webauthn-pane',
+//   title: i18nLazyString(UIStrings.webauthn),
+//   commandPrompt: i18nLazyString(UIStrings.showWebauthn),
+//   order: 100,
+//   persistence: UI.ViewManager.ViewPersistence.CLOSEABLE,
+//   async loadView() {
+//     const Webauthn = await loadWebauthnModule();
+//     return Webauthn.WebauthnPane.WebauthnPaneImpl.instance();
+//   },
+//   experiment: Root.Runtime.ExperimentName.WEBAUTHN_PANE,
+// });

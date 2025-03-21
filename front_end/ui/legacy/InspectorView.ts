@@ -92,7 +92,8 @@ const UIStrings = {
    * is configured with a different locale than Chrome. This option means DevTools will
    * always try and display the DevTools UI in the same language as Chrome.
    */
-  setToBrowserLanguage: 'Always match Chrome\'s language',
+  /* OHOS_DEVTOOLS */
+  setToBrowserLanguage: 'Always match ArkWeb\'s language',
   /**
    * @description An option the user can select when DevTools notices that DevTools
    * is configured with a different locale than Chrome. This option means DevTools UI

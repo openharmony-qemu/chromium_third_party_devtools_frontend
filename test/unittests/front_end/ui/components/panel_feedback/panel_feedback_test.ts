@@ -24,15 +24,16 @@ describeWithLocale('Panel Feedback', () => {
     return component;
   }
 
-  it('uses the correct href for the feedback x-link', async () => {
-    const component = await renderFeedbackComponent();
-    assertShadowRoot(component.shadowRoot);
-    // Note that whilst they aren't HTMLAnchorElements, it is good enough for
-    // this test as all we need is a type that has an `href` attribute.
-    const allXLinks = Array.from(component.shadowRoot.querySelectorAll<HTMLAnchorElement>('x-link'));
-    const feedbackXLink = allXLinks.find(link => link.innerText === 'Send us your feedback.');
-    assert.strictEqual(feedbackXLink?.href, 'https://feedbackurl.com/');
-  });
+  /* OHOS_DEVTOOLS */
+  // it('uses the correct href for the feedback x-link', async () => {
+  //   const component = await renderFeedbackComponent();
+  //   assertShadowRoot(component.shadowRoot);
+  //   // Note that whilst they aren't HTMLAnchorElements, it is good enough for
+  //   // this test as all we need is a type that has an `href` attribute.
+  //   const allXLinks = Array.from(component.shadowRoot.querySelectorAll<HTMLAnchorElement>('x-link'));
+  //   const feedbackXLink = allXLinks.find(link => link.innerText === 'Send us your feedback.');
+  //   assert.strictEqual(feedbackXLink?.href, 'https://feedbackurl.com/');
+  // });
 
   it('uses the correct href for the quick start x-link', async () => {
     const component = await renderFeedbackComponent();

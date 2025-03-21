@@ -17,12 +17,12 @@ const UIStrings = {
    * @description Text shown to the user in the Settings UI. 'This setting' refers
    * to a checkbox that is disabled.
    */
-  syncDisabled: 'To turn this setting on, you must enable Chrome sync.',
+  syncDisabled: 'To turn this setting on, you must enable ArkWeb sync.',
   /**
    * @description Text shown to the user in the Settings UI. 'This setting' refers
    * to a checkbox that is disabled.
    */
-  preferencesSyncDisabled: 'To turn this setting on, you must first enable settings sync in Chrome.',
+  preferencesSyncDisabled: 'To turn this setting on, you must first enable settings sync in ArkWeb.',
   /**
    * @description Label for a link that take the user to the "Sync" section of the
    * chrome settings. The link is shown in the DevTools Settings UI.
@@ -32,7 +32,7 @@ const UIStrings = {
    * @description Label for the account email address. Shown in the DevTools Settings UI in
    * front of the email address currently used for Chrome Sync.
    */
-  signedIn: 'Signed into Chrome as:',
+  signedIn: 'Signed into ArkWeb as:',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/settings/components/SyncSection.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);

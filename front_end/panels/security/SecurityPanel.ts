@@ -112,7 +112,7 @@ const UIStrings = {
   /**
    *@description Body of message to display in devtools security tab when you are viewing a page that triggered a safety tip.
    */
-  chromeHasDeterminedThatThisSiteS: 'Chrome has determined that this site could be fake or fraudulent.',
+  chromeHasDeterminedThatThisSiteS: 'ArkWeb has determined that this site could be fake or fraudulent.',
   /**
    *@description Second part of the body of message to display in devtools security tab when you are viewing a page that triggered a safety tip.
    */
@@ -136,7 +136,7 @@ const UIStrings = {
   /**
    *@description Title of the devtools security tab when the page you are on triggered a safety tip.
    */
-  thisPageIsSuspiciousFlaggedBy: 'This page is suspicious (flagged by Chrome).',
+  thisPageIsSuspiciousFlaggedBy: 'This page is suspicious (flagged by ArkWeb).',
   /**
    *@description Text for a security certificate
    */
@@ -410,11 +410,11 @@ const UIStrings = {
   /**
    *@description Text in Security Panel of the Security panel
    */
-  thisRequestCompliesWithChromes: 'This request complies with `Chrome`\'s Certificate Transparency policy.',
+  thisRequestCompliesWithChromes: 'This request complies with `ArkWeb`\'s Certificate Transparency policy.',
   /**
    *@description Text in Security Panel of the Security panel
    */
-  thisRequestDoesNotComplyWith: 'This request does not comply with `Chrome`\'s Certificate Transparency policy.',
+  thisRequestDoesNotComplyWith: 'This request does not comply with `ArkWeb`\'s Certificate Transparency policy.',
   /**
    *@description Text in Security Panel of the Security panel
    */

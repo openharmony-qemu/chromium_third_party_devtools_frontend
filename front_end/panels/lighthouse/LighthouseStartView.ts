@@ -46,6 +46,15 @@ const UIStrings = {
    */
   learnMore: 'Learn more',
   /**
+   * @description OHOS_DEVTOOLS
+   */
+  communityPluginsBeta: 'Community Plugins (beta)',
+  /**
+   * @description OHOS_DEVTOOLS
+   */
+  identifyAndFixCommonProblemsThat:
+  'Identify and fix common problems that affect your site\'s performance, accessibility, and user experience.',
+  /**
    * @description Text that refers to device such as a phone
    */
   device: 'Device',
@@ -177,36 +186,44 @@ export class StartView extends UI.Widget.Widget {
     const {mode} = this.controller.getFlags();
     this.populateStartButton(mode);
 
+    const auditsDescription = i18nString(UIStrings.identifyAndFixCommonProblemsThat);  // crbug.com/972969
     const fragment = UI.Fragment.Fragment.build`
-<form class="lighthouse-start-view">
-  <header class="hbox">
+    <div class="vbox lighthouse-start-view">
+    <header>
     <div class="lighthouse-logo"></div>
-    <div class="lighthouse-title">${i18nString(UIStrings.generateLighthouseReport)}</div>
-    <div class="lighthouse-start-button-container" $="start-button-container">${this.startButton}</div>
-  </header>
-  <div $="help-text" class="lighthouse-help-text hidden"></div>
-  <div class="lighthouse-options hbox">
-    <div class="lighthouse-form-section">
-      <div class="lighthouse-form-elements" $="mode-form-elements"></div>
+    <div class="lighthouse-start-button-container hbox">
+    ${this.startButton}
     </div>
-    <div class="lighthouse-form-section">
-      <div class="lighthouse-form-elements" $="device-type-form-elements"></div>
+    <div $="help-text" class="lighthouse-help-text hidden"></div>
+    <div class="lighthouse-start-view-text">
+    <span>${auditsDescription}</span>
+    ${UI.XLink.XLink.create('', '')}
     </div>
+    <div $="warning-text" class="lighthouse-warning-text hidden"></div>
+    </header>
+    <form>
     <div class="lighthouse-form-categories">
-      <div class="lighthouse-form-section">
-        <div class="lighthouse-form-section-label">${i18nString(UIStrings.categories)}</div>
-        <div class="lighthouse-form-elements" $="categories-form-elements"></div>
-      </div>
-      <div class="lighthouse-form-section">
-        <div class="lighthouse-form-section-label">
-          <div class="lighthouse-icon-label">${i18nString(UIStrings.plugins)}</div>
-        </div>
-        <div class="lighthouse-form-elements" $="plugins-form-elements"></div>
-      </div>
+    <div class="lighthouse-form-section">
+    <div class="lighthouse-form-section-label">
+    ${i18nString(UIStrings.categories)}
     </div>
-  </div>
-  <div $="warning-text" class="lighthouse-warning-text hidden"></div>
-</form>
+    <div class="lighthouse-form-elements" $="categories-form-elements"></div>
+    </div>
+    <div class="lighthouse-form-section">
+    <div class="lighthouse-form-section-label">
+    <div class="lighthouse-icon-label">${i18nString(UIStrings.communityPluginsBeta)}</div>
+    </div>
+    <div class="lighthouse-form-elements" $="plugins-form-elements"></div>
+    </div>
+    </div>
+    <div class="lighthouse-form-section">
+    <div class="lighthouse-form-section-label">
+    ${i18nString(UIStrings.device)}
+    </div>
+    <div class="lighthouse-form-elements" $="device-type-form-elements"></div>
+    </div>
+    </form>
+    </div>
     `;
 
     this.helpText = fragment.$('help-text');
