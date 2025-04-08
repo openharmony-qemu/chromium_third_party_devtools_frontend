@@ -2,12 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import type {Chrome} from '../../../extension-api/ExtensionAPI.js';
+import type * as Platform from '../../core/platform/platform.js';
 import type * as SDK from '../../core/sdk/sdk.js';
 import * as Bindings from '../bindings/bindings.js';
-import {type Chrome} from '../../../extension-api/ExtensionAPI.js';  // eslint-disable-line rulesdir/es_modules_import
-import {ExtensionEndpoint} from './ExtensionEndpoint.js';
 
 import {PrivateAPI} from './ExtensionAPI.js';
+import {ExtensionEndpoint} from './ExtensionEndpoint.js';
 
 class LanguageExtensionEndpointImpl extends ExtensionEndpoint {
   private plugin: LanguageExtensionEndpoint;
@@ -20,9 +21,7 @@ class LanguageExtensionEndpointImpl extends ExtensionEndpoint {
       case PrivateAPI.LanguageExtensionPluginEvents.UnregisteredLanguageExtensionPlugin: {
         this.disconnect();
         const {pluginManager} = Bindings.DebuggerWorkspaceBinding.DebuggerWorkspaceBinding.instance();
-        if (pluginManager) {
-          pluginManager.removePlugin(this.plugin);
-        }
+        pluginManager.removePlugin(this.plugin);
         break;
       }
     }
@@ -37,10 +36,11 @@ export class LanguageExtensionEndpoint implements Bindings.DebuggerLanguagePlugi
     symbol_types: Array<string>,
   };
   private endpoint: LanguageExtensionEndpointImpl;
+  private extensionOrigin: string;
   name: string;
 
   constructor(
-      name: string, supportedScriptTypes: {
+      extensionOrigin: string, name: string, supportedScriptTypes: {
         language: string,
         // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
         // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -48,6 +48,7 @@ export class LanguageExtensionEndpoint implements Bindings.DebuggerLanguagePlugi
       },
       port: MessagePort) {
     this.name = name;
+    this.extensionOrigin = extensionOrigin;
     this.supportedScriptTypes = supportedScriptTypes;
     this.endpoint = new LanguageExtensionEndpointImpl(this, port);
   }
@@ -56,6 +57,15 @@ export class LanguageExtensionEndpoint implements Bindings.DebuggerLanguagePlugi
     const language = script.scriptLanguage();
     return language !== null && script.debugSymbols !== null && language === this.supportedScriptTypes.language &&
         this.supportedScriptTypes.symbol_types.includes(script.debugSymbols.type);
+  }
+
+  createPageResourceLoadInitiator(): SDK.PageResourceLoader.PageResourceLoadInitiator {
+    return {
+      target: null,
+      frameId: null,
+      extensionId: this.extensionOrigin,
+      initiatorUrl: this.extensionOrigin as Platform.DevToolsPath.UrlString,
+    };
   }
 
   /** Notify the plugin about a new script
@@ -132,49 +142,12 @@ export class LanguageExtensionEndpoint implements Bindings.DebuggerLanguagePlugi
         Promise<Chrome.DevTools.RawLocationRange[]>;
   }
 
-  getTypeInfo(expression: string, context: Chrome.DevTools.RawLocation): Promise<{
-    typeInfos: Array<Chrome.DevTools.TypeInfo>,
-    base: Chrome.DevTools.EvalBase,
-  }|null> {
-    return this.endpoint.sendRequest(PrivateAPI.LanguageExtensionPluginCommands.GetTypeInfo, {expression, context}) as
-        Promise<{
-             typeInfos: Array<Chrome.DevTools.TypeInfo>,
-             base: Chrome.DevTools.EvalBase,
-           }|null>;
-  }
-
-  getFormatter(
-      expressionOrField: string|{
-        base: Chrome.DevTools.EvalBase,
-        field: Array<Chrome.DevTools.FieldInfo>,
-      },
-      context: Chrome.DevTools.RawLocation): Promise<{
-    js: string,
-  }> {
-    return this.endpoint.sendRequest(
-               PrivateAPI.LanguageExtensionPluginCommands.GetFormatter, {expressionOrField, context}) as Promise<{
-             js: string,
-           }>;
-  }
-
-  getInspectableAddress(field: {
-    base: Chrome.DevTools.EvalBase,
-    field: Array<Chrome.DevTools.FieldInfo>,
-  }): Promise<{
-    js: string,
-  }> {
-    return this.endpoint.sendRequest(PrivateAPI.LanguageExtensionPluginCommands.GetInspectableAddress, {field}) as
-        Promise<{
-             js: string,
-           }>;
-  }
-
   async getMappedLines(rawModuleId: string, sourceFileURL: string): Promise<number[]|undefined> {
     return this.endpoint.sendRequest(
         PrivateAPI.LanguageExtensionPluginCommands.GetMappedLines, {rawModuleId, sourceFileURL});
   }
 
-  evaluate(expression: string, context: Chrome.DevTools.RawLocation, stopId: number):
+  async evaluate(expression: string, context: Chrome.DevTools.RawLocation, stopId: number):
       Promise<Chrome.DevTools.RemoteObject> {
     return this.endpoint.sendRequest(
         PrivateAPI.LanguageExtensionPluginCommands.FormatValue, {expression, context, stopId});

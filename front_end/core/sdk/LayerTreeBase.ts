@@ -5,8 +5,8 @@
 import type * as Protocol from '../../generated/protocol.js';
 
 import {DOMModel, type DOMNode} from './DOMModel.js';
-import {type SnapshotWithRect} from './PaintProfiler.js';
-import {type Target} from './Target.js';
+import type {SnapshotWithRect} from './PaintProfiler.js';
+import type {Target} from './Target.js';
 
 export interface Layer {
   id(): string;
@@ -31,21 +31,18 @@ export interface Layer {
   stickyPositionConstraint(): StickyPositionConstraint|null;
   gpuMemoryUsage(): number;
   requestCompositingReasons(): Promise<string[]>;
-  // TODO(wangxianzhu): Remove this function after updating blink web tests.
   requestCompositingReasonIds(): Promise<string[]>;
   drawsContent(): boolean;
   snapshots(): Promise<SnapshotWithRect|null>[];
 }
 
 export namespace Layer {
-  // TODO(crbug.com/1167717): Make this a const enum again
-  // eslint-disable-next-line rulesdir/const_enum
-  export enum ScrollRectType {
-    NonFastScrollable = 'NonFastScrollable',
-    TouchEventHandler = 'TouchEventHandler',
-    WheelEventHandler = 'WheelEventHandler',
-    RepaintsOnScroll = 'RepaintsOnScroll',
-    MainThreadScrollingReason = 'MainThreadScrollingReason',
+  export const enum ScrollRectType {
+    NON_FAST_SCROLLABLE = 'NonFastScrollable',
+    TOUCH_EVENT_HANDLER = 'TouchEventHandler',
+    WHEEL_EVENT_HANDLER = 'WheelEventHandler',
+    REPAINTS_ON_SCROLL = 'RepaintsOnScroll',
+    MAIN_THREAD_SCROLL_REASON = 'MainThreadScrollingReason',
   }
 }
 

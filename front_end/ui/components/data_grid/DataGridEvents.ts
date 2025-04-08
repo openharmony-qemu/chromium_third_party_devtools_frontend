@@ -1,7 +1,7 @@
 // Copyright (c) 2021 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import {type Cell, type Column, type Row} from './DataGridUtils.js';
+import type {Cell, Column, Row} from './DataGridUtils.js';
 
 export class ColumnHeaderClickEvent extends Event {
   static readonly eventName = 'columnheaderclick';
@@ -80,6 +80,34 @@ export class BodyCellFocusedEvent extends Event {
   }
 }
 
+export class RowMouseEnterEvent extends Event {
+  static readonly eventName = 'rowmouseenter';
+  data: {row: Row};
+
+  constructor(row: Row) {
+    super(RowMouseEnterEvent.eventName, {
+      composed: true,
+    });
+    this.data = {
+      row,
+    };
+  }
+}
+
+export class RowMouseLeaveEvent extends Event {
+  static readonly eventName = 'rowmouseleave';
+  data: {row: Row};
+
+  constructor(row: Row) {
+    super(RowMouseLeaveEvent.eventName, {
+      composed: true,
+    });
+    this.data = {
+      row,
+    };
+  }
+}
+
 declare global {
   interface HTMLElementEventMap {
     [ColumnHeaderClickEvent.eventName]: ColumnHeaderClickEvent;
@@ -87,5 +115,7 @@ declare global {
     [ContextMenuHeaderResetClickEvent.eventName]: ContextMenuHeaderResetClickEvent;
     [NewUserFilterTextEvent.eventName]: NewUserFilterTextEvent;
     [BodyCellFocusedEvent.eventName]: BodyCellFocusedEvent;
+    [RowMouseEnterEvent.eventName]: RowMouseEnterEvent;
+    [RowMouseLeaveEvent.eventName]: RowMouseLeaveEvent;
   }
 }

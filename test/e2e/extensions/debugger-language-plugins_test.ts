@@ -4,15 +4,19 @@
 
 import {assert} from 'chai';
 
-import {type Chrome} from '../../../extension-api/ExtensionAPI.js';  // eslint-disable-line rulesdir/es_modules_import
+import type {Chrome} from '../../../extension-api/ExtensionAPI.js';
+import {expectError} from '../../conductor/events.js';
 import {
   $,
   $$,
   assertNotNullOrUndefined,
   click,
-  enableExperiment,
+  getAllTextContents,
   getBrowserAndPages,
+  getDevToolsFrontendHostname,
   getResourcesPath,
+  getTestServerPort,
+  getTextContent,
   goToResource,
   installEventListener,
   pasteText,
@@ -23,35 +27,33 @@ import {
   waitForMany,
   waitForNone,
 } from '../../shared/helper.js';
-import {describe, it} from '../../shared/mocha-extensions.js';
-import {getResourcesPathWithDevToolsHostname, loadExtension} from '../helpers/extension-helpers.js';
 import {
   CONSOLE_TAB_SELECTOR,
   focusConsolePrompt,
   getCurrentConsoleMessages,
   getStructuredConsoleMessages,
 } from '../helpers/console-helpers.js';
-
+import {checkIfTabExistsInDrawer} from '../helpers/cross-tool-helper.js';
+import {getResourcesPathWithDevToolsHostname, loadExtension} from '../helpers/extension-helpers.js';
 import {
+  captureAddedSourceFiles,
+  DEBUGGER_PAUSED_EVENT,
   getCallFrameLocations,
   getCallFrameNames,
   getNonBreakableLines,
   getValuesForScope,
+  type LabelMapping,
   openFileInEditor,
-  openSourceCodeEditorForFile,
   openSourcesPanel,
+  PAUSE_ON_UNCAUGHT_EXCEPTION_SELECTOR,
   RESUME_BUTTON,
+  retrieveTopCallFrameWithoutResuming,
+  stepOver,
   switchToCallFrame,
   WasmLocationLabels,
-  type LabelMapping,
-  captureAddedSourceFiles,
-  PAUSE_ON_UNCAUGHT_EXCEPTION_SELECTOR,
-  stepOver,
-  retrieveTopCallFrameWithoutResuming,
-  DEBUGGER_PAUSED_EVENT,
 } from '../helpers/sources-helpers.js';
-import {expectError} from '../../conductor/events.js';
 
+const DEVELOPER_RESOURCES_TAB_SELECTOR = '#tab-developer-resources';
 declare global {
   let chrome: Chrome.DevTools.Chrome;
   interface Window {
@@ -78,13 +80,20 @@ function goToWasmResource(
   return goToResource(`extensions/wasm_module.html?${queryParams.join('&')}`);
 }
 
+// We need a dummy external DWARF file such that DevTools uses the mock extensions
+// for debugging the WebAssembly.
+async function addDummyExternalDWARFInfo(wasmFile: string) {
+  await openFileInEditor(wasmFile);
+  await click('aria/Code editor', {clickOptions: {button: 'right'}});
+  await click('aria/Add DWARF debug info…');
+  await waitFor('.add-source-map');
+  await typeText('dummy-external-file');
+  await pressKey('Enter');
+}
+
 // This testcase reaches into DevTools internals to install the extension plugin. At this point, there is no sensible
 // alternative, because loading a real extension is not supported in our test setup.
-describe('The Debugger Language Plugins', async () => {
-  beforeEach(async () => {
-    await enableExperiment('wasmDWARFDebugging');
-  });
-
+describe('The Debugger Language Plugins', () => {
   // Load a simple wasm file and verify that the source file shows up in the file tree.
   it('can show C filenames after loading the module', async () => {
     const {target} = getBrowserAndPages();
@@ -99,15 +108,19 @@ describe('The Debugger Language Plugins', async () => {
         }
       }
 
-      RegisterExtension(new SingleFilePlugin(), 'Single File', {language: 'WebAssembly', symbol_types: ['None']});
+      RegisterExtension(
+          new SingleFilePlugin(), 'Single File', {language: 'WebAssembly', symbol_types: ['ExternalDWARF']});
     });
 
     await goToWasmResource('/test/e2e/resources/extensions/global_variable.wasm');
     await openSourcesPanel();
-    const capturedFileNames = await captureAddedSourceFiles(2, async () => {
+
+    const capturedFileNames = captureAddedSourceFiles(2, async () => {
       await target.evaluate('loadModule();');
     });
-    assert.deepEqual(capturedFileNames, [
+    await addDummyExternalDWARFInfo('global_variable.wasm');
+
+    assert.deepEqual(await capturedFileNames, [
       '/test/e2e/resources/extensions/global_variable.wasm',
       '/source_file.c',
     ]);
@@ -145,13 +158,14 @@ describe('The Debugger Language Plugins', async () => {
         }
       }
       RegisterExtension(
-          new LocationMappingPlugin(), 'Location Mapping', {language: 'WebAssembly', symbol_types: ['None']});
+          new LocationMappingPlugin(), 'Location Mapping', {language: 'WebAssembly', symbol_types: ['ExternalDWARF']});
     }, locationLabels.getMappingsForPlugin());
 
     await openSourcesPanel();
     await click(PAUSE_ON_UNCAUGHT_EXCEPTION_SELECTOR);
 
     await goToWasmResource('unreachable.wasm', {runFunctionAfterLoad: 'Main', autoLoadModule: true});
+    await addDummyExternalDWARFInfo('unreachable.wasm');
     await waitFor('.paused-status');
 
     const pauseLocation = await locationLabels.checkLocationForLabel('PAUSED(unreachable)');
@@ -227,11 +241,12 @@ describe('The Debugger Language Plugins', async () => {
       }
 
       RegisterExtension(
-          new LocationMappingPlugin(), 'Location Mapping', {language: 'WebAssembly', symbol_types: ['None']});
+          new LocationMappingPlugin(), 'Location Mapping', {language: 'WebAssembly', symbol_types: ['ExternalDWARF']});
     }, locationLabels.getMappingsForPlugin());
 
     await goToWasmResource('/test/e2e/resources/extensions/global_variable.wasm', {autoLoadModule: true});
     await openSourcesPanel();
+    await addDummyExternalDWARFInfo('global_variable.wasm');
     await openFileInEditor('global_variable.wat');
 
     const toolbarLink = await waitFor('.toolbar-item .devtools-link');
@@ -241,9 +256,6 @@ describe('The Debugger Language Plugins', async () => {
     assert.isNotEmpty(await getNonBreakableLines());
 
     await locationLabels.setBreakpointInSourceAndRun('BREAK(return)', 'Module.instance.exports.Main();');
-
-    // FIXME(pfaffe) what was the point of this check?
-    // await waitForFunction(async () => !(await isBreakpointSet(4)));
   });
 
   it('shows top-level and nested variables', async () => {
@@ -294,12 +306,13 @@ describe('The Debugger Language Plugins', async () => {
       }
 
       RegisterExtension(
-          new VariableListingPlugin(), 'Location Mapping', {language: 'WebAssembly', symbol_types: ['None']});
+          new VariableListingPlugin(), 'Location Mapping', {language: 'WebAssembly', symbol_types: ['ExternalDWARF']});
     });
 
     await openSourcesPanel();
     await click(PAUSE_ON_UNCAUGHT_EXCEPTION_SELECTOR);
     await goToResource('sources/wasm/unreachable.html');
+    await addDummyExternalDWARFInfo('unreachable.wasm');
     await waitFor(RESUME_BUTTON);
 
     const locals = await getValuesForScope('LOCAL', 0, 1);
@@ -369,18 +382,22 @@ describe('The Debugger Language Plugins', async () => {
         }
       }
 
-      RegisterExtension(new InliningPlugin(), 'Inlining', {language: 'WebAssembly', symbol_types: ['None']});
+      RegisterExtension(new InliningPlugin(), 'Inlining', {language: 'WebAssembly', symbol_types: ['ExternalDWARF']});
     });
 
     await openSourcesPanel();
     await click(PAUSE_ON_UNCAUGHT_EXCEPTION_SELECTOR);
     await goToResource('sources/wasm/unreachable.html');
     await waitFor(RESUME_BUTTON);
+    await addDummyExternalDWARFInfo('unreachable.wasm');
 
     // Call stack shows inline function names and source locations.
-    const funcNames = await getCallFrameNames();
-    assert.deepEqual(
-        funcNames, ['inner_inline_func', 'outer_inline_func', 'Main', 'go', 'await in go (async)', '(anonymous)']);
+    let funcNames: string[] = [];
+    await waitForFunction(async () => {
+      funcNames = await getCallFrameNames();
+      return funcNames.length === 6;
+    });
+    assert.deepEqual(funcNames, ['inner_inline_func', 'outer_inline_func', 'Main', 'go', 'await in go', '(anonymous)']);
     const sourceLocations = await getCallFrameLocations();
     assert.deepEqual(
         sourceLocations,
@@ -462,17 +479,18 @@ describe('The Debugger Language Plugins', async () => {
         }
       }
 
-      RegisterExtension(new InliningPlugin(), 'Inlining', {language: 'WebAssembly', symbol_types: ['None']});
+      RegisterExtension(new InliningPlugin(), 'Inlining', {language: 'WebAssembly', symbol_types: ['ExternalDWARF']});
     });
 
     await openSourcesPanel();
     await click(PAUSE_ON_UNCAUGHT_EXCEPTION_SELECTOR);
     await goToResource('sources/wasm/unreachable.html');
+    await addDummyExternalDWARFInfo('unreachable.wasm');
     await waitFor(RESUME_BUTTON);
 
     // Call stack shows inline function names and source locations.
     const funcNames = await getCallFrameNames();
-    assert.deepEqual(funcNames, ['$Main', 'go', 'await in go (async)', '(anonymous)']);
+    assert.deepEqual(funcNames, ['$Main', 'go', 'await in go', '(anonymous)']);
     const sourceLocations = await getCallFrameLocations();
     assert.deepEqual(sourceLocations, ['unreachable.ll:6', 'unreachable.html:27', 'unreachable.html:30']);
   });
@@ -495,13 +513,15 @@ describe('The Debugger Language Plugins', async () => {
         }
       }
 
-      RegisterExtension(new MissingInfoPlugin(), 'MissingInfo', {language: 'WebAssembly', symbol_types: ['None']});
+      RegisterExtension(
+          new MissingInfoPlugin(), 'MissingInfo', {language: 'WebAssembly', symbol_types: ['ExternalDWARF']});
     });
 
     await openSourcesPanel();
     await click(PAUSE_ON_UNCAUGHT_EXCEPTION_SELECTOR);
     await goToResource('sources/wasm/unreachable.html');
     await waitFor(RESUME_BUTTON);
+    await addDummyExternalDWARFInfo('unreachable.wasm');
 
     const incompleteMessage = `Failed to load any debug info for ${getResourcesPath()}/sources/wasm/unreachable.wasm.`;
     const infoBar = await waitFor(`.infobar-error[aria-label="${incompleteMessage}"`);
@@ -565,12 +585,14 @@ describe('The Debugger Language Plugins', async () => {
         }
       }
 
-      RegisterExtension(new MissingInfoPlugin(), 'MissingInfo', {language: 'WebAssembly', symbol_types: ['None']});
+      RegisterExtension(
+          new MissingInfoPlugin(), 'MissingInfo', {language: 'WebAssembly', symbol_types: ['ExternalDWARF']});
     });
 
     await openSourcesPanel();
     await click(PAUSE_ON_UNCAUGHT_EXCEPTION_SELECTOR);
     await goToResource('sources/wasm/unreachable.html');
+    await addDummyExternalDWARFInfo('unreachable.wasm');
     await waitFor(RESUME_BUTTON);
 
     const incompleteMessage = 'The debug information for function $Main is incomplete';
@@ -589,167 +611,57 @@ describe('The Debugger Language Plugins', async () => {
     assert.deepEqual(title, `${incompleteMessage}\n${text}`);
   });
 
-  it('shows variable values with JS formatters', async () => {
+  it('connects warnings to the developer resource panel', async () => {
     const extension = await loadExtension(
         'TestExtension', `${getResourcesPathWithDevToolsHostname()}/extensions/language_extensions.html`);
     await extension.evaluate(() => {
-      class VariableListingPlugin {
-        private modules:
-            Map<string,
-                {rawLocationRange?: Chrome.DevTools.RawLocationRange, sourceLocation?: Chrome.DevTools.SourceLocation}>;
-        constructor() {
-          this.modules = new Map();
-        }
-
-        async addRawModule(rawModuleId: string, symbols: string, rawModule: Chrome.DevTools.RawModule) {
-          const sourceFileURL = new URL('unreachable.ll', rawModule.url || symbols).href;
-          this.modules.set(rawModuleId, {
-            rawLocationRange: {rawModuleId, startOffset: 6, endOffset: 7},
-            sourceLocation: {rawModuleId, sourceFileURL, lineNumber: 5, columnNumber: 2},
-          });
-          return [sourceFileURL];
-        }
-
-        async rawLocationToSourceLocation(rawLocation: Chrome.DevTools.RawLocation) {
-          const {rawLocationRange, sourceLocation} = this.modules.get(rawLocation.rawModuleId) || {};
-          if (rawLocationRange && sourceLocation && rawLocationRange.startOffset <= rawLocation.codeOffset &&
-              rawLocation.codeOffset < rawLocationRange.endOffset) {
-            return [sourceLocation];
-          }
+      class MissingInfoPlugin {
+        async addRawModule() {
+          await chrome.devtools.languageServices.reportResourceLoad(
+              'http://test.com/test.dwo', {success: false, errorMessage: '404'});
           return [];
         }
 
-        async listVariablesInScope(_rawLocation: Chrome.DevTools.RawLocation) {
-          return [{scope: 'LOCAL', name: 'local', type: 'TestType'}];
-        }
-
-        async getScopeInfo(type: string) {
-          return {type, typeName: type};
-        }
-
-        async getTypeInfo(expression: string, _context: Chrome.DevTools.RawLocation):
-            Promise<{typeInfos: Chrome.DevTools.TypeInfo[], base: Chrome.DevTools.EvalBase}|null> {
-          if (expression === 'local') {
-            const typeInfos = [
-              {
-                typeNames: ['TestType'],
-                typeId: 'TestType',
-                members: [{name: 'member', offset: 1, typeId: 'TestTypeMember'}],
-                alignment: 0,
-                arraySize: 0,
-                size: 4,
-                canExpand: true,
-                hasValue: false,
-              },
-              {
-                typeNames: ['TestTypeMember'],
-                typeId: 'TestTypeMember',
-                members: [{name: 'member2', offset: 1, typeId: 'TestTypeMember2'}],
-                alignment: 0,
-                arraySize: 0,
-                size: 3,
-                canExpand: true,
-                hasValue: false,
-              },
-              {
-                typeNames: ['TestTypeMember2'],
-                typeId: 'TestTypeMember2',
-                members: [],
-                alignment: 0,
-                arraySize: 0,
-                size: 2,
-                canExpand: false,
-                hasValue: true,
-              },
-              {
-                typeNames: ['int'],
-                typeId: 'int',
-                members: [],
-                alignment: 0,
-                arraySize: 0,
-                size: 4,
-                canExpand: false,
-                hasValue: true,
-              },
-            ];
-            const base = {rootType: typeInfos[0], payload: 28};
-
-            return {typeInfos, base};
-          }
-          return null;
-        }
-
-        async getFormatter(
-            expressionOrField: string|{base: Chrome.DevTools.EvalBase, field: Chrome.DevTools.FieldInfo[]},
-            _context: Chrome.DevTools.RawLocation): Promise<{js: string}|null> {
-          function formatWithDescription(description: string) {
-            const sym = Symbol('sym');
-            const tag = {className: '$tag', symbol: sym};
-            return {tag, value: 27, description};
-          }
-          function format(description?: string) {
-            const sym = Symbol('sym');
-            const tag = {className: '$tag', symbol: sym};
-
-            class $tag {
-              [sym]: Chrome.DevTools.EvalBase;
-              constructor(value: number) {
-                const rootType = {
-                  typeNames: ['int'],
-                  typeId: 'int',
-                  members: [],
-                  alignment: 0,
-                  arraySize: 0,
-                  size: 4,
-                  canExpand: false,
-                  hasValue: true,
-                };
-                this[sym] = {payload: {value}, rootType};
-              }
-            }
-
-            const value = {value: 26, recurse: new $tag(19), describe: new $tag(20)};
-            Object.setPrototypeOf(value, null);
-            return {tag, value, description};
-          }
-
-          if (typeof expressionOrField === 'string') {
-            return null;
-          }
-
-          const {base, field} = expressionOrField;
-          if (base.payload === 28 && field.length === 2 && field[0].name === 'member' && field[0].offset === 1 &&
-              field[0].typeId === 'TestTypeMember' && field[1].name === 'member2' && field[1].offset === 1 &&
-              field[1].typeId === 'TestTypeMember2') {
-            return {js: `(${format})()`};
-          }
-          if ((base.payload as {value: number}).value === 19 && field.length === 0) {
-            return {js: '27'};
-          }
-          if ((base.payload as {value: number}).value === 20 && field.length === 0) {
-            return {js: `(${formatWithDescription})('CustomLabel')`};
-          }
-          return null;
+        async getFunctionInfo() {
+          return {missingSymbolFiles: ['http://test.com/test.dwo']};
         }
       }
 
       RegisterExtension(
-          new VariableListingPlugin(), 'Location Mapping', {language: 'WebAssembly', symbol_types: ['None']});
+          new MissingInfoPlugin(), 'MissingInfo', {language: 'WebAssembly', symbol_types: ['ExternalDWARF']});
     });
 
     await openSourcesPanel();
     await click(PAUSE_ON_UNCAUGHT_EXCEPTION_SELECTOR);
     await goToResource('sources/wasm/unreachable.html');
+    await addDummyExternalDWARFInfo('unreachable.wasm');
     await waitFor(RESUME_BUTTON);
 
-    const locals = await getValuesForScope('LOCAL', 3, 6);
-    assert.deepEqual(locals, [
-      'local: TestType',
-      'member: TestTypeMember',
-      'member2: TestTypeMember2',
-      'describe: CustomLabel',
-      'recurse: 27',
-      'value: 26',
+    const incompleteMessage = 'The debug information for function $Main is incomplete';
+    const infoBar = await waitFor(`.infobar-error[aria-label="${incompleteMessage}"`);
+
+    assert.deepEqual(await getTextContent('devtools-button', infoBar), 'Show more');
+    await click('devtools-button', {root: infoBar});
+
+    const detailsRowMessage = await waitFor('.infobar-row-message');
+    assert.deepEqual(await getTextContent('devtools-button', detailsRowMessage), 'Show request');
+    await click('devtools-button', {root: detailsRowMessage});
+
+    await checkIfTabExistsInDrawer(DEVELOPER_RESOURCES_TAB_SELECTOR);
+
+    const resourcesGrid = await waitFor('.developer-resource-view-results');
+    const selectedReportedResource = await waitFor('.data-grid-data-grid-node.selected', resourcesGrid);
+    const selectedDetails = await getAllTextContents('td', selectedReportedResource);
+
+    const initiatorUrl = `https://${getDevToolsFrontendHostname()}:${getTestServerPort()}`;
+    const dwoUrl = 'http://test.com/test.dwo';
+    assert.deepEqual(selectedDetails, [
+      'failure',
+      dwoUrl,
+      initiatorUrl,
+      '',
+      '404',
+      '',
     ]);
   });
 
@@ -789,58 +701,6 @@ describe('The Debugger Language Plugins', async () => {
 
         async getScopeInfo(type: string) {
           return {type, typeName: type};
-        }
-
-        async getTypeInfo(expression: string, _context: Chrome.DevTools.RawLocation):
-            Promise<{typeInfos: Chrome.DevTools.TypeInfo[], base: Chrome.DevTools.EvalBase}|null> {
-          if (expression === 'local') {
-            const typeInfos = [
-              {
-                typeNames: ['TestType'],
-                typeId: 'TestType',
-                members: [{name: 'member', offset: 1, typeId: 'TestTypeMember'}],
-                alignment: 0,
-                arraySize: 0,
-                size: 4,
-                canExpand: true,
-                hasValue: false,
-              },
-              {
-                typeNames: ['TestTypeMember'],
-                typeId: 'TestTypeMember',
-                members: [{name: 'member2', offset: 1, typeId: 'TestTypeMember2'}],
-                alignment: 0,
-                arraySize: 0,
-                size: 3,
-                canExpand: true,
-                hasValue: false,
-              },
-              {
-                typeNames: ['TestTypeMember2'],
-                typeId: 'TestTypeMember2',
-                members: [],
-                alignment: 0,
-                arraySize: 0,
-                size: 2,
-                canExpand: false,
-                hasValue: true,
-              },
-              {
-                typeNames: ['int'],
-                typeId: 'int',
-                members: [],
-                alignment: 0,
-                arraySize: 0,
-                size: 4,
-                canExpand: false,
-                hasValue: true,
-              },
-            ];
-            const base = {rootType: typeInfos[0], payload: undefined};
-
-            return {typeInfos, base};
-          }
-          return null;
         }
 
         async evaluate(expression: string, _context: Chrome.DevTools.RawLocation, _stopId: unknown):
@@ -911,12 +771,13 @@ describe('The Debugger Language Plugins', async () => {
         }
       }
 
-      RegisterExtension(new EvalPlugin(), 'Evaluation', {language: 'WebAssembly', symbol_types: ['None']});
+      RegisterExtension(new EvalPlugin(), 'Evaluation', {language: 'WebAssembly', symbol_types: ['ExternalDWARF']});
     });
 
     await openSourcesPanel();
     await click(PAUSE_ON_UNCAUGHT_EXCEPTION_SELECTOR);
     await goToResource('sources/wasm/unreachable.html');
+    await addDummyExternalDWARFInfo('unreachable.wasm');
     await waitFor(RESUME_BUTTON);
 
     const locals = await getValuesForScope('LOCAL', 3, 5);
@@ -978,41 +839,25 @@ describe('The Debugger Language Plugins', async () => {
           return [{scope: 'LOCAL', name: 'unreachable', type: 'int'}];
         }
 
-        async getTypeInfo(expression: string, _context: Chrome.DevTools.RawLocation):
-            Promise<{typeInfos: Chrome.DevTools.TypeInfo[], base: Chrome.DevTools.EvalBase}|null> {
+        evaluate(expression: string, _context: Chrome.DevTools.RawLocation, _stopId: unknown):
+            Promise<Chrome.DevTools.RemoteObject|null> {
           if (expression === 'unreachable') {
-            const typeInfos = [{
-              typeNames: ['int'],
-              typeId: 'int',
-              members: [],
-              alignment: 0,
-              arraySize: 0,
-              size: 4,
-              canExpand: false,
-              hasValue: true,
-            }];
-            const base = {rootType: typeInfos[0], payload: 28};
-
-            return {typeInfos, base};
+            return Promise.resolve({type: 'number', value: 23, description: '23', hasChildren: false});
           }
-          return null;
-        }
-
-        async getFormatter(
-            _expressionOrField: string|{base: Chrome.DevTools.EvalBase, field: Chrome.DevTools.FieldInfo[]},
-            _context: Chrome.DevTools.RawLocation): Promise<{js: string}|null> {
-          return {js: '23'};
+          return Promise.resolve(null);
         }
       }
 
       RegisterExtension(
-          new VariableListingPlugin(), 'Location Mapping', {language: 'WebAssembly', symbol_types: ['None']});
+          new VariableListingPlugin(), 'Location Mapping', {language: 'WebAssembly', symbol_types: ['ExternalDWARF']});
     });
 
     await openSourcesPanel();
     await click(PAUSE_ON_UNCAUGHT_EXCEPTION_SELECTOR);
-    await openSourceCodeEditorForFile('unreachable.ll', 'wasm/unreachable.html');
+    await goToResource('sources/wasm/unreachable.html');
+    await addDummyExternalDWARFInfo('unreachable.wasm');
     await waitFor(RESUME_BUTTON);
+    await openFileInEditor('unreachable.ll');
 
     const pausedPosition = await waitForFunction(async () => {
       const element = await $('.cm-executionToken');
@@ -1067,50 +912,30 @@ describe('The Debugger Language Plugins', async () => {
           const {codeOffset} = rawLocation;
           if (!rawLocationRange || rawLocationRange.startOffset > codeOffset ||
               rawLocationRange.endOffset <= codeOffset) {
+            console.error('foobar');
             return [];
           }
 
           return [{scope: 'LOCAL', name: 'unreachable', type: 'int'}];
         }
 
-        async getTypeInfo(expression: string, _context: Chrome.DevTools.RawLocation):
-            Promise<{typeInfos: Chrome.DevTools.TypeInfo[], base: Chrome.DevTools.EvalBase}|null> {
+        async evaluate(expression: string, _context: Chrome.DevTools.RawLocation, _stopId: unknown):
+            Promise<Chrome.DevTools.RemoteObject|null> {
           if (expression === 'foo') {
-            const typeInfos = [{
-              typeNames: ['int'],
-              typeId: 'int',
-              members: [],
-              alignment: 0,
-              arraySize: 0,
-              size: 4,
-              canExpand: false,
-              hasValue: true,
-            }];
-            const base = {rootType: typeInfos[0], payload: 28};
-
-            return {typeInfos, base};
+            return {type: 'number', value: 23, description: '23', hasChildren: false};
           }
           throw new Error(`No typeinfo for ${expression}`);
-        }
-
-        async getFormatter(
-            expressionOrField: string|{base: Chrome.DevTools.EvalBase, field: Chrome.DevTools.FieldInfo[]},
-            _context: Chrome.DevTools.RawLocation): Promise<{js: string}|null> {
-          if (typeof expressionOrField !== 'string' && expressionOrField.base.payload as number === 28 &&
-              expressionOrField.field.length === 0) {
-            return {js: '23'};
-          }
-          throw new Error(`cannot format ${expressionOrField}`);
         }
       }
 
       RegisterExtension(
-          new FormattingErrorsPlugin(), 'Formatter Errors', {language: 'WebAssembly', symbol_types: ['None']});
+          new FormattingErrorsPlugin(), 'Formatter Errors', {language: 'WebAssembly', symbol_types: ['ExternalDWARF']});
     });
 
     await openSourcesPanel();
     await click(PAUSE_ON_UNCAUGHT_EXCEPTION_SELECTOR);
     await goToResource('sources/wasm/unreachable.html');
+    await addDummyExternalDWARFInfo('unreachable.wasm');
     await waitFor(RESUME_BUTTON);
     const locals = await getValuesForScope('LOCAL', 0, 1);
     assert.deepStrictEqual(locals, ['unreachable: undefined']);
@@ -1136,7 +961,10 @@ describe('The Debugger Language Plugins', async () => {
     await waitForNone('.watch-expression-editing');
 
     const watchResults = await waitForMany('.watch-expression', 2);
-    const watchTexts = await Promise.all(watchResults.map(async watch => await watch.evaluate(e => e.textContent)));
+    const watchTexts = await waitForFunction(async () => {
+      const texts = await Promise.all(watchResults.map(async watch => await watch.evaluate(e => e.textContent)));
+      return texts.every(t => t?.length) ? texts : null;
+    });
     assert.deepStrictEqual(watchTexts, ['foo: 23', 'bar: <not available>']);
 
     const tooltipText = await watchResults[1].evaluate(e => {
@@ -1178,11 +1006,13 @@ describe('The Debugger Language Plugins', async () => {
         }
       }
 
-      RegisterExtension(new WasmDataExtension(), 'Wasm Data', {language: 'WebAssembly', symbol_types: ['None']});
+      RegisterExtension(
+          new WasmDataExtension(), 'Wasm Data', {language: 'WebAssembly', symbol_types: ['ExternalDWARF']});
     });
 
     await goToWasmResource('can_access_wasm_data.wasm', {autoLoadModule: true});
     await openSourcesPanel();
+    await addDummyExternalDWARFInfo('can_access_wasm_data.wasm');
 
     await target.evaluate(
         () => new Uint8Array((window.Module.instance.exports.memory as WebAssembly.Memory).buffer)
@@ -1193,7 +1023,7 @@ describe('The Debugger Language Plugins', async () => {
     await locationLabels.setBreakpointInWasmAndRun(
         'BREAK(can_access_wasm_data)', 'window.Module.instance.exports.exported_func(4)');
 
-    const mem = await extension.evaluate(async(): Promise<number[]> => {
+    const mem = await extension.evaluate(async () => {
       const buffer = await chrome.devtools.languageServices.getWasmLinearMemory(0, 10, 0n);
       if (buffer instanceof ArrayBuffer) {
         return Array.from(new Uint8Array(buffer));
@@ -1228,8 +1058,9 @@ describe('The Debugger Language Plugins', async () => {
     });
     assertNotNullOrUndefined(expectedError.caught);
 
-    const local2Set = await extension.evaluate(() => chrome.devtools.languageServices.getWasmLocal(1, 1n));
-    assert.deepEqual(local2Set, {type: 'i32', value: 4});
+    // TODO(crbug.com/1472241): Find a way to stop the flake by determining the stopid
+    // const local2Set = await extension.evaluate(() => chrome.devtools.languageServices.getWasmLocal(1, 1n));
+    // assert.deepEqual(local2Set, {type: 'i32', value: 4});
   });
 
   it('lets users manually attach debug info', async () => {
@@ -1278,6 +1109,37 @@ describe('The Debugger Language Plugins', async () => {
     }
   });
 
+  it('does not auto-step for modules without a plugin', async () => {
+    const {frontend} = getBrowserAndPages();
+    const locationLabels = WasmLocationLabels.load('extensions/stepping.wat', 'extensions/stepping.wasm');
+
+    await goToWasmResource('stepping.wasm', {autoLoadModule: true});
+    await openSourcesPanel();
+
+    installEventListener(frontend, DEBUGGER_PAUSED_EVENT);
+    await locationLabels.setBreakpointInWasmAndRun('FIRST_PAUSE', 'window.Module.instance.exports.Main(16)');
+    await waitFor('.paused-status');
+    await locationLabels.checkLocationForLabel('FIRST_PAUSE');
+    const beforeStepCallFrame = (await retrieveTopCallFrameWithoutResuming())!.split(':');
+    const beforeStepFunctionNames = await getCallFrameNames();
+
+    await stepOver();
+    const afterStepCallFrame = await waitForFunction(async () => {
+      const callFrame = (await retrieveTopCallFrameWithoutResuming())?.split(':');
+      if (callFrame && (callFrame[0] !== beforeStepCallFrame[0] || callFrame[1] !== beforeStepCallFrame[1])) {
+        return callFrame;
+      }
+      return undefined;
+    });
+    const afterStepFunctionNames = await getCallFrameNames();
+    // still in the same function:
+    assert.deepStrictEqual(beforeStepFunctionNames, afterStepFunctionNames);
+    // still in the same module:
+    assert.deepStrictEqual(beforeStepCallFrame[0], afterStepCallFrame[0]);
+    // moved one instruction:
+    assert.deepStrictEqual(parseInt(beforeStepCallFrame[1], 16) + 2, parseInt(afterStepCallFrame[1], 16));
+  });
+
   it('auto-steps over unmapped code correctly', async () => {
     const {frontend} = getBrowserAndPages();
     const extension = await loadExtension(
@@ -1286,6 +1148,7 @@ describe('The Debugger Language Plugins', async () => {
 
     await goToWasmResource('stepping.wasm', {autoLoadModule: true});
     await openSourcesPanel();
+    await addDummyExternalDWARFInfo('stepping.wasm');
 
     // Do this after setting the breakpoint, otherwise the helper gets confused
     await locationLabels.setBreakpointInWasmAndRun('FIRST_PAUSE', 'window.Module.instance.exports.Main(16)');
@@ -1343,7 +1206,7 @@ describe('The Debugger Language Plugins', async () => {
       }
 
       RegisterExtension(
-          new LocationMappingPlugin(), 'Location Mapping', {language: 'WebAssembly', symbol_types: ['None']});
+          new LocationMappingPlugin(), 'Location Mapping', {language: 'WebAssembly', symbol_types: ['ExternalDWARF']});
     }, locationLabels.getMappingsForPlugin());
 
     await waitFor('.paused-status');

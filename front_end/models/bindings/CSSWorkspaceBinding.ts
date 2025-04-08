@@ -8,11 +8,11 @@ import * as SDK from '../../core/sdk/sdk.js';
 import type * as Workspace from '../workspace/workspace.js';
 
 import {
-  LiveLocationWithPool,
   type LiveLocation as LiveLocationInterface,
   type LiveLocationPool,
+  LiveLocationWithPool,
 } from './LiveLocation.js';
-import {type ResourceMapping} from './ResourceMapping.js';
+import type {ResourceMapping} from './ResourceMapping.js';
 import {SASSSourceMapping} from './SASSSourceMapping.js';
 import {StylesSourceMapping} from './StylesSourceMapping.js';
 
@@ -245,6 +245,10 @@ export class ModelInfo {
     }
     await Promise.all(promises);
     this.#locations.deleteAll(header);
+  }
+
+  addSourceMap(sourceUrl: Platform.DevToolsPath.UrlString, sourceMapUrl: Platform.DevToolsPath.UrlString): void {
+    this.#stylesSourceMapping.addSourceMap(sourceUrl, sourceMapUrl);
   }
 
   rawLocationToUILocation(rawLocation: SDK.CSSModel.CSSLocation): Workspace.UISourceCode.UILocation|null {

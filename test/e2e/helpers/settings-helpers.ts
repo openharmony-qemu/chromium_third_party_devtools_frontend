@@ -3,8 +3,11 @@
 // found in the LICENSE file.
 
 import {
+  $,
   click,
   clickElement,
+  getBrowserAndPages,
+  hover,
   scrollElementIntoView,
   waitFor,
   waitForAria,
@@ -12,12 +15,18 @@ import {
 } from '../../shared/helper.js';
 
 export const openPanelViaMoreTools = async (panelTitle: string) => {
+  const {frontend} = getBrowserAndPages();
+
+  await frontend.bringToFront();
+
   // Head to the triple dot menu.
   await click('aria/Customize and control DevTools');
 
-  // Open the “More Tools” option.
-  const moreTools = await waitForAria('More tools[role="menuitem"]');
-  await moreTools.hover();
+  await waitForFunction(async () => {
+    // Open the “More Tools” option.
+    await hover('aria/More tools[role="menuitem"]');
+    return $(`${panelTitle}[role="menuitem"]`, undefined, 'aria');
+  });
 
   // Click the desired menu item
   await click(`aria/${panelTitle}[role="menuitem"]`);
@@ -27,7 +36,7 @@ export const openPanelViaMoreTools = async (panelTitle: string) => {
 };
 
 export const openSettingsTab = async (tabTitle: string) => {
-  const gearIconSelector = '.toolbar-button[aria-label="Settings"]';
+  const gearIconSelector = 'devtools-button[aria-label="Settings"]';
   const settingsMenuSelector = `.tabbed-pane-header-tab[aria-label="${tabTitle}"]`;
   const panelSelector = `.view-container[aria-label="${tabTitle} panel"]`;
 
@@ -35,7 +44,6 @@ export const openSettingsTab = async (tabTitle: string) => {
   await click(gearIconSelector);
 
   // Click on the Settings tab and wait for the panel to appear.
-  await waitFor(settingsMenuSelector);
   await click(settingsMenuSelector);
   await waitFor(panelSelector);
 };
@@ -66,9 +74,9 @@ export const togglePreferenceInSettingsTab = async (label: string, shouldBeCheck
 };
 
 export const setIgnoreListPattern = async (pattern: string) => {
-  await openSettingsTab('Ignore List');
-  await click('[aria-label="Add filename pattern"]');
-  const textBox = await waitFor('[aria-label="Add Pattern"]');
+  await openSettingsTab('Ignore list');
+  await click('[aria-label="Add a regular expression rule for the script\'s URL"]');
+  const textBox = await waitFor('[aria-label="Add a regular expression rule for the script\'s URL"]');
   await clickElement(textBox);
   await textBox.type(pattern);
   await textBox.type('\n');
@@ -77,11 +85,11 @@ export const setIgnoreListPattern = async (pattern: string) => {
 };
 
 export const toggleIgnoreListing = async (enable: boolean) => {
-  await openSettingsTab('Ignore List');
-  const enabledPattern = '.ignore-list-options:not(.ignore-listing-disabled)';
-  const disabledPattern = '.ignore-list-options.ignore-listing-disabled';
+  await openSettingsTab('Ignore list');
+  const enabledPattern = '.ignore-list-settings:not(.ignore-listing-disabled)';
+  const disabledPattern = '.ignore-list-settings.ignore-listing-disabled';
   await waitFor(enable ? disabledPattern : enabledPattern);
-  await click('[aria-label="Enable Ignore Listing"]');
+  await click('[title="Enable ignore listing"]');
   await waitFor(enable ? enabledPattern : disabledPattern);
   await closeSettings();
 };

@@ -11,8 +11,7 @@
 .security-main-view {
   overflow-x: hidden;
   overflow-y: auto;
-  /* crbug.com/1152736 Consider moving --toolbar-bg-color to theme colors */
-  background-color: var(--color-background-elevation-1);
+  background-color: var(--sys-color-cdt-base-container);
 }
 
 .security-main-view > div {
@@ -47,19 +46,19 @@
 .security-summary:not(.security-summary-neutral) .lock-icon-neutral,
 .security-summary:not(.security-summary-insecure) .lock-icon-insecure,
 .security-summary:not(.security-summary-insecure-broken) .lock-icon-insecure-broken {
-  background-color: var(--color-text-disabled);
+  color: var(--sys-color-state-disabled);
 }
 
 @media (forced-colors: active) {
   .security-summary-neutral .lock-icon-neutral {
-    background-color: Highlight;
+    color: Highlight;
   }
 
   .security-summary:not(.security-summary-secure) .lock-icon-secure,
   .security-summary:not(.security-summary-neutral) .lock-icon-neutral,
   .security-summary:not(.security-summary-insecure) .lock-icon-insecure,
   .security-summary:not(.security-summary-insecure-broken) .lock-icon-insecure-broken {
-    background-color: canvastext;
+    color: canvastext;
   }
 }
 
@@ -82,8 +81,8 @@
   transform: rotate(-45deg);
   border-style: solid;
   border-width: 1px 1px 0 0;
-  background: var(--color-background);
-  border-color: var(--color-background-elevation-1);
+  background: var(--sys-color-cdt-base-container);
+  border-color: var(--sys-color-neutral-outline);
 }
 
 .security-summary-secure .triangle-pointer-wrapper {
@@ -107,15 +106,15 @@
   border-style: solid;
   border-width: 1px 0;
   font-size: 15px;
-  background: var(--color-background);
-  border-color: var(--color-background-elevation-1);
+  background: var(--sys-color-cdt-base-container);
+  border-color: var(--sys-color-neutral-outline);
   user-select: text;
 }
 
 .security-summary-secure .triangle-pointer,
 .security-summary-secure .security-summary-text,
 .security-explanation-title-secure {
-  color: var(--color-accent-green);
+  color: var(--sys-color-green);
 }
 
 .security-summary-insecure-broken .triangle-pointer,
@@ -123,7 +122,7 @@
 .security-explanation-title-neutral,
 .security-explanation-title-insecure,
 .security-explanation-title-insecure-broken {
-  color: var(--color-accent-red);
+  color: var(--sys-color-error);
 }
 
 .security-explanation-list {
@@ -137,8 +136,8 @@
 
 .security-explanations-main {
   margin-top: -5px;
-  background-color: var(--color-background);
-  border-bottom: 1px solid var(--color-background-elevation-1);
+  background-color: var(--sys-color-cdt-base-container);
+  border-bottom: 1px solid var(--sys-color-divider);
 }
 
 .security-explanations-extra {
@@ -150,13 +149,17 @@
   display: flex;
   white-space: nowrap;
   border: none;
-  color: var(--color-text-secondary);
+  color: var(--sys-color-token-subtle);
 }
 
 .security-explanation-text {
   flex: auto;
   white-space: normal;
   max-width: 400px;
+}
+
+.origin-button {
+  margin-top: var(--sys-size-4);
 }
 
 .security-explanation .security-property {
@@ -167,7 +170,7 @@
 }
 
 .security-explanation-title {
-  color: var(--color-text-secondary);
+  color: var(--sys-color-token-subtle);
   margin-top: 1px;
   margin-bottom: 8px;
 }

@@ -6,13 +6,12 @@ import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import type * as Protocol from '../../generated/protocol.js';
 import * as Workspace from '../../models/workspace/workspace.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import * as UI from '../../ui/legacy/legacy.js';
 
 import liveHeapProfileStyles from './liveHeapProfile.css.js';
-
-import type * as Protocol from '../../generated/protocol.js';
 
 const UIStrings = {
   /**
@@ -69,11 +68,10 @@ export class LiveHeapProfileView extends UI.Widget.VBox {
     super(true);
     this.gridNodeByUrl = new Map();
 
-    this.setting = Common.Settings.Settings.instance().moduleSetting('memoryLiveHeapProfile');
+    this.setting = Common.Settings.Settings.instance().moduleSetting('memory-live-heap-profile');
     const toolbar = new UI.Toolbar.Toolbar('live-heap-profile-toolbar', this.contentElement);
     this.toggleRecordAction =
-        (UI.ActionRegistry.ActionRegistry.instance().action('live-heap-profile.toggle-recording') as
-         UI.ActionRegistration.Action);
+        UI.ActionRegistry.ActionRegistry.instance().getAction('live-heap-profile.toggle-recording');
     this.toggleRecordButton =
         (UI.Toolbar.Toolbar.createActionButton(this.toggleRecordAction) as UI.Toolbar.ToolbarToggle);
     this.toggleRecordButton.setToggled(this.setting.get());
@@ -82,8 +80,7 @@ export class LiveHeapProfileView extends UI.Widget.VBox {
     const mainTarget = SDK.TargetManager.TargetManager.instance().primaryPageTarget();
     if (mainTarget && mainTarget.model(SDK.ResourceTreeModel.ResourceTreeModel)) {
       const startWithReloadAction =
-          (UI.ActionRegistry.ActionRegistry.instance().action('live-heap-profile.start-with-reload') as
-           UI.ActionRegistration.Action);
+          UI.ActionRegistry.ActionRegistry.instance().getAction('live-heap-profile.start-with-reload');
       this.startWithReloadButton = UI.Toolbar.Toolbar.createActionButton(startWithReloadAction);
       toolbar.appendToolbarItem(this.startWithReloadButton);
     }
@@ -108,7 +105,7 @@ export class LiveHeapProfileView extends UI.Widget.VBox {
       width: undefined,
       fixedWidth: true,
       sortable: true,
-      align: DataGrid.DataGrid.Align.Right,
+      align: DataGrid.DataGrid.Align.RIGHT,
       sort: DataGrid.DataGrid.Order.Descending,
       titleDOMFragment: undefined,
       editable: undefined,
@@ -128,7 +125,7 @@ export class LiveHeapProfileView extends UI.Widget.VBox {
         width: '72px',
         fixedWidth: true,
         sortable: true,
-        align: DataGrid.DataGrid.Align.Right,
+        align: DataGrid.DataGrid.Align.RIGHT,
         sort: DataGrid.DataGrid.Order.Descending,
         tooltip: i18nString(UIStrings.allocatedJsHeapSizeCurrentlyIn),
       },
@@ -138,7 +135,7 @@ export class LiveHeapProfileView extends UI.Widget.VBox {
         title: i18nString(UIStrings.vms),
         width: '40px',
         fixedWidth: true,
-        align: DataGrid.DataGrid.Align.Right,
+        align: DataGrid.DataGrid.Align.RIGHT,
         tooltip: i18nString(UIStrings.numberOfVmsSharingTheSameScript),
       },
       {
@@ -149,7 +146,7 @@ export class LiveHeapProfileView extends UI.Widget.VBox {
         sortable: true,
         tooltip: i18nString(UIStrings.urlOfTheScriptSource),
       },
-    ];
+    ] as ({tooltip: Common.UIString.LocalizedString} & DataGrid.DataGrid.ColumnDescriptor)[];
     const dataGrid = new DataGrid.SortableDataGrid.SortableDataGrid({
       displayName: i18nString(UIStrings.heapProfile),
       columns,
@@ -157,11 +154,11 @@ export class LiveHeapProfileView extends UI.Widget.VBox {
       deleteCallback: undefined,
       refreshCallback: undefined,
     });
-    dataGrid.setResizeMethod(DataGrid.DataGrid.ResizeMethod.Last);
+    dataGrid.setResizeMethod(DataGrid.DataGrid.ResizeMethod.LAST);
     dataGrid.element.classList.add('flex-auto');
     dataGrid.element.addEventListener('keydown', this.onKeyDown.bind(this), false);
-    dataGrid.addEventListener(DataGrid.DataGrid.Events.OpenedNode, this.revealSourceForSelectedNode, this);
-    dataGrid.addEventListener(DataGrid.DataGrid.Events.SortingChanged, this.sortingChanged, this);
+    dataGrid.addEventListener(DataGrid.DataGrid.Events.OPENED_NODE, this.revealSourceForSelectedNode, this);
+    dataGrid.addEventListener(DataGrid.DataGrid.Events.SORTING_CHANGED, this.sortingChanged, this);
     for (const info of columns) {
       const headerCell = dataGrid.headerTableHeader(info.id);
       if (headerCell) {
@@ -240,12 +237,10 @@ export class LiveHeapProfileView extends UI.Widget.VBox {
     }
 
     for (const node of rootNode.children.slice()) {
-      // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-      // @ts-expect-error
-      if (!exisitingNodes.has(node)) {
-        node.remove();
+      const gridNode = node as GridNode;
+      if (!exisitingNodes.has(gridNode)) {
+        gridNode.remove();
       }
-      const gridNode = (node as GridNode);
       this.gridNodeByUrl.delete(gridNode.url);
     }
 
@@ -390,22 +385,10 @@ export class GridNode extends DataGrid.SortableDataGrid.SortableDataGridNode<unk
   }
 }
 
-let profilerActionDelegateInstance: ActionDelegate;
-
 export class ActionDelegate implements UI.ActionRegistration.ActionDelegate {
-  static instance(opts: {
-    forceNew: boolean|null,
-  } = {forceNew: null}): ActionDelegate {
-    const {forceNew} = opts;
-    if (!profilerActionDelegateInstance || forceNew) {
-      profilerActionDelegateInstance = new ActionDelegate();
-    }
-    return profilerActionDelegateInstance;
-  }
-
   handleAction(_context: UI.Context.Context, actionId: string): boolean {
-    void (async(): Promise<void> => {
-      const profileViewId = 'live_heap_profile';
+    void (async () => {
+      const profileViewId = 'live-heap-profile';
       await UI.ViewManager.ViewManager.instance().showView(profileViewId);
       const view = UI.ViewManager.ViewManager.instance().view(profileViewId);
       if (view) {

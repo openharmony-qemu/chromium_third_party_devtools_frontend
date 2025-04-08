@@ -4,11 +4,11 @@
 
 import("../../../scripts/build/ninja/devtools_entrypoint.gni")
 import("../../../scripts/build/ninja/devtools_module.gni")
+import("../../../scripts/build/typescript/typescript.gni")
 import("../visibility.gni")
 
 devtools_module("bindings") {
   sources = [
-    "BreakpointManager.ts",
     "CSSWorkspaceBinding.ts",
     "CompilerScriptMapping.ts",
     "ContentProviderBasedProject.ts",
@@ -49,46 +49,61 @@ devtools_entrypoint("bundle") {
 
   visibility = [
     ":*",
-    "../../../test/unittests/front_end/helpers/*",
-    "../../../test/unittests/front_end/models/bindings/*",
-    "../../../test/unittests/front_end/models/formatter/*",
-    "../../../test/unittests/front_end/panels/console/*",
+    "../../core/sdk:unittests",
     "../../entrypoints/main/*",
     "../../legacy_test_runner/*",
     "../../panels/application/*",
     "../../panels/console/*",
     "../../panels/coverage/*",
-    "../../panels/network/*",
-    "../../panels/profiler/*",
-    "../../panels/sources/*",
-    "../persistence/*",
-
-    # TODO(crbug.com/1202788): Remove invalid dependents
-    "../../../test/unittests/front_end/ui/legacy/components/utils/*",
     "../../panels/elements/*",
     "../../panels/emulation/*",
+    "../../panels/freestyler/*",
+    "../../panels/network/*",
+    "../../panels/profiler/*",
+    "../../panels/recorder/*",
+    "../../panels/sources/*",
+    "../../panels/timeline/*",
+    "../../testing/*",
     "../../ui/components/docs/performance_panel/*",
     "../../ui/components/linkifier/*",
     "../../ui/legacy/components/inline_editor/*",
     "../../ui/legacy/components/perf_ui/*",
     "../../ui/legacy/components/utils/*",
+    "../breakpoints/*",
     "../extensions/*",
     "../formatter/*",
     "../issues_manager/*",
+    "../persistence/*",
     "../source_map_scopes/*",
   ]
 
   visibility += devtools_models_visibility
 }
 
-devtools_entrypoint("legacy") {
-  entrypoint = "bindings-legacy.ts"
+ts_library("unittests") {
+  testonly = true
 
-  deps = [ ":bundle" ]
+  sources = [
+    "CompilerScriptMapping.test.ts",
+    "ContentProviderBasedProject.test.ts",
+    "DebuggerLanguagePlugins.test.ts",
+    "DebuggerWorkspaceBinding.test.ts",
+    "DefaultScriptMapping.test.ts",
+    "FileUtils.test.ts",
+    "IgnoreListManager.test.ts",
+    "LiveLocation.test.ts",
+    "PresentationConsoleMessageHelper.test.ts",
+    "ResourceMapping.test.ts",
+    "ResourceScriptMapping.test.ts",
+    "ResourceUtils.test.ts",
+  ]
 
-  visibility = [
-    "../..:legacy_entrypoints",
-    "../../entrypoints/shell/*",
-    "../../legacy_test_runner/*",
+  deps = [
+    ":bundle",
+    "../../core/common:bundle",
+    "../../testing",
+    "../persistence:bundle",
+    "../text_utils:bundle",
+    "../workspace:bundle",
   ]
 }

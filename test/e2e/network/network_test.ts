@@ -4,15 +4,21 @@
 
 import {assert} from 'chai';
 
-import {$textContent, goTo, reloadDevTools, typeText, waitFor, waitForFunction} from '../../shared/helper.js';
-import {describe, it} from '../../shared/mocha-extensions.js';
 import {
+  goTo,
+  waitForFunction,
+} from '../../shared/helper.js';
+
+import {
+  clearTimeWindow,
   getAllRequestNames,
+  getNumberOfRequests,
   getSelectedRequestName,
   navigateToNetworkTab,
   selectRequestByName,
   setCacheDisabled,
   setPersistLog,
+  setTimeWindow,
   waitForSelectedRequestChange,
   waitForSomeRequestsToAppear,
 } from '../helpers/network-helpers.js';
@@ -20,25 +26,7 @@ import {
 const SIMPLE_PAGE_REQUEST_NUMBER = 10;
 const SIMPLE_PAGE_URL = `requests.html?num=${SIMPLE_PAGE_REQUEST_NUMBER}`;
 
-async function getCategoryXHRFilter() {
-  const filters = await waitFor('.filter-bitset-filter');
-  const categoryXHRFilter = await $textContent('Fetch/XHR', filters);
-  if (!categoryXHRFilter) {
-    assert.fail('Could not find category XHR filter to click.');
-  }
-  return categoryXHRFilter;
-}
-
-async function getThirdPartyFilter() {
-  const filters = await waitFor('.filter-bar');
-  const thirdPartyFilter = await $textContent('3rd-party requests', filters);
-  if (!thirdPartyFilter) {
-    assert.fail('Could not find category third-party filter to click.');
-  }
-  return thirdPartyFilter;
-}
-
-describe('The Network Tab', async function() {
+describe('The Network Tab', function() {
   // The tests here tend to take time because they wait for requests to appear in the request panel.
   this.timeout(5000);
 
@@ -106,34 +94,20 @@ describe('The Network Tab', async function() {
     assert.deepStrictEqual(secondPageRequestNames, firstPageRequestNames, 'The requests were persisted');
   });
 
-  it('persists filters across a reload', async () => {
-    await navigateToNetworkTab(SIMPLE_PAGE_URL);
-    let filterInput = await waitFor('.filter-input-field.text-prompt');
-    filterInput.focus();
-    await typeText('foo');
-    let categoryXHRFilter = await getCategoryXHRFilter();
-    await categoryXHRFilter.click();
+  it('should continue receiving new requests after timeline filter is cleared', async () => {
+    await navigateToNetworkTab('infinite-requests.html');
+    await waitForSomeRequestsToAppear(2);
 
-    await reloadDevTools({selectedPanel: {name: 'network'}});
-    filterInput = await waitFor('.filter-input-field.text-prompt');
-    const filterText = await filterInput.evaluate(x => (x as HTMLElement).innerText);
-    assert.strictEqual(filterText, 'foo');
+    await setTimeWindow();
+    // After the time filter is set, only visible request is the html page.
+    assert.strictEqual(await getNumberOfRequests(), 1);
+    await clearTimeWindow();
+    const numberOfRequestsAfterFilter = await getNumberOfRequests();
+    // Time filter is cleared so the number of requests must be greater than 1.
+    assert.isTrue(numberOfRequestsAfterFilter > 1);
 
-    categoryXHRFilter = await getCategoryXHRFilter();
-    const xhrHasSelectedClass = await categoryXHRFilter.evaluate(x => x.classList.contains('selected'));
-    assert.isTrue(xhrHasSelectedClass);
-  });
-
-  it('can show only third-party requests', async () => {
-    await navigateToNetworkTab('third-party-resources.html');
-    await waitForSomeRequestsToAppear(3);
-
-    let names = await getAllRequestNames();
-    /* assert.deepStrictEqual(names, [], 'The right request names should appear in the list'); */
-    const thirdPartyFilter = await getThirdPartyFilter();
-    await thirdPartyFilter.click();
-
-    names = await getAllRequestNames();
-    assert.deepStrictEqual(names, ['external_image.svg'], 'The right request names should appear in the list');
+    // After some time we expect new requests to come so it must be
+    // that the number of requests increased.
+    await waitForSomeRequestsToAppear(numberOfRequestsAfterFilter + 1);
   });
 });

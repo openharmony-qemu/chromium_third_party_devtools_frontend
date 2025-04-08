@@ -2,13 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as SDK from '../../../core/sdk/sdk.js';
-import * as ComponentHelpers from '../../../ui/components/helpers/helpers.js';
-import * as IconButton from '../../../ui/components/icon_button/icon_button.js';
-import * as NodeText from '../../../ui/components/node_text/node_text.js';
-import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import '../../../ui/components/icon_button/icon_button.js';
+import '../../../ui/components/node_text/node_text.js';
 
-import {type DOMNode} from './Helper.js';
+import * as SDK from '../../../core/sdk/sdk.js';
+import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import * as VisualLogging from '../../../ui/visual_logging/visual_logging.js';
+
+import type {DOMNode} from './Helper.js';
 import queryContainerStyles from './queryContainer.css.js';
 
 const {render, html} = LitHtml;
@@ -28,8 +29,6 @@ export interface QueryContainerData {
 }
 
 export class QueryContainer extends HTMLElement {
-  static readonly litTagName = LitHtml.literal`devtools-query-container`;
-
   readonly #shadow = this.attachShadow({mode: 'open'});
   #queryName?: string;
   #container?: DOMNode;
@@ -86,16 +85,17 @@ export class QueryContainer extends HTMLElement {
       <a href="#"
         draggable=false
         class="container-link"
+        jslog=${VisualLogging.cssRuleHeader('container-query').track({click: true})}
         @click=${this.#onContainerLinkClick}
         @mouseenter=${this.#onContainerLinkMouseEnter}
         @mouseleave=${this.#onContainerLinkMouseLeave}
-      ><${NodeText.NodeText.NodeText.litTagName}
+      ><devtools-node-text
           data-node-title=${nodeTitle}
           .data=${{
         nodeTitle,
         nodeId: idToDisplay,
         nodeClasses: classesToDisplay,
-      } as NodeText.NodeText.NodeTextData}></${NodeText.NodeText.NodeText.litTagName}></a>
+      }}></devtools-node-text></a>
       ${this.#isContainerLinkHovered ? this.#renderQueriedSizeDetails() : LitHtml.nothing}
     `, this.#shadow, {
       host: this,
@@ -104,41 +104,40 @@ export class QueryContainer extends HTMLElement {
   }
 
   #renderQueriedSizeDetails(): LitHtml.LitTemplate {
-    if (!this.#queriedSizeDetails || this.#queriedSizeDetails.queryAxis === QueryAxis.None) {
+    if (!this.#queriedSizeDetails || this.#queriedSizeDetails.queryAxis === QueryAxis.NONE) {
       return LitHtml.nothing;
     }
 
-    const areBothAxesQueried = this.#queriedSizeDetails.queryAxis === QueryAxis.Both;
+    const areBothAxesQueried = this.#queriedSizeDetails.queryAxis === QueryAxis.BOTH;
 
     const axisIconClasses = LitHtml.Directives.classMap({
       'axis-icon': true,
-      'hidden': areBothAxesQueried,
-      'vertical': this.#queriedSizeDetails.physicalAxis === PhysicalAxis.Vertical,
+      hidden: areBothAxesQueried,
+      vertical: this.#queriedSizeDetails.physicalAxis === PhysicalAxis.VERTICAL,
     });
 
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
     return html`
       <span class="queried-size-details">
-        (${this.#queriedSizeDetails.queryAxis}<${IconButton.Icon.Icon.litTagName}
+        (${this.#queriedSizeDetails.queryAxis}<devtools-icon
           class=${axisIconClasses} .data=${{
             iconName: 'width',
             color: 'var(--icon-default)',
-          } as IconButton.Icon.IconData}></${IconButton.Icon.Icon.litTagName}>)
+          }}></devtools-icon>)
         ${areBothAxesQueried && this.#queriedSizeDetails.width ? 'width:' : LitHtml.nothing}
         ${this.#queriedSizeDetails.width || LitHtml.nothing}
         ${areBothAxesQueried && this.#queriedSizeDetails.height ? 'height:' : LitHtml.nothing}
         ${this.#queriedSizeDetails.height || LitHtml.nothing}
       </span>
     `;
-    // clang-format on
+            // clang-format on
   }
 }
 
-ComponentHelpers.CustomElements.defineComponent('devtools-query-container', QueryContainer);
+customElements.define('devtools-query-container', QueryContainer);
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface HTMLElementTagNameMap {
     'devtools-query-container': QueryContainer;
   }

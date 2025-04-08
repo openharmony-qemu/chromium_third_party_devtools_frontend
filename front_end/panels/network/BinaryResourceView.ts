@@ -5,13 +5,12 @@
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
-
-import binaryResourceViewStyles from './binaryResourceView.css.js';
-
 import type * as Platform from '../../core/platform/platform.js';
 import type * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as SourceFrame from '../../ui/legacy/components/source_frame/source_frame.js';
 import * as UI from '../../ui/legacy/legacy.js';
+
+import binaryResourceViewStyles from './binaryResourceView.css.js';
 
 const UIStrings = {
   /**
@@ -72,12 +71,12 @@ export class BinaryResourceView extends UI.Widget.VBox {
   private lastView: UI.Widget.Widget|null;
 
   constructor(
-      base64content: string, contentUrl: Platform.DevToolsPath.UrlString,
+      content: TextUtils.StreamingContentData.StreamingContentData, contentUrl: Platform.DevToolsPath.UrlString,
       resourceType: Common.ResourceType.ResourceType) {
     super();
 
     this.binaryResourceViewFactory =
-        new SourceFrame.BinaryResourceViewFactory.BinaryResourceViewFactory(base64content, contentUrl, resourceType);
+        new SourceFrame.BinaryResourceViewFactory.BinaryResourceViewFactory(content, contentUrl, resourceType);
 
     this.toolbar = new UI.Toolbar.Toolbar('binary-view-toolbar', this.element);
 
@@ -95,7 +94,7 @@ export class BinaryResourceView extends UI.Widget.VBox {
           this.binaryResourceViewFactory.createUtf8View.bind(this.binaryResourceViewFactory),
           this.binaryResourceViewFactory.utf8.bind(this.binaryResourceViewFactory)),
     ];
-    this.binaryViewTypeSetting = Common.Settings.Settings.instance().createSetting('binaryViewType', 'hex');
+    this.binaryViewTypeSetting = Common.Settings.Settings.instance().createSetting('binary-view-type', 'hex');
     this.binaryViewTypeCombobox =
         new UI.Toolbar.ToolbarComboBox(this.binaryViewTypeChanged.bind(this), i18nString(UIStrings.binaryViewType));
     for (const viewObject of this.binaryViewObjects) {
@@ -105,8 +104,8 @@ export class BinaryResourceView extends UI.Widget.VBox {
     this.toolbar.appendToolbarItem(this.binaryViewTypeCombobox);
 
     const copyButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.copyToClipboard), 'copy');
-    copyButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, _event => {
-      void this.copySelectedViewToClipboard();
+    copyButton.addEventListener(UI.Toolbar.ToolbarButton.Events.CLICK, _event => {
+      this.copySelectedViewToClipboard();
     }, this);
     this.toolbar.appendToolbarItem(copyButton);
 
@@ -125,17 +124,17 @@ export class BinaryResourceView extends UI.Widget.VBox {
     const binaryViewObject = this.binaryViewObjects.find(filter);
     console.assert(
         Boolean(binaryViewObject),
-        `No binary view found for binary view type found in setting 'binaryViewType': ${
+        `No binary view found for binary view type found in setting 'binary-view-type': ${
             this.binaryViewTypeSetting.get()}`);
     return binaryViewObject || null;
   }
 
-  private async copySelectedViewToClipboard(): Promise<void> {
+  private copySelectedViewToClipboard(): void {
     const viewObject = this.getCurrentViewObject();
     if (!viewObject) {
       return;
     }
-    Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText((await viewObject.content()).content);
+    Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(viewObject.content());
     this.copiedText.setText(viewObject.copiedMessage);
     this.copiedText.element.classList.remove('fadeout');
     function addFadeoutClass(this: BinaryResourceView): void {
@@ -187,21 +186,21 @@ export class BinaryResourceView extends UI.Widget.VBox {
   }
 
   addCopyToContextMenu(contextMenu: UI.ContextMenu.ContextMenu, submenuItemText: string): void {
-    const copyMenu = contextMenu.clipboardSection().appendSubMenuItem(submenuItemText);
+    const copyMenu = contextMenu.clipboardSection().appendSubMenuItem(submenuItemText, false, 'copy');
     const footerSection = copyMenu.footerSection();
 
     footerSection.appendItem(i18nString(UIStrings.copyAsBase), async () => {
-      const content = await this.binaryResourceViewFactory.base64();
-      Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(content.content);
-    });
+      const content = this.binaryResourceViewFactory.base64();
+      Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(content);
+    }, {jslogContext: 'copy-as-base'});
     footerSection.appendItem(i18nString(UIStrings.copyAsHex), async () => {
       const content = await this.binaryResourceViewFactory.hex();
-      Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(content.content);
-    });
+      Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(content);
+    }, {jslogContext: 'copy-as-hex'});
     footerSection.appendItem(i18nString(UIStrings.copyAsUtf), async () => {
       const content = await this.binaryResourceViewFactory.utf8();
-      Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(content.content);
-    });
+      Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(content);
+    }, {jslogContext: 'copy-as-utf'});
   }
 }
 
@@ -209,17 +208,16 @@ export class BinaryViewObject {
   type: string;
   label: string;
   copiedMessage: string;
-  content: () => Promise<TextUtils.ContentProvider.DeferredContent>;
+  content: () => string;
   private createViewFn: () => UI.Widget.Widget;
   private view: UI.Widget.Widget|null;
 
   constructor(
-      type: string, label: string, copiedMessage: string, createViewFn: () => UI.Widget.Widget,
-      deferredContent: () => Promise<TextUtils.ContentProvider.DeferredContent>) {
+      type: string, label: string, copiedMessage: string, createViewFn: () => UI.Widget.Widget, content: () => string) {
     this.type = type;
     this.label = label;
     this.copiedMessage = copiedMessage;
-    this.content = deferredContent;
+    this.content = content;
     this.createViewFn = createViewFn;
 
     this.view = null;

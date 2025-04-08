@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import * as i18n from '../../core/i18n/i18n.js';
+import type * as I18n from '../../third_party/i18n/i18n.js';
 import * as Lit from '../../third_party/lit/lit.js';
 
 export interface Static {
@@ -51,8 +53,10 @@ export function flattenTemplate(strings: TemplateStringsArray, ...values: Templa
 }
 
 export function html(strings: TemplateStringsArray, ...values: TemplateValues[]): Lit.TemplateResult {
-  if (values.some(value => isStaticLiteral(value))) {
-    return htmlWithStatics(strings, ...values);
+  const staticValues = values.filter(value => isStaticLiteral(value));
+  if (staticValues.length) {
+    const key = staticValues.map(v => v.value as string).join(' ');
+    return htmlWithStatics(strings, values, key);
   }
 
   return Lit.html(strings, ...values);
@@ -69,23 +73,55 @@ function isStaticLiteral(item: TemplateValues|unknown): item is Static {
   return typeof item === 'object' && (item !== null && '$$static$$' in item);
 }
 
-const flattenedTemplates = new WeakMap<TemplateStringsArray, FlattenedTemplateValues>();
-function htmlWithStatics(strings: TemplateStringsArray, ...values: TemplateValues[]): Lit.TemplateResult {
+// While this is a WeakMap, that doesn't help because TemplateStringsArray are objects in a global registry
+// managed by the V8 runtime. They are never garbage collected.
+// We use a double-keyed cache in order to support dynamically changing the static literal: for example,
+// within a loop that dynamically selects what custom component to render.
+const flattenedTemplates = new WeakMap<TemplateStringsArray, Map<string, FlattenedTemplateValues>>();
+
+function htmlWithStatics(
+    strings: TemplateStringsArray, values: TemplateValues[], staticValuesKey: string): Lit.TemplateResult {
   // Check to see if we've already converted this before.
-  const existing = flattenedTemplates.get(strings);
-  if (existing) {
-    const filteredValues = values.filter((a, index) => {
-      if (!existing) {
-        return false;
-      }
-
-      return existing.valueMap[index];
-    });
-
-    // Pass through to Lit.
-    return Lit.html(existing.strings, ...filteredValues);
+  // Cache key is the TemplateStringsArray, which works because the same usage of template string reuses the same array object.
+  // See: https://tc39.es/ecma262/multipage/ecmascript-language-expressions.html#sec-gettemplateobject
+  //      13.2.8.4 GetTemplateObject, step 3.
+  let flattened;
+  let secondaryMap = flattenedTemplates.get(strings);
+  if (!secondaryMap) {
+    secondaryMap = new Map();
+    flattenedTemplates.set(strings, secondaryMap);
   }
 
-  flattenedTemplates.set(strings, flattenTemplate(strings, ...values));
-  return htmlWithStatics(strings, ...values);
+  flattened = secondaryMap.get(staticValuesKey);
+  if (!flattened) {
+    flattened = flattenTemplate(strings, ...values);
+    secondaryMap.set(staticValuesKey, flattened);
+  }
+
+  // Pass through to Lit.
+  const filteredValues = values.filter((_, index) => flattened.valueMap[index]);
+  return Lit.html(flattened.strings, ...filteredValues);
+}
+
+/**
+ * @param placeholders placeholders must not contain localized strings or other localized templates as that is
+ * incompatible with languages using a different sentence structure or ordering (e.g., RTL).
+ */
+export function i18nTemplate(
+    registeredStrings: I18n.LocalizedStringSet.RegisteredFileStrings, stringId: string,
+    placeholders: Record<string, Lit.TemplateResult|string>): Lit.TemplateResult {
+  const formatter = registeredStrings.getLocalizedStringSetFor(i18n.DevToolsLocale.DevToolsLocale.instance().locale)
+                        .getMessageFormatterFor(stringId);
+  let result = html``;
+  for (const icuElement of formatter.getAst()) {
+    if (icuElement.type === /* argumentElement */ 1) {
+      const placeholderValue = placeholders[icuElement.value];
+      if (placeholderValue) {
+        result = html`${result}${placeholderValue}`;
+      }
+    } else if ('value' in icuElement) {
+      result = html`${result}${icuElement.value}`;
+    }
+  }
+  return result;
 }

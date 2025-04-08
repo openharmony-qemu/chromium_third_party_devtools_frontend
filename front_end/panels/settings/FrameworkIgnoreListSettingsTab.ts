@@ -3,41 +3,43 @@
 // found in the LICENSE file.
 
 import * as Common from '../../core/common/common.js';
+import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
+import type * as Platform from '../../core/platform/platform.js';
+import * as Buttons from '../../ui/components/buttons/buttons.js';
+import * as Cards from '../../ui/components/cards/cards.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 
 import frameworkIgnoreListSettingsTabStyles from './frameworkIgnoreListSettingsTab.css.js';
+import settingsScreenStyles from './settingsScreen.css.js';
 
 const UIStrings = {
   /**
-   *@description Header text content in Framework Ignore List Settings Tab of the Settings
+   *@description Header text content in Framework Ignore List Settings Tab of the Settings for enabling or disabling ignore listing
    */
-  frameworkIgnoreList: 'Framework Ignore List',
+  frameworkIgnoreList: 'Ignore listing',
+  /**
+   *@description Checkbox label in Framework Ignore List Settings Tab of the Settings
+   */
+  ignoreListingDescription:
+      'When enabled, the debugger will skip over ignore-listed scripts and will ignore exceptions that only affect them and the Performance panel will collapse matching flamechart items.',
   /**
    *@description Text in Framework Ignore List Settings Tab of the Settings
    */
-  debuggerWillSkipThroughThe: 'Debugger will skip through the scripts and will not stop on exceptions thrown by them.',
+  ignoreListContentScripts: 'Content scripts injected by extensions',
   /**
    *@description Text in Framework Ignore List Settings Tab of the Settings
    */
-  ignoreListContentScripts: 'Add content scripts to ignore list',
-  /**
-   *@description Ignore List content scripts title in Framework Ignore List Settings Tab of the Settings
-   */
-  ignoreListContentScriptsExtension: 'Add content scripts to ignore list (extension scripts in the page)',
+  ignoreListAnonymousScripts: 'Anonymous scripts from eval or console',
   /**
    *@description Text in Framework Ignore List Settings Tab of the Settings
    */
-  automaticallyIgnoreListKnownThirdPartyScripts: 'Automatically add known third-party scripts to ignore list',
+  automaticallyIgnoreListKnownThirdPartyScripts: 'Known third-party scripts from source maps',
   /**
    *@description Text in Framework Ignore List Settings Tab of the Settings
    */
-  automaticallyIgnoreListKnownThirdPartyScriptsTooltip:
-      'Add sources from the `x_google_ignoreList` field from source maps to the ignore list',
-  /**
-   *@description Text in Framework Ignore List Settings Tab of the Settings
-   */
-  enableIgnoreListing: 'Enable Ignore Listing',
+  enableIgnoreListing: 'Enable ignore listing',
   /**
    *@description Text in Framework Ignore List Settings Tab of the Settings
    */
@@ -45,19 +47,19 @@ const UIStrings = {
   /**
    *@description Text in Framework Ignore List Settings Tab of the Settings
    */
-  generalExclusionRules: 'General exclusion rules:',
+  generalExclusionRules: 'General exclusion rules',
   /**
    *@description Text in Framework Ignore List Settings Tab of the Settings
    */
-  customExclusionRules: 'Custom exclusion rules:',
+  customExclusionRules: 'Custom exclusion rules',
   /**
    *@description Text of the add pattern button in Framework Ignore List Settings Tab of the Settings
    */
-  addPattern: 'Add pattern...',
+  addPattern: 'Add regex rule...',
   /**
    *@description Aria accessible name in Framework Ignore List Settings Tab of the Settings
    */
-  addFilenamePattern: 'Add filename pattern',
+  addFilenamePattern: 'Add a regular expression rule for the script\'s URL',
   /**
    *@description Pattern title in Framework Ignore List Settings Tab of the Settings
    *@example {ad.*?} PH1
@@ -67,24 +69,27 @@ const UIStrings = {
    *@description Aria accessible name in Framework Ignore List Settings Tab of the Settings. It labels the input
    * field used to add new or edit existing regular expressions that match file names to ignore in the debugger.
    */
-  pattern: 'Add Pattern',
+  pattern: 'Add a regular expression rule for the script\'s URL',
   /**
    *@description Error message in Framework Ignore List settings pane that declares pattern must not be empty
    */
-  patternCannotBeEmpty: 'Pattern cannot be empty',
+  patternCannotBeEmpty: 'Rule can\'t be empty',
   /**
    *@description Error message in Framework Ignore List settings pane that declares pattern already exits
    */
-  patternAlreadyExists: 'Pattern already exists',
+  patternAlreadyExists: 'Rule already exists',
   /**
    *@description Error message in Framework Ignore List settings pane that declares pattern must be a valid regular expression
    */
-  patternMustBeAValidRegular: 'Pattern must be a valid regular expression',
+  patternMustBeAValidRegular: 'Rule must be a valid regular expression',
+  /**
+   *@description Text that is usually a hyperlink to more documentation
+   */
+  learnMore: 'Learn more',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/settings/FrameworkIgnoreListSettingsTab.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
-let frameworkIgnoreListSettingsTabInstance: FrameworkIgnoreListSettingsTab;
 export class FrameworkIgnoreListSettingsTab extends UI.Widget.VBox implements
     UI.ListWidget.Delegate<Common.Settings.RegExpSettingItem> {
   private readonly list: UI.ListWidget.ListWidget<Common.Settings.RegExpSettingItem>;
@@ -93,40 +98,77 @@ export class FrameworkIgnoreListSettingsTab extends UI.Widget.VBox implements
 
   constructor() {
     super(true);
+    this.element.setAttribute('jslog', `${VisualLogging.pane('blackbox')}`);
 
-    const header = this.contentElement.createChild('div', 'header');
-    header.textContent = i18nString(UIStrings.frameworkIgnoreList);
-    UI.ARIAUtils.markAsHeading(header, 1);
+    const settingsContent =
+        this.contentElement.createChild('div', 'settings-card-container-wrapper').createChild('div');
+    settingsContent.classList.add('settings-card-container', 'ignore-list-settings');
 
-    this.contentElement.createChild('div', 'intro').textContent = i18nString(UIStrings.debuggerWillSkipThroughThe);
-
+    const ignoreListingDescription = document.createElement('span');
+    ignoreListingDescription.textContent = i18nString(UIStrings.ignoreListingDescription);
     const enabledSetting =
-        Common.Settings.Settings.instance().moduleSetting('enableIgnoreListing') as Common.Settings.Setting<boolean>;
-    const enableIgnoreListing = this.contentElement.createChild('div', 'ignore-list-global-enable');
+        Common.Settings.Settings.instance().moduleSetting('enable-ignore-listing') as Common.Settings.Setting<boolean>;
+    const enableIgnoreListing = this.contentElement.createChild('div', 'enable-ignore-listing');
     enableIgnoreListing.appendChild(
         UI.SettingsUI.createSettingCheckbox(i18nString(UIStrings.enableIgnoreListing), enabledSetting, true));
     UI.Tooltip.Tooltip.install(enableIgnoreListing, i18nString(UIStrings.enableIgnoreListingTooltip));
 
-    const ignoreListOptions = this.contentElement.createChild('div', 'ignore-list-options');
+    const enableIgnoreListingCard = new Cards.Card.Card();
+    enableIgnoreListingCard.data = {
+      heading: i18nString(UIStrings.frameworkIgnoreList),
+      content: [ignoreListingDescription, enableIgnoreListing],
+    };
+    settingsContent.appendChild(enableIgnoreListingCard);
 
-    ignoreListOptions.createChild('div', 'ignore-list-option-group').textContent =
-        i18nString(UIStrings.generalExclusionRules);
-
-    const ignoreListContentScripts = ignoreListOptions.createChild('div', 'ignore-list-option');
+    const generalExclusionGroup = this.createSettingGroup();
+    generalExclusionGroup.classList.add('general-exclusion-group');
+    const ignoreListContentScripts = generalExclusionGroup.createChild('div', 'ignore-list-option');
     ignoreListContentScripts.appendChild(UI.SettingsUI.createSettingCheckbox(
         i18nString(UIStrings.ignoreListContentScripts),
-        Common.Settings.Settings.instance().moduleSetting('skipContentScripts'), true));
-    UI.Tooltip.Tooltip.install(ignoreListContentScripts, i18nString(UIStrings.ignoreListContentScriptsExtension));
+        Common.Settings.Settings.instance().moduleSetting('skip-content-scripts'), true));
 
-    const automaticallyIgnoreList = ignoreListOptions.createChild('div', 'ignore-list-option');
+    const automaticallyIgnoreList = generalExclusionGroup.createChild('div', 'ignore-list-option');
     automaticallyIgnoreList.appendChild(UI.SettingsUI.createSettingCheckbox(
         i18nString(UIStrings.automaticallyIgnoreListKnownThirdPartyScripts),
-        Common.Settings.Settings.instance().moduleSetting('automaticallyIgnoreListKnownThirdPartyScripts'), true));
-    UI.Tooltip.Tooltip.install(
-        automaticallyIgnoreList, i18nString(UIStrings.automaticallyIgnoreListKnownThirdPartyScriptsTooltip));
+        Common.Settings.Settings.instance().moduleSetting('automatically-ignore-list-known-third-party-scripts'),
+        true));
 
-    ignoreListOptions.createChild('div', 'ignore-list-option-group').textContent =
-        i18nString(UIStrings.customExclusionRules);
+    const automaticallyIgnoreLinkButton = new Buttons.Button.Button();
+    automaticallyIgnoreLinkButton.data = {
+      iconName: 'help',
+      variant: Buttons.Button.Variant.ICON,
+      size: Buttons.Button.Size.SMALL,
+      jslogContext: 'learn-more',
+      title: i18nString(UIStrings.learnMore),
+    };
+    automaticallyIgnoreLinkButton.addEventListener(
+        'click',
+        () => Host.InspectorFrontendHost.InspectorFrontendHostInstance.openInNewTab(
+            'http://goo.gle/skip-third-party' as Platform.DevToolsPath.UrlString));
+    automaticallyIgnoreList.appendChild(automaticallyIgnoreLinkButton);
+
+    const ignoreListAnonymousScripts = generalExclusionGroup.createChild('div', 'ignore-list-option');
+    ignoreListAnonymousScripts.appendChild(UI.SettingsUI.createSettingCheckbox(
+        i18nString(UIStrings.ignoreListAnonymousScripts),
+        Common.Settings.Settings.instance().moduleSetting('skip-anonymous-scripts'), true));
+
+    const generalExclusionGroupCard = new Cards.Card.Card();
+    generalExclusionGroupCard.data = {
+      heading: i18nString(UIStrings.generalExclusionRules),
+      content: [generalExclusionGroup],
+    };
+    generalExclusionGroupCard.classList.add('ignore-list-options');
+    settingsContent.appendChild(generalExclusionGroupCard);
+
+    const customExclusionGroup = this.createSettingGroup();
+    customExclusionGroup.classList.add('custom-exclusion-group');
+    const customExclusionGroupCard = new Cards.Card.Card();
+    customExclusionGroupCard.classList.add('ignore-list-options');
+    customExclusionGroupCard.data = {
+      heading: i18nString(UIStrings.customExclusionRules),
+      content: [customExclusionGroup],
+    };
+    settingsContent.appendChild(customExclusionGroupCard);
 
     this.list = new UI.ListWidget.ListWidget(this);
     this.list.element.classList.add('ignore-list');
@@ -134,16 +176,15 @@ export class FrameworkIgnoreListSettingsTab extends UI.Widget.VBox implements
     const placeholder = document.createElement('div');
     placeholder.classList.add('ignore-list-empty');
     this.list.setEmptyPlaceholder(placeholder);
-    this.list.show(ignoreListOptions);
-    const addPatternButton =
-        UI.UIUtils.createTextButton(i18nString(UIStrings.addPattern), this.addButtonClicked.bind(this), 'add-button');
-    UI.ARIAUtils.setAccessibleName(addPatternButton, i18nString(UIStrings.addFilenamePattern));
-    ignoreListOptions.appendChild(addPatternButton);
+    this.list.show(customExclusionGroup);
+    const addPatternButton = UI.UIUtils.createTextButton(
+        i18nString(UIStrings.addPattern), this.addButtonClicked.bind(this),
+        {className: 'add-button', jslogContext: 'settings.add-ignore-list-pattern'});
+    UI.ARIAUtils.setLabel(addPatternButton, i18nString(UIStrings.addFilenamePattern));
+    customExclusionGroup.appendChild(addPatternButton);
     this.setting =
-        Common.Settings.Settings.instance().moduleSetting('skipStackFramesPattern') as Common.Settings.RegExpSetting;
+        Common.Settings.Settings.instance().moduleSetting('skip-stack-frames-pattern') as Common.Settings.RegExpSetting;
     this.setting.addChangeListener(this.settingUpdated, this);
-
-    this.setDefaultFocusedElement(addPatternButton);
 
     enabledSetting.addChangeListener(enabledChanged);
     enabledChanged();
@@ -151,26 +192,17 @@ export class FrameworkIgnoreListSettingsTab extends UI.Widget.VBox implements
     function enabledChanged(): void {
       const enabled = enabledSetting.get();
       if (enabled) {
-        ignoreListOptions.classList.remove('ignore-listing-disabled');
+        settingsContent.classList.remove('ignore-listing-disabled');
       } else {
-        ignoreListOptions.classList.add('ignore-listing-disabled');
+        settingsContent.classList.add('ignore-listing-disabled');
       }
     }
-  }
-
-  static instance(opts = {forceNew: null}): FrameworkIgnoreListSettingsTab {
-    const {forceNew} = opts;
-    if (!frameworkIgnoreListSettingsTabInstance || forceNew) {
-      frameworkIgnoreListSettingsTabInstance = new FrameworkIgnoreListSettingsTab();
-    }
-
-    return frameworkIgnoreListSettingsTabInstance;
   }
 
   override wasShown(): void {
     super.wasShown();
     this.list.registerCSSFiles([frameworkIgnoreListSettingsTabStyles]);
-    this.registerCSSFiles([frameworkIgnoreListSettingsTabStyles]);
+    this.registerCSSFiles([frameworkIgnoreListSettingsTabStyles, settingsScreenStyles]);
     this.settingUpdated();
   }
 
@@ -186,12 +218,20 @@ export class FrameworkIgnoreListSettingsTab extends UI.Widget.VBox implements
     this.list.addNewItem(this.setting.getAsArray().length, {pattern: '', disabled: false});
   }
 
+  private createSettingGroup(): HTMLElement {
+    const group = document.createElement('div');
+    group.classList.add('ignore-list-option-group');
+    UI.ARIAUtils.markAsGroup(group);
+    return group;
+  }
+
   renderItem(item: Common.Settings.RegExpSettingItem, _editable: boolean): Element {
     const element = document.createElement('div');
 
     const listSetting = this.setting;
 
-    const checkbox = UI.UIUtils.CheckboxLabel.create(item.pattern, !item.disabled);
+    const checkbox =
+        UI.UIUtils.CheckboxLabel.create(item.pattern, !item.disabled, undefined, 'settings.ignore-list-pattern');
     const helpText = i18nString(UIStrings.ignoreScriptsWhoseNamesMatchS, {PH1: item.pattern});
     UI.Tooltip.Tooltip.install(checkbox, helpText);
     checkbox.checkboxElement.ariaLabel = helpText;
@@ -250,7 +290,7 @@ export class FrameworkIgnoreListSettingsTab extends UI.Widget.VBox implements
 
     const fields = content.createChild('div', 'ignore-list-edit-row');
     const pattern = editor.createInput('pattern', 'text', '/framework\\.js$', patternValidator.bind(this));
-    UI.ARIAUtils.setAccessibleName(pattern, i18nString(UIStrings.pattern));
+    UI.ARIAUtils.setLabel(pattern, i18nString(UIStrings.pattern));
     fields.createChild('div', 'ignore-list-pattern').appendChild(pattern);
 
     return editor;

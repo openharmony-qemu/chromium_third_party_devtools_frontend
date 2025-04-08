@@ -6,8 +6,8 @@ import {click, goToResource, waitFor, waitForMany, waitForNone} from '../../shar
 
 import {openPanelViaMoreTools} from './settings-helpers.js';
 
-const START_INSTRUMENTING_BUTTON = 'button[aria-label="Start instrumenting coverage and reload page"]';
-const STOP_INSTRUMENTING_BUTTON = 'button[aria-label="Stop instrumenting coverage and show results"]';
+const START_INSTRUMENTING_BUTTON = 'devtools-button[aria-label="Start instrumenting coverage and reload page"]';
+const STOP_INSTRUMENTING_BUTTON = 'devtools-button[aria-label="Stop instrumenting coverage and show results"]';
 
 export async function waitForTheCoveragePanelToLoad() {
   // Open panel and wait for content
@@ -21,18 +21,17 @@ export async function navigateToCoverageTestSite() {
 }
 
 export async function startInstrumentingCoverage() {
-  await waitFor(START_INSTRUMENTING_BUTTON);
   await click(START_INSTRUMENTING_BUTTON);
   await waitForNone('.coverage-results .landing-page');
 }
 
 export async function stopInstrumentingCoverage() {
   await click(STOP_INSTRUMENTING_BUTTON);
-  await waitForNone('button[aria-label="Clear all"][disabled]');
+  await waitForNone('button[title="Clear coverage"][disabled]');
 }
 
 export async function clearCoverageContent() {
-  await click('button[aria-label="Clear all"]');
+  await click('devtools-button[aria-label="Clear coverage"]');
   await waitFor('.coverage-results .landing-page');
 }
 
@@ -46,6 +45,6 @@ export async function getCoverageData(expectedCount: number) {
   return Promise.all(rows.map(r => r.evaluate((r: Element) => ({
                                                 url: r.querySelector('.url-column')?.textContent,
                                                 total: r.querySelector('.size-column')?.textContent,
-                                                unused: r.querySelector('.unusedSize-column span')?.textContent,
+                                                unused: r.querySelector('.unused-size-column span')?.textContent,
                                               }))));
 }

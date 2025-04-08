@@ -26,7 +26,7 @@ export class ProfileHeader extends Common.ObjectWrapper.ObjectWrapper<EventTypes
 
   setTitle(title: string): void {
     this.title = title;
-    this.dispatchEventToListeners(Events.ProfileTitleChanged, this);
+    this.dispatchEventToListeners(Events.PROFILE_TITLE_CHANGED, this);
   }
 
   profileType(): ProfileType {
@@ -34,7 +34,7 @@ export class ProfileHeader extends Common.ObjectWrapper.ObjectWrapper<EventTypes
   }
 
   updateStatus(subtitle: string|null, wait?: boolean): void {
-    this.dispatchEventToListeners(Events.UpdateStatus, new StatusUpdate(subtitle, wait));
+    this.dispatchEventToListeners(Events.UPDATE_STATUS, new StatusUpdate(subtitle, wait));
   }
 
   /**
@@ -90,18 +90,14 @@ export class StatusUpdate {
   }
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export enum Events {
-  UpdateStatus = 'UpdateStatus',
-  ProfileReceived = 'ProfileReceived',
-  ProfileTitleChanged = 'ProfileTitleChanged',
+export const enum Events {
+  UPDATE_STATUS = 'UpdateStatus',
+  PROFILE_TITLE_CHANGED = 'ProfileTitleChanged',
 }
 
 export type EventTypes = {
-  [Events.UpdateStatus]: StatusUpdate,
-  [Events.ProfileReceived]: void,
-  [Events.ProfileTitleChanged]: ProfileHeader,
+  [Events.UPDATE_STATUS]: StatusUpdate,
+  [Events.PROFILE_TITLE_CHANGED]: ProfileHeader,
 };
 
 export class ProfileType extends Common.ObjectWrapper.ObjectWrapper<ProfileEventTypes> {
@@ -120,7 +116,7 @@ export class ProfileType extends Common.ObjectWrapper.ObjectWrapper<ProfileEvent
     this.nextProfileUidInternal = 1;
 
     if (!window.opener) {
-      window.addEventListener('unload', this.clearTempStorage.bind(this), false);
+      window.addEventListener('pagehide', this.clearTempStorage.bind(this), false);
     }
   }
 
@@ -218,7 +214,7 @@ export class ProfileType extends Common.ObjectWrapper.ObjectWrapper<ProfileEvent
 
   addProfile(profile: ProfileHeader): void {
     this.profiles.push(profile);
-    this.dispatchEventToListeners(ProfileEvents.AddProfileHeader, profile);
+    this.dispatchEventToListeners(ProfileEvents.ADD_PROFILE_HEADER, profile);
   }
 
   removeProfile(profile: ProfileHeader): void {
@@ -256,7 +252,7 @@ export class ProfileType extends Common.ObjectWrapper.ObjectWrapper<ProfileEvent
   }
 
   disposeProfile(profile: ProfileHeader): void {
-    this.dispatchEventToListeners(ProfileEvents.RemoveProfileHeader, profile);
+    this.dispatchEventToListeners(ProfileEvents.REMOVE_PROFILE_HEADER, profile);
     profile.dispose();
     if (this.profileBeingRecordedInternal === profile) {
       this.profileBeingRecordedRemoved();
@@ -265,20 +261,18 @@ export class ProfileType extends Common.ObjectWrapper.ObjectWrapper<ProfileEvent
   }
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export enum ProfileEvents {
-  AddProfileHeader = 'add-profile-header',
-  ProfileComplete = 'profile-complete',
-  RemoveProfileHeader = 'remove-profile-header',
-  ViewUpdated = 'view-updated',
+export const enum ProfileEvents {
+  ADD_PROFILE_HEADER = 'add-profile-header',
+  PROFILE_COMPLETE = 'profile-complete',
+  REMOVE_PROFILE_HEADER = 'remove-profile-header',
+  VIEW_UPDATED = 'view-updated',
 }
 
 export type ProfileEventTypes = {
-  [ProfileEvents.AddProfileHeader]: ProfileHeader,
-  [ProfileEvents.ProfileComplete]: ProfileHeader,
-  [ProfileEvents.RemoveProfileHeader]: ProfileHeader,
-  [ProfileEvents.ViewUpdated]: void,
+  [ProfileEvents.ADD_PROFILE_HEADER]: ProfileHeader,
+  [ProfileEvents.PROFILE_COMPLETE]: ProfileHeader,
+  [ProfileEvents.REMOVE_PROFILE_HEADER]: ProfileHeader,
+  [ProfileEvents.VIEW_UPDATED]: void,
 };
 
 export interface DataDisplayDelegate {

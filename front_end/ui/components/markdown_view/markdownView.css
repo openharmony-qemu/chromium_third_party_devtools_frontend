@@ -4,42 +4,81 @@
  * found in the LICENSE file.
  */
 
+:host {
+  --code-background-color: var(--sys-color-surface4);
+}
+
+@keyframes typing {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+.animating {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typing 0.3s steps(40, end);
+}
+
+.pending {
+  display: none !important; /* stylelint-disable-line declaration-no-important */
+}
+
 .message {
-  line-height: 20px;
-  font-size: 14px;
-  color: var(--color-text-secondary);
-  margin-bottom: 4px;
+  line-height: 18px;
+  font-size: 12px;
+  color: var(--override-markdown-view-message-color, --sys-color-token-subtle);
   user-select: text;
 }
 
 .message p {
-  margin-bottom: 16px;
+  margin: 0;
+}
+
+.message p:not(:first-child) {
   margin-block-start: 2px;
+}
+
+.message p:not(:last-child) {
+  margin-bottom: 10px;
 }
 
 .message ul {
   list-style-type: none;
-  list-style-position: inside;
-  padding-inline-start: 0;
+  padding-inline-start: var(--sys-size-8);
+}
+
+.message ul ul {
+  padding-inline-start: 19px;
 }
 
 .message li {
   margin-top: 8px;
   display: list-item;
-}
-
-.message li::before {
-  content: "→";
-  -webkit-mask-image: none;
-  padding-right: 5px;
-  position: relative;
-  top: -1px;
+  list-style-type: disc;
 }
 
 .message code {
-  color: var(--color-text-primary);
-  font-size: 12px;
+  color: var(--sys-color-on-surface);
+  font-size: 11px;
   user-select: text;
   cursor: text;
-  background: var(--color-background-elevation-1);
+  /* This is still using design tokens because `--code-background-color` is defined with them by default */
+  /* stylelint-disable-next-line plugin/use_theme_colors */
+  background-color: var(--code-background-color);
+  border-radius: 2px;
+  padding: 1px 3px;
+}
+
+devtools-code-block {
+  margin-bottom: var(--sys-size-5);
+}
+
+.devtools-link {
+  color: var(--sys-color-primary);
+  outline-offset: 2px;
+  text-decoration: none;
+}
+
+.devtools-link:hover {
+  text-decoration: underline;
 }

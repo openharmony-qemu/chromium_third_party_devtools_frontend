@@ -9,12 +9,11 @@ import * as Platform from '../platform/platform.js';
 import {CSSContainerQuery} from './CSSContainerQuery.js';
 import {CSSLayer} from './CSSLayer.js';
 import {CSSMedia} from './CSSMedia.js';
+import type {CSSModel, Edit} from './CSSModel.js';
 import {CSSScope} from './CSSScope.js';
-import {CSSSupports} from './CSSSupports.js';
-
-import {type CSSModel, type Edit} from './CSSModel.js';
 import {CSSStyleDeclaration, Type} from './CSSStyleDeclaration.js';
-import {type CSSStyleSheetHeader} from './CSSStyleSheetHeader.js';
+import type {CSSStyleSheetHeader} from './CSSStyleSheetHeader.js';
+import {CSSSupports} from './CSSSupports.js';
 
 export class CSSRule {
   readonly cssModelInternal: CSSModel;
@@ -70,6 +69,10 @@ export class CSSRule {
     return this.origin === Protocol.CSS.StyleSheetOrigin.Regular;
   }
 
+  isKeyframeRule(): boolean {
+    return false;
+  }
+
   cssModel(): CSSModel {
     return this.cssModelInternal;
   }
@@ -84,10 +87,14 @@ export class CSSRule {
 class CSSValue {
   text: string;
   range: TextUtils.TextRange.TextRange|undefined;
+  specificity: Protocol.CSS.Specificity|undefined;
   constructor(payload: Protocol.CSS.Value) {
     this.text = payload.text;
     if (payload.range) {
       this.range = TextUtils.TextRange.TextRange.fromObject(payload.range);
+    }
+    if (payload.specificity) {
+      this.specificity = payload.specificity;
     }
   }
 
@@ -107,6 +114,7 @@ export class CSSStyleRule extends CSSRule {
   supports: CSSSupports[];
   scopes: CSSScope[];
   layers: CSSLayer[];
+  ruleTypes: Protocol.CSS.CSSRuleType[];
   wasUsed: boolean;
   constructor(cssModel: CSSModel, payload: Protocol.CSS.CSSRule, wasUsed?: boolean) {
     super(cssModel, {origin: payload.origin, style: payload.style, styleSheetId: payload.styleSheetId});
@@ -119,6 +127,7 @@ export class CSSStyleRule extends CSSRule {
     this.scopes = payload.scopes ? CSSScope.parseScopesPayload(cssModel, payload.scopes) : [];
     this.supports = payload.supports ? CSSSupports.parseSupportsPayload(cssModel, payload.supports) : [];
     this.layers = payload.layers ? CSSLayer.parseLayerPayload(cssModel, payload.layers) : [];
+    this.ruleTypes = payload.ruleTypes || [];
     this.wasUsed = wasUsed || false;
   }
 
@@ -163,6 +172,12 @@ export class CSSStyleRule extends CSSRule {
   }
 
   selectorRange(): TextUtils.TextRange.TextRange|null {
+    // Nested group rules might not contain a selector.
+    // https://www.w3.org/TR/css-nesting-1/#conditionals
+    if (this.selectors.length === 0) {
+      return null;
+    }
+
     const firstRange = this.selectors[0].range;
     const lastRange = this.selectors[this.selectors.length - 1].range;
     if (!firstRange || !lastRange) {
@@ -211,6 +226,52 @@ export class CSSStyleRule extends CSSRule {
   }
 }
 
+export class CSSPropertyRule extends CSSRule {
+  #name: CSSValue;
+  constructor(cssModel: CSSModel, payload: Protocol.CSS.CSSPropertyRule) {
+    super(cssModel, {origin: payload.origin, style: payload.style, styleSheetId: payload.styleSheetId});
+    this.#name = new CSSValue(payload.propertyName);
+  }
+
+  propertyName(): CSSValue {
+    return this.#name;
+  }
+
+  initialValue(): string|null {
+    return this.style.hasActiveProperty('initial-value') ? this.style.getPropertyValue('initial-value') : null;
+  }
+
+  syntax(): string {
+    return this.style.getPropertyValue('syntax');
+  }
+  inherits(): boolean {
+    return this.style.getPropertyValue('inherits') === 'true';
+  }
+  setPropertyName(newPropertyName: string): Promise<boolean> {
+    const styleSheetId = this.styleSheetId;
+    if (!styleSheetId) {
+      throw new Error('No rule stylesheet id');
+    }
+    const range = this.#name.range;
+    if (!range) {
+      throw new Error('Property name is not editable');
+    }
+    return this.cssModelInternal.setPropertyRulePropertyName(styleSheetId, range, newPropertyName);
+  }
+}
+
+export class CSSFontPaletteValuesRule extends CSSRule {
+  readonly #paletteName: CSSValue;
+  constructor(cssModel: CSSModel, payload: Protocol.CSS.CSSFontPaletteValuesRule) {
+    super(cssModel, {origin: payload.origin, style: payload.style, styleSheetId: payload.styleSheetId});
+    this.#paletteName = new CSSValue(payload.fontPaletteName);
+  }
+
+  name(): CSSValue {
+    return this.#paletteName;
+  }
+}
+
 export class CSSKeyframesRule {
   readonly #animationName: CSSValue;
   readonly #keyframesInternal: CSSKeyframeRule[];
@@ -256,6 +317,10 @@ export class CSSKeyframeRule extends CSSRule {
     super.rebase(edit);
   }
 
+  override isKeyframeRule(): boolean {
+    return true;
+  }
+
   setKeyText(newKeyText: string): Promise<boolean> {
     const styleSheetId = this.styleSheetId;
     if (!styleSheetId) {
@@ -269,21 +334,20 @@ export class CSSKeyframeRule extends CSSRule {
   }
 }
 
-export class CSSPositionFallbackRule {
+export class CSSPositionTryRule extends CSSRule {
   readonly #name: CSSValue;
-  readonly #tryRules: CSSRule[];
-  constructor(cssModel: CSSModel, payload: Protocol.CSS.CSSPositionFallbackRule) {
+  readonly #active: boolean;
+  constructor(cssModel: CSSModel, payload: Protocol.CSS.CSSPositionTryRule) {
+    super(cssModel, {origin: payload.origin, style: payload.style, styleSheetId: payload.styleSheetId});
     this.#name = new CSSValue(payload.name);
-    this.#tryRules = payload.tryRules.map(
-        tryRule =>
-            new CSSRule(cssModel, {origin: tryRule.origin, style: tryRule.style, styleSheetId: tryRule.styleSheetId}));
+    this.#active = payload.active;
   }
 
   name(): CSSValue {
     return this.#name;
   }
 
-  tryRules(): CSSRule[] {
-    return this.#tryRules;
+  active(): boolean {
+    return this.#active;
   }
 }

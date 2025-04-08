@@ -36,6 +36,7 @@ import * as i18n from '../../../../core/i18n/i18n.js';
 import * as Platform from '../../../../core/platform/platform.js';
 import * as TextUtils from '../../../../models/text_utils/text_utils.js';
 import * as Workspace from '../../../../models/workspace/workspace.js';
+import * as VisualLogging from '../../../visual_logging/visual_logging.js';
 import * as UI from '../../legacy.js';
 
 import imageViewStyles from './imageView.css.legacy.js';
@@ -95,12 +96,13 @@ export class ImageView extends UI.View.SimpleView {
   private readonly mimeTypeLabel: UI.Toolbar.ToolbarText;
   private readonly container: HTMLElement;
   private imagePreviewElement: HTMLImageElement;
-  private cachedContent?: TextUtils.ContentProvider.DeferredContent;
+  private cachedContent?: TextUtils.ContentData.ContentData;
   constructor(mimeType: string, contentProvider: TextUtils.ContentProvider.ContentProvider) {
     super(i18nString(UIStrings.image));
     this.registerRequiredCSS(imageViewStyles);
     this.element.tabIndex = -1;
     this.element.classList.add('image-view');
+    this.element.setAttribute('jslog', `${VisualLogging.pane('image-view')}`);
     this.url = contentProvider.contentURL();
     this.parsedURL = new Common.ParsedURL.ParsedURL(this.url);
     this.mimeType = mimeType;
@@ -153,22 +155,20 @@ export class ImageView extends UI.View.SimpleView {
   }
 
   private async updateContentIfNeeded(): Promise<void> {
-    const content = await this.contentProvider.requestContent();
-    if (this.cachedContent?.content === content.content) {
+    const content = await this.contentProvider.requestContentData();
+    if (TextUtils.ContentData.ContentData.isError(content) || this.cachedContent?.contentEqualTo(content)) {
       return;
     }
 
     this.cachedContent = content;
-    const imageSrc =
-        TextUtils.ContentProvider.contentAsDataURL(content.content, this.mimeType, content.isEncoded) || this.url;
+    const imageSrc = content.asDataUrl() ?? this.url;
     const loadPromise = new Promise(x => {
       this.imagePreviewElement.onload = x;
     });
     this.imagePreviewElement.src = imageSrc;
     this.imagePreviewElement.alt = i18nString(UIStrings.imageFromS, {PH1: this.url});
-    const size = content.content && !content.isEncoded ? content.content.length :
-                                                         Platform.StringUtilities.base64ToSize(content.content);
-    this.sizeLabel.setText(Platform.NumberUtilities.bytesToString(size));
+    const size = content.isTextContent ? content.text.length : Platform.StringUtilities.base64ToSize(content.base64);
+    this.sizeLabel.setText(i18n.ByteUtilities.bytesToString(size));
     await loadPromise;
     this.dimensionsLabel.setText(i18nString(
         UIStrings.dD, {PH1: this.imagePreviewElement.naturalWidth, PH2: this.imagePreviewElement.naturalHeight}));
@@ -180,16 +180,22 @@ export class ImageView extends UI.View.SimpleView {
     const contextMenu = new UI.ContextMenu.ContextMenu(event);
     const parsedSrc = new Common.ParsedURL.ParsedURL(this.imagePreviewElement.src);
     if (!this.parsedURL.isDataURL()) {
-      contextMenu.clipboardSection().appendItem(i18nString(UIStrings.copyImageUrl), this.copyImageURL.bind(this));
+      contextMenu.clipboardSection().appendItem(i18nString(UIStrings.copyImageUrl), this.copyImageURL.bind(this), {
+        jslogContext: 'image-view.copy-image-url',
+      });
     }
     if (parsedSrc.isDataURL()) {
       contextMenu.clipboardSection().appendItem(
-          i18nString(UIStrings.copyImageAsDataUri), this.copyImageAsDataURL.bind(this));
+          i18nString(UIStrings.copyImageAsDataUri), this.copyImageAsDataURL.bind(this), {
+            jslogContext: 'image-view.copy-image-as-data-url',
+          });
     }
 
-    contextMenu.clipboardSection().appendItem(i18nString(UIStrings.openImageInNewTab), this.openInNewTab.bind(this));
-    contextMenu.clipboardSection().appendItem(i18nString(UIStrings.saveImageAs), async () => {
-      await this.saveImage();
+    contextMenu.clipboardSection().appendItem(i18nString(UIStrings.openImageInNewTab), this.openInNewTab.bind(this), {
+      jslogContext: 'image-view.open-in-new-tab',
+    });
+    contextMenu.clipboardSection().appendItem(i18nString(UIStrings.saveImageAs), this.saveImage.bind(this), {
+      jslogContext: 'image-view.save-image',
     });
 
     void contextMenu.show();
@@ -204,12 +210,7 @@ export class ImageView extends UI.View.SimpleView {
   }
 
   private async saveImage(): Promise<void> {
-    if (!this.cachedContent || !this.cachedContent.content) {
-      return;
-    }
-    const imageDataURL = TextUtils.ContentProvider.contentAsDataURL(
-        this.cachedContent.content, this.mimeType, this.cachedContent.isEncoded, '', false);
-
+    const imageDataURL = this.cachedContent?.asDataUrl();
     if (!imageDataURL) {
       return;
     }
@@ -244,7 +245,7 @@ export class ImageView extends UI.View.SimpleView {
     const encoded = !file.name.endsWith('.svg');
     const fileCallback = (file: Blob): void => {
       const reader = new FileReader();
-      reader.onloadend = (): void => {
+      reader.onloadend = () => {
         let result;
         try {
           result = (reader.result as string | null);

@@ -33,7 +33,7 @@ export class ResourceMapping implements SDK.TargetManager.SDKModelObserver<SDK.R
   constructor(targetManager: SDK.TargetManager.TargetManager, workspace: Workspace.Workspace.WorkspaceImpl) {
     this.workspace = workspace;
     this.#modelToInfo = new Map();
-    targetManager.observeModels(SDK.ResourceTreeModel.ResourceTreeModel, this, {scoped: true});
+    targetManager.observeModels(SDK.ResourceTreeModel.ResourceTreeModel, this);
   }
 
   modelAdded(resourceTreeModel: SDK.ResourceTreeModel.ResourceTreeModel): void {
@@ -301,7 +301,9 @@ class ModelInfo {
     if (resourceType !== Common.ResourceType.resourceTypes.Image &&
         resourceType !== Common.ResourceType.resourceTypes.Font &&
         resourceType !== Common.ResourceType.resourceTypes.Document &&
-        resourceType !== Common.ResourceType.resourceTypes.Manifest) {
+        resourceType !== Common.ResourceType.resourceTypes.Manifest &&
+        resourceType !== Common.ResourceType.resourceTypes.Fetch &&
+        resourceType !== Common.ResourceType.resourceTypes.XHR) {
       return false;
     }
 
@@ -451,9 +453,9 @@ class Binding implements TextUtils.ContentProvider.ContentProvider {
       return;
     }  // There is already a styleSheetChanged loop running
 
-    const {content} = await this.#uiSourceCode.requestContent();
-    if (content !== null) {
-      await this.innerStyleSheetChanged(content);
+    const content = await this.#uiSourceCode.requestContentData();
+    if (!TextUtils.ContentData.ContentData.isError(content)) {
+      await this.innerStyleSheetChanged(content.text);
     }
     this.#edits = [];
   }
@@ -519,7 +521,7 @@ class Binding implements TextUtils.ContentProvider.ContentProvider {
 
   private firstResource(): SDK.Resource.Resource {
     console.assert(this.resources.size > 0);
-    return this.resources.values().next().value;
+    return this.resources.values().next().value as SDK.Resource.Resource;
   }
 
   contentURL(): Platform.DevToolsPath.UrlString {
@@ -532,6 +534,10 @@ class Binding implements TextUtils.ContentProvider.ContentProvider {
 
   requestContent(): Promise<TextUtils.ContentProvider.DeferredContent> {
     return this.firstResource().requestContent();
+  }
+
+  requestContentData(): Promise<TextUtils.ContentData.ContentDataOrError> {
+    return this.firstResource().requestContentData();
   }
 
   searchInContent(query: string, caseSensitive: boolean, isRegex: boolean):

@@ -6,10 +6,10 @@ import * as i18n from '../../core/i18n/i18n.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import * as SourceFrame from '../../ui/legacy/components/source_frame/source_frame.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 
 import eventDisplayTableStyles from './eventDisplayTable.css.js';
-
-import {type PlayerEvent} from './MediaModel.js';
+import type {PlayerEvent} from './MediaModel.js';
 
 const UIStrings = {
   /**
@@ -40,9 +40,9 @@ export interface EventDisplayColumnConfig {
 }
 
 export const enum MediaEventColumnKeys {
-  Timestamp = 'displayTimestamp',
-  Event = 'event',
-  Value = 'value',
+  TIMESTAMP = 'display-timestamp',
+  EVENT = 'event',
+  VALUE = 'value',
 }
 
 export class EventNode extends DataGrid.DataGrid.DataGridNode<EventNode> {
@@ -56,7 +56,7 @@ export class EventNode extends DataGrid.DataGrid.DataGridNode<EventNode> {
   override createCell(columnId: string): HTMLElement {
     const cell = this.createTD(columnId);
     const cellData = this.data[columnId] as string;
-    if (columnId === MediaEventColumnKeys.Value) {
+    if (columnId === MediaEventColumnKeys.VALUE) {
       const enclosed = cell.createChild('div', 'event-display-table-contents-json-wrapper');
       this.expandableElement =
           new SourceFrame.JSONView.JSONView(new SourceFrame.JSONView.ParsedJSON(cellData, '', ''), true);
@@ -77,20 +77,22 @@ export class PlayerEventsView extends UI.Widget.VBox {
   constructor() {
     super();
 
+    this.element.setAttribute('jslog', `${VisualLogging.pane('events')}`);
+
     // Set up element styles.
 
     this.contentElement.classList.add('event-display-table-contents-table-container');
 
     this.dataGrid = this.createDataGrid([
       {
-        id: MediaEventColumnKeys.Timestamp,
+        id: MediaEventColumnKeys.TIMESTAMP,
         title: i18nString(UIStrings.timestamp),
         weight: 1,
         sortable: false,
       },
-      {id: MediaEventColumnKeys.Event, title: i18nString(UIStrings.eventName), weight: 2, sortable: false},
+      {id: MediaEventColumnKeys.EVENT, title: i18nString(UIStrings.eventName), weight: 2, sortable: false},
       {
-        id: MediaEventColumnKeys.Value,
+        id: MediaEventColumnKeys.VALUE,
         title: i18nString(UIStrings.value),
         weight: 7,
         sortable: false,

@@ -2,14 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {
-  $textContent,
-  assertNotNullOrUndefined,
-  click,
-  waitForAria,
-  waitForFunction,
-} from '../../shared/helper.js';
-import {describe, it} from '../../shared/mocha-extensions.js';
+import {$textContent, click, waitForAria, waitForFunction} from '../../shared/helper.js';
+
 import {waitForSoftContextMenu} from '../helpers/context-menu-helpers.js';
 import {shiftClickColorSwatch} from '../helpers/elements-helpers.js';
 import {openFileInEditor, openFileInSourcesPanel} from '../helpers/sources-helpers.js';
@@ -20,11 +14,10 @@ describe('Color swatches in the sources panel', () => {
     await openFileInEditor('inline-css.html');
 
     const editor = await waitForAria('Code editor');
-    assertNotNullOrUndefined(editor);
 
     await waitForFunction(() => $textContent('red', editor));
 
-    await shiftClickColorSwatch(editor, 0);
+    await shiftClickColorSwatch(editor, 0, 'Panel: sources > Pane: editor > TextField');
     const menu = await waitForSoftContextMenu();
     await click('[aria-label="#f00"]', {root: menu});
 

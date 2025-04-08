@@ -5,6 +5,7 @@
 import type * as Common from '../common/common.js';
 import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
 
+import {assertNotNullOrUndefined} from '../platform/platform.js';
 import * as Protocol from '../../generated/protocol.js';
 import {SDKModel} from './SDKModel.js';
 import {Capability, type Target} from './Target.js';
@@ -100,6 +101,25 @@ export class PreloadingModel extends SDKModel<EventTypes> {
     return this.currentDocument()?.ruleSets.getAll() || [];
   }
 
+  getPreloadCountsByRuleSetId(): Map<Protocol.Preload.RuleSetId|null, Map<PreloadingStatus, number>> {
+    const countsByRuleSetId = new Map<Protocol.Preload.RuleSetId|null, Map<PreloadingStatus, number>>();
+
+    for (const {value} of this.getPreloadingAttempts(null)) {
+      for (const ruleSetId of [null, ...value.ruleSetIds]) {
+        if (countsByRuleSetId.get(ruleSetId) === undefined) {
+          countsByRuleSetId.set(ruleSetId, new Map<PreloadingStatus, number>());
+        }
+
+        const countsByStatus = countsByRuleSetId.get(ruleSetId);
+        assertNotNullOrUndefined(countsByStatus);
+        const i = countsByStatus.get(value.status) || 0;
+        countsByStatus.set(value.status, i + 1);
+      }
+    }
+
+    return countsByRuleSetId;
+  }
+
   // Returns a preloading attempt of the current page.
   //
   // Returns reference. Don't save returned values.
@@ -149,15 +169,15 @@ export class PreloadingModel extends SDKModel<EventTypes> {
     const {frame, type} = event.data;
 
     // Model of prerendered page's target will hands over. Do nothing for the initiator page.
-    if (this.lastPrimaryPageModel === null && type === PrimaryPageChangeType.Activation) {
+    if (this.lastPrimaryPageModel === null && type === PrimaryPageChangeType.ACTIVATION) {
       return;
     }
 
-    if (this.lastPrimaryPageModel !== null && type !== PrimaryPageChangeType.Activation) {
+    if (this.lastPrimaryPageModel !== null && type !== PrimaryPageChangeType.ACTIVATION) {
       return;
     }
 
-    if (this.lastPrimaryPageModel !== null && type === PrimaryPageChangeType.Activation) {
+    if (this.lastPrimaryPageModel !== null && type === PrimaryPageChangeType.ACTIVATION) {
       // Hand over from the model of the last primary page.
       this.loaderIds = this.lastPrimaryPageModel.loaderIds;
       for (const [loaderId, prev] of this.lastPrimaryPageModel.documents.entries()) {
@@ -183,7 +203,7 @@ export class PreloadingModel extends SDKModel<EventTypes> {
       }
     }
 
-    this.dispatchEventToListeners(Events.ModelUpdated);
+    this.dispatchEventToListeners(Events.MODEL_UPDATED);
   }
 
   onRuleSetUpdated(event: Protocol.Preload.RuleSetUpdatedEvent): void {
@@ -199,7 +219,7 @@ export class PreloadingModel extends SDKModel<EventTypes> {
 
     this.ensureDocumentPreloadingData(loaderId);
     this.documents.get(loaderId)?.ruleSets.upsert(ruleSet);
-    this.dispatchEventToListeners(Events.ModelUpdated);
+    this.dispatchEventToListeners(Events.MODEL_UPDATED);
   }
 
   onRuleSetRemoved(event: Protocol.Preload.RuleSetRemovedEvent): void {
@@ -208,7 +228,7 @@ export class PreloadingModel extends SDKModel<EventTypes> {
     for (const document of this.documents.values()) {
       document.ruleSets.delete(id);
     }
-    this.dispatchEventToListeners(Events.ModelUpdated);
+    this.dispatchEventToListeners(Events.MODEL_UPDATED);
   }
 
   onPreloadingAttemptSourcesUpdated(event: Protocol.Preload.PreloadingAttemptSourcesUpdatedEvent): void {
@@ -222,42 +242,60 @@ export class PreloadingModel extends SDKModel<EventTypes> {
 
     document.sources.update(event.preloadingAttemptSources);
     document.preloadingAttempts.maybeRegisterNotTriggered(document.sources);
-    this.dispatchEventToListeners(Events.ModelUpdated);
+    document.preloadingAttempts.cleanUpRemovedAttempts(document.sources);
+    this.dispatchEventToListeners(Events.MODEL_UPDATED);
   }
 
   onPrefetchStatusUpdated(event: Protocol.Preload.PrefetchStatusUpdatedEvent): void {
+    // We ignore this event to avoid reinserting an attempt after it was removed by
+    // onPreloadingAttemptSourcesUpdated.
+    if (event.prefetchStatus === Protocol.Preload.PrefetchStatus.PrefetchEvictedAfterCandidateRemoved) {
+      return;
+    }
+
     const loaderId = event.key.loaderId;
     this.ensureDocumentPreloadingData(loaderId);
-    const attempt = {
+    const attempt: PrefetchAttemptInternal = {
+      action: Protocol.Preload.SpeculationAction.Prefetch,
       key: event.key,
       status: convertPreloadingStatus(event.status),
+      prefetchStatus: event.prefetchStatus || null,
+      requestId: event.requestId,
     };
     this.documents.get(loaderId)?.preloadingAttempts.upsert(attempt);
-    this.dispatchEventToListeners(Events.ModelUpdated);
+    this.dispatchEventToListeners(Events.MODEL_UPDATED);
   }
 
   onPrerenderStatusUpdated(event: Protocol.Preload.PrerenderStatusUpdatedEvent): void {
     const loaderId = event.key.loaderId;
     this.ensureDocumentPreloadingData(loaderId);
-    const attempt = {
+    const attempt: PrerenderAttemptInternal = {
+      action: Protocol.Preload.SpeculationAction.Prerender,
       key: event.key,
       status: convertPreloadingStatus(event.status),
+      prerenderStatus: event.prerenderStatus || null,
+      disallowedMojoInterface: event.disallowedMojoInterface || null,
+      mismatchedHeaders: event.mismatchedHeaders || null,
     };
     this.documents.get(loaderId)?.preloadingAttempts.upsert(attempt);
-    this.dispatchEventToListeners(Events.ModelUpdated);
+    this.dispatchEventToListeners(Events.MODEL_UPDATED);
+  }
+
+  onPreloadEnabledStateUpdated(event: Protocol.Preload.PreloadEnabledStateUpdatedEvent): void {
+    this.dispatchEventToListeners(Events.WARNINGS_UPDATED, event);
   }
 }
 
-SDKModel.register(PreloadingModel, {capabilities: Capability.Target, autostart: false});
+SDKModel.register(PreloadingModel, {capabilities: Capability.DOM, autostart: false});
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export enum Events {
-  ModelUpdated = 'ModelUpdated',
+export const enum Events {
+  MODEL_UPDATED = 'ModelUpdated',
+  WARNINGS_UPDATED = 'WarningsUpdated',
 }
 
 export type EventTypes = {
-  [Events.ModelUpdated]: void,
+  [Events.MODEL_UPDATED]: void,
+  [Events.WARNINGS_UPDATED]: Protocol.Preload.PreloadEnabledStateUpdatedEvent,
 };
 
 class PreloadDispatcher implements ProtocolProxyApi.PreloadDispatcher {
@@ -283,11 +321,12 @@ class PreloadDispatcher implements ProtocolProxyApi.PreloadDispatcher {
     this.model.onPrefetchStatusUpdated(event);
   }
 
-  prerenderAttemptCompleted(_: Protocol.Preload.PrerenderAttemptCompletedEvent): void {
-  }
-
   prerenderStatusUpdated(event: Protocol.Preload.PrerenderStatusUpdatedEvent): void {
     this.model.onPrerenderStatusUpdated(event);
+  }
+
+  preloadEnabledStateUpdated(event: Protocol.Preload.PreloadEnabledStateUpdatedEvent): void {
+    void this.model.onPreloadEnabledStateUpdated(event);
   }
 }
 
@@ -355,29 +394,29 @@ class RuleSetRegistry {
 //
 // TODO(https://crbug.com/1384419): Add NotEligible.
 export const enum PreloadingStatus {
-  NotTriggered = 'NotTriggered',
-  Pending = 'Pending',
-  Running = 'Running',
-  Ready = 'Ready',
-  Success = 'Success',
-  Failure = 'Failure',
-  NotSupported = 'NotSupported',
+  NOT_TRIGGERED = 'NotTriggered',
+  PENDING = 'Pending',
+  RUNNING = 'Running',
+  READY = 'Ready',
+  SUCCESS = 'Success',
+  FAILURE = 'Failure',
+  NOT_SUPPORTED = 'NotSupported',
 }
 
 function convertPreloadingStatus(status: Protocol.Preload.PreloadingStatus): PreloadingStatus {
   switch (status) {
     case Protocol.Preload.PreloadingStatus.Pending:
-      return PreloadingStatus.Pending;
+      return PreloadingStatus.PENDING;
     case Protocol.Preload.PreloadingStatus.Running:
-      return PreloadingStatus.Running;
+      return PreloadingStatus.RUNNING;
     case Protocol.Preload.PreloadingStatus.Ready:
-      return PreloadingStatus.Ready;
+      return PreloadingStatus.READY;
     case Protocol.Preload.PreloadingStatus.Success:
-      return PreloadingStatus.Success;
+      return PreloadingStatus.SUCCESS;
     case Protocol.Preload.PreloadingStatus.Failure:
-      return PreloadingStatus.Failure;
+      return PreloadingStatus.FAILURE;
     case Protocol.Preload.PreloadingStatus.NotSupported:
-      return PreloadingStatus.NotSupported;
+      return PreloadingStatus.NOT_SUPPORTED;
   }
 
   throw new Error('unreachable');
@@ -385,16 +424,46 @@ function convertPreloadingStatus(status: Protocol.Preload.PreloadingStatus): Pre
 
 export type PreloadingAttemptId = string;
 
-export interface PreloadingAttempt {
+export type PreloadingAttempt = PrefetchAttempt|PrerenderAttempt;
+
+export interface PrefetchAttempt {
+  action: Protocol.Preload.SpeculationAction.Prefetch;
   key: Protocol.Preload.PreloadingAttemptKey;
   status: PreloadingStatus;
+  prefetchStatus: Protocol.Preload.PrefetchStatus|null;
+  requestId: Protocol.Network.RequestId;
   ruleSetIds: Protocol.Preload.RuleSetId[];
   nodeIds: Protocol.DOM.BackendNodeId[];
 }
 
-export interface PreloadingAttemptInternal {
+export interface PrerenderAttempt {
+  action: Protocol.Preload.SpeculationAction.Prerender;
   key: Protocol.Preload.PreloadingAttemptKey;
   status: PreloadingStatus;
+  prerenderStatus: Protocol.Preload.PrerenderFinalStatus|null;
+  disallowedMojoInterface: string|null;
+  mismatchedHeaders: Protocol.Preload.PrerenderMismatchedHeaders[]|null;
+  ruleSetIds: Protocol.Preload.RuleSetId[];
+  nodeIds: Protocol.DOM.BackendNodeId[];
+}
+
+export type PreloadingAttemptInternal = PrefetchAttemptInternal|PrerenderAttemptInternal;
+
+export interface PrefetchAttemptInternal {
+  action: Protocol.Preload.SpeculationAction.Prefetch;
+  key: Protocol.Preload.PreloadingAttemptKey;
+  status: PreloadingStatus;
+  prefetchStatus: Protocol.Preload.PrefetchStatus|null;
+  requestId: Protocol.Network.RequestId;
+}
+
+export interface PrerenderAttemptInternal {
+  action: Protocol.Preload.SpeculationAction.Prerender;
+  key: Protocol.Preload.PreloadingAttemptKey;
+  status: PreloadingStatus;
+  prerenderStatus: Protocol.Preload.PrerenderFinalStatus|null;
+  disallowedMojoInterface: string|null;
+  mismatchedHeaders: Protocol.Preload.PrerenderMismatchedHeaders[]|null;
 }
 
 function makePreloadingAttemptId(key: Protocol.Preload.PreloadingAttemptKey): PreloadingAttemptId {
@@ -473,17 +542,51 @@ class PreloadingAttemptRegistry {
     this.map.set(id, attempt);
   }
 
+  // Speculation rules emits a CDP event Preload.preloadingAttemptSourcesUpdated
+  // and an IPC SpeculationHost::UpdateSpeculationCandidates. The latter emits
+  // Preload.prefetch/prerenderAttemptUpdated for each preload attempt triggered.
+  // In general, "Not triggered to triggered" period is short (resp. long) for
+  // eager (resp. non-eager) preloads. For not yet emitted ones, we fill
+  // "Not triggered" preload attempts and show them.
   maybeRegisterNotTriggered(sources: SourceRegistry): void {
     for (const [id, {key}] of sources.entries()) {
       if (this.map.get(id) !== undefined) {
         continue;
       }
 
-      const attempt = {
-        key,
-        status: PreloadingStatus.NotTriggered,
-      };
+      let attempt: PreloadingAttemptInternal;
+      switch (key.action) {
+        case Protocol.Preload.SpeculationAction.Prefetch:
+          attempt = {
+            action: Protocol.Preload.SpeculationAction.Prefetch,
+            key,
+            status: PreloadingStatus.NOT_TRIGGERED,
+            prefetchStatus: null,
+            // Fill invalid request id.
+            requestId: '' as Protocol.Network.RequestId,
+          };
+          break;
+        case Protocol.Preload.SpeculationAction.Prerender:
+          attempt = {
+            action: Protocol.Preload.SpeculationAction.Prerender,
+            key,
+            status: PreloadingStatus.NOT_TRIGGERED,
+            prerenderStatus: null,
+            disallowedMojoInterface: null,
+            mismatchedHeaders: null,
+          };
+          break;
+      }
       this.map.set(id, attempt);
+    }
+  }
+
+  // Removes keys in `this.map` that are not in `sources`. This is used to
+  // remove attempts that no longer have a matching speculation rule.
+  cleanUpRemovedAttempts(sources: SourceRegistry): void {
+    const keysToRemove = Array.from(this.map.keys()).filter(key => !sources.getById(key));
+    for (const key of keysToRemove) {
+      this.map.delete(key);
     }
   }
 

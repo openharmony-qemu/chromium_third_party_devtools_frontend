@@ -32,7 +32,7 @@ export class LogModel extends SDKModel<EventTypes> implements ProtocolProxyApi.L
   }
 
   entryAdded({entry}: Protocol.Log.EntryAddedEvent): void {
-    this.dispatchEventToListeners(Events.EntryAdded, {logModel: this, entry});
+    this.dispatchEventToListeners(Events.ENTRY_ADDED, {logModel: this, entry});
   }
 
   requestClear(): void {
@@ -40,10 +40,8 @@ export class LogModel extends SDKModel<EventTypes> implements ProtocolProxyApi.L
   }
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export enum Events {
-  EntryAdded = 'EntryAdded',
+export const enum Events {
+  ENTRY_ADDED = 'EntryAdded',
 }
 
 export interface EntryAddedEvent {
@@ -52,7 +50,7 @@ export interface EntryAddedEvent {
 }
 
 export type EventTypes = {
-  [Events.EntryAdded]: EntryAddedEvent,
+  [Events.ENTRY_ADDED]: EntryAddedEvent,
 };
 
-SDKModel.register(LogModel, {capabilities: Capability.Log, autostart: true});
+SDKModel.register(LogModel, {capabilities: Capability.LOG, autostart: true});

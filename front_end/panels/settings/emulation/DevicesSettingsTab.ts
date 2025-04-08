@@ -4,19 +4,23 @@
 
 import * as i18n from '../../../core/i18n/i18n.js';
 import * as EmulationModel from '../../../models/emulation/emulation.js';
+import type * as Buttons from '../../../ui/components/buttons/buttons.js';
+import * as Cards from '../../../ui/components/cards/cards.js';
 import * as UI from '../../../ui/legacy/legacy.js';
+import * as VisualLogging from '../../../ui/visual_logging/visual_logging.js';
 
 import * as EmulationComponents from './components/components.js';
-
 import devicesSettingsTabStyles from './devicesSettingsTab.css.js';
-
-let devicesSettingsTabInstance: DevicesSettingsTab;
 
 const UIStrings = {
   /**
-   *@description Title for a section of the UI that shows all of the devices the user can emulate, in the Device Toolbar.
+   * @description Title for a section of the UI that shows all of the custom devices the user can emulate, in the Device Toolbar.
    */
-  emulatedDevices: 'Emulated Devices',
+  customDevices: 'Custom devices',
+  /**
+   * @description Title for a section of the UI that shows all of the default devices the user can emulate, in the Device Toolbar.
+   */
+  defaultDevices: 'Default devices',
   /**
    *@description Button to add a custom device (e.g. phone, tablet) the Device Toolbar.
    */
@@ -71,57 +75,71 @@ const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class DevicesSettingsTab extends UI.Widget.VBox implements
     UI.ListWidget.Delegate<EmulationModel.EmulatedDevices.EmulatedDevice> {
   containerElement: HTMLElement;
-  private readonly addCustomButton: HTMLButtonElement;
+  private readonly addCustomButton: Buttons.Button.Button;
   private readonly ariaSuccessMessageElement: HTMLElement;
-  private readonly list: UI.ListWidget.ListWidget<EmulationModel.EmulatedDevices.EmulatedDevice>;
+  readonly #customDeviceList: UI.ListWidget.ListWidget<EmulationModel.EmulatedDevices.EmulatedDevice>;
+  readonly #defaultDeviceList: UI.ListWidget.ListWidget<EmulationModel.EmulatedDevices.EmulatedDevice>;
   private muteUpdate: boolean;
   private emulatedDevicesList: EmulationModel.EmulatedDevices.EmulatedDevicesList;
   private editor?: UI.ListWidget.Editor<EmulationModel.EmulatedDevices.EmulatedDevice>;
 
-  private constructor() {
+  constructor() {
     super();
-    this.element.classList.add('settings-tab-container');
-    this.element.classList.add('devices-settings-tab');
 
-    const header = this.element.createChild('header');
-    UI.UIUtils.createTextChild(header.createChild('h1'), i18nString(UIStrings.emulatedDevices));
-    this.containerElement = this.element.createChild('div', 'settings-container-wrapper')
-                                .createChild('div', 'settings-tab settings-content settings-container');
+    this.element.setAttribute('jslog', `${VisualLogging.pane('devices')}`);
 
-    const buttonsRow = this.containerElement.createChild('div', 'devices-button-row');
-    this.addCustomButton =
-        UI.UIUtils.createTextButton(i18nString(UIStrings.addCustomDevice), this.addCustomDevice.bind(this));
-    this.addCustomButton.id = 'custom-device-add-button';
-    buttonsRow.appendChild(this.addCustomButton);
-    this.ariaSuccessMessageElement = this.containerElement.createChild('div', 'device-success-message');
-    UI.ARIAUtils.markAsPoliteLiveRegion(this.ariaSuccessMessageElement, false);
+    this.containerElement =
+        this.contentElement.createChild('div', 'settings-card-container-wrapper').createChild('div');
+    this.containerElement.classList.add('settings-card-container', 'ignore-list-settings');
 
-    this.list = new UI.ListWidget.ListWidget(this, false /* delegatesFocus */);
-    this.list.element.classList.add('devices-list');
-    this.list.show(this.containerElement);
+    this.#defaultDeviceList = new UI.ListWidget.ListWidget(this, false /* delegatesFocus */);
+    this.#defaultDeviceList.element.classList.add('devices-list', 'device-card-content');
 
     this.muteUpdate = false;
     this.emulatedDevicesList = EmulationModel.EmulatedDevices.EmulatedDevicesList.instance();
     this.emulatedDevicesList.addEventListener(
-        EmulationModel.EmulatedDevices.Events.CustomDevicesUpdated, this.devicesUpdated, this);
+        EmulationModel.EmulatedDevices.Events.CUSTOM_DEVICES_UPDATED, this.devicesUpdated, this);
     this.emulatedDevicesList.addEventListener(
-        EmulationModel.EmulatedDevices.Events.StandardDevicesUpdated, this.devicesUpdated, this);
+        EmulationModel.EmulatedDevices.Events.STANDARD_DEVICES_UPDATED, this.devicesUpdated, this);
 
-    this.setDefaultFocusedElement(this.addCustomButton);
-  }
+    this.ariaSuccessMessageElement = this.contentElement.createChild('div', 'device-success-message');
+    UI.ARIAUtils.markAsPoliteLiveRegion(this.ariaSuccessMessageElement, false);
 
-  static instance(): DevicesSettingsTab {
-    if (!devicesSettingsTabInstance) {
-      devicesSettingsTabInstance = new DevicesSettingsTab();
-    }
-    return devicesSettingsTabInstance;
+    this.addCustomButton = UI.UIUtils.createTextButton(
+        i18nString(UIStrings.addCustomDevice), this.addCustomDevice.bind(this), {jslogContext: 'add-custom-device'});
+    this.addCustomButton.id = 'custom-device-add-button';
+
+    const customSettings = document.createElement('div');
+    customSettings.classList.add('device-card-content');
+    customSettings.appendChild(this.ariaSuccessMessageElement);
+    const deviceList = customSettings.createChild('div');
+    customSettings.appendChild(this.addCustomButton);
+
+    const customDevicesCard = new Cards.Card.Card();
+    customDevicesCard.data = {
+      heading: i18nString(UIStrings.customDevices),
+      content: [customSettings],
+    };
+    this.containerElement.appendChild(customDevicesCard);
+
+    this.#customDeviceList = new UI.ListWidget.ListWidget(this, false /* delegatesFocus */);
+    this.#customDeviceList.element.classList.add('devices-list');
+    this.#customDeviceList.show(deviceList);
+
+    const defaultDevicesCard = new Cards.Card.Card();
+    defaultDevicesCard.data = {
+      heading: i18nString(UIStrings.defaultDevices),
+      content: [this.#defaultDeviceList.element],
+    };
+    this.containerElement.appendChild(defaultDevicesCard);
   }
 
   override wasShown(): void {
     super.wasShown();
     this.devicesUpdated();
     this.registerCSSFiles([devicesSettingsTabStyles]);
-    this.list.registerCSSFiles([devicesSettingsTabStyles]);
+    this.#defaultDeviceList.registerCSSFiles([devicesSettingsTabStyles]);
+    this.#customDeviceList.registerCSSFiles([devicesSettingsTabStyles]);
   }
 
   private devicesUpdated(): void {
@@ -129,19 +147,18 @@ export class DevicesSettingsTab extends UI.Widget.VBox implements
       return;
     }
 
-    this.list.clear();
+    this.#defaultDeviceList.clear();
+    this.#customDeviceList.clear();
 
     let devices = this.emulatedDevicesList.custom().slice();
     for (let i = 0; i < devices.length; ++i) {
-      this.list.appendItem(devices[i], true);
+      this.#customDeviceList.appendItem(devices[i], true);
     }
-
-    this.list.appendSeparator();
 
     devices = this.emulatedDevicesList.standard().slice();
     devices.sort(EmulationModel.EmulatedDevices.EmulatedDevice.deviceComparator);
     for (let i = 0; i < devices.length; ++i) {
-      this.list.appendItem(devices[i], false);
+      this.#defaultDeviceList.appendItem(devices[i], false);
     }
   }
 
@@ -162,7 +179,7 @@ export class DevicesSettingsTab extends UI.Widget.VBox implements
     device.horizontal.height = 400;
     device.vertical.width = 400;
     device.vertical.height = 700;
-    this.list.addNewItem(this.emulatedDevicesList.custom().length, device);
+    this.#customDeviceList.addNewItem(this.emulatedDevicesList.custom().length, device);
   }
 
   private toNumericInputValue(value: number): string {
@@ -176,6 +193,7 @@ export class DevicesSettingsTab extends UI.Widget.VBox implements
     checkbox.type = 'checkbox';
     checkbox.checked = device.show();
     checkbox.addEventListener('click', onItemClicked.bind(this), false);
+    checkbox.setAttribute('jslog', `${VisualLogging.toggle().track({click: true})}`);
     const span = document.createElement('span');
     span.classList.add('device-name');
     span.appendChild(document.createTextNode(device.title));
@@ -219,13 +237,13 @@ export class DevicesSettingsTab extends UI.Widget.VBox implements
     });
     device.capabilities = [];
     const uaType = editor.control('ua-type').value;
-    if (uaType === EmulationModel.DeviceModeModel.UA.Mobile ||
-        uaType === EmulationModel.DeviceModeModel.UA.MobileNoTouch) {
-      device.capabilities.push(EmulationModel.EmulatedDevices.Capability.Mobile);
+    if (uaType === EmulationModel.DeviceModeModel.UA.MOBILE ||
+        uaType === EmulationModel.DeviceModeModel.UA.MOBILE_NO_TOUCH) {
+      device.capabilities.push(EmulationModel.EmulatedDevices.Capability.MOBILE);
     }
-    if (uaType === EmulationModel.DeviceModeModel.UA.Mobile ||
-        uaType === EmulationModel.DeviceModeModel.UA.DesktopTouch) {
-      device.capabilities.push(EmulationModel.EmulatedDevices.Capability.Touch);
+    if (uaType === EmulationModel.DeviceModeModel.UA.MOBILE ||
+        uaType === EmulationModel.DeviceModeModel.UA.DESKTOP_TOUCH) {
+      device.capabilities.push(EmulationModel.EmulatedDevices.Capability.TOUCH);
     }
     const userAgentControlValue =
         (editor.control('ua-metadata') as
@@ -235,8 +253,8 @@ export class DevicesSettingsTab extends UI.Widget.VBox implements
       device.userAgentMetadata = {
         ...userAgentControlValue,
         mobile:
-            (uaType === EmulationModel.DeviceModeModel.UA.Mobile ||
-             uaType === EmulationModel.DeviceModeModel.UA.MobileNoTouch),
+            (uaType === EmulationModel.DeviceModeModel.UA.MOBILE ||
+             uaType === EmulationModel.DeviceModeModel.UA.MOBILE_NO_TOUCH),
       };
     }
     if (isNew) {
@@ -261,10 +279,10 @@ export class DevicesSettingsTab extends UI.Widget.VBox implements
     let uaType;
     if (device.mobile()) {
       uaType =
-          device.touch() ? EmulationModel.DeviceModeModel.UA.Mobile : EmulationModel.DeviceModeModel.UA.MobileNoTouch;
+          device.touch() ? EmulationModel.DeviceModeModel.UA.MOBILE : EmulationModel.DeviceModeModel.UA.MOBILE_NO_TOUCH;
     } else {
       uaType =
-          device.touch() ? EmulationModel.DeviceModeModel.UA.DesktopTouch : EmulationModel.DeviceModeModel.UA.Desktop;
+          device.touch() ? EmulationModel.DeviceModeModel.UA.DESKTOP_TOUCH : EmulationModel.DeviceModeModel.UA.DESKTOP;
     }
     editor.control('ua-type').value = uaType;
     (editor.control('ua-metadata') as
@@ -302,10 +320,10 @@ export class DevicesSettingsTab extends UI.Widget.VBox implements
       return {valid: true, errorMessage: undefined};
     }));
     const uaTypeOptions = [
-      EmulationModel.DeviceModeModel.UA.Mobile,
-      EmulationModel.DeviceModeModel.UA.MobileNoTouch,
-      EmulationModel.DeviceModeModel.UA.Desktop,
-      EmulationModel.DeviceModeModel.UA.DesktopTouch,
+      EmulationModel.DeviceModeModel.UA.MOBILE,
+      EmulationModel.DeviceModeModel.UA.MOBILE_NO_TOUCH,
+      EmulationModel.DeviceModeModel.UA.DESKTOP,
+      EmulationModel.DeviceModeModel.UA.DESKTOP_TOUCH,
     ];
     const uaType = editor.createSelect('ua-type', uaTypeOptions, () => {
       return {valid: true, errorMessage: undefined};

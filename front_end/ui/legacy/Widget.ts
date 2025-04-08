@@ -28,32 +28,91 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as DOMExtension from '../../core/dom_extension/dom_extension.js';
+import '../../core/dom_extension/dom_extension.js';
+
 import * as Platform from '../../core/platform/platform.js';
+import * as LitHtml from '../../ui/lit-html/lit-html.js';
 import * as Helpers from '../components/helpers/helpers.js';
 
 import {Constraints, Size} from './Geometry.js';
 import * as ThemeSupport from './theme_support/theme_support.js';
-import * as Utils from './utils/utils.js';
+import {createShadowRootWithCoreStyles} from './UIUtils.js';
 import {XWidget} from './XWidget.js';
 
-export class WidgetElement extends HTMLDivElement {
-  // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-  // eslint-disable-next-line @typescript-eslint/naming-convention, rulesdir/no_underscored_properties
-  override __widget!: Widget|null;
-  // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-  // eslint-disable-next-line @typescript-eslint/naming-convention, rulesdir/no_underscored_properties
-  __widgetCounter!: number|null;
-  constructor() {
-    super();
+// Remember the original DOM mutation methods here, since we
+// will override them below to sanity check the Widget system.
+const originalAppendChild = Element.prototype.appendChild;
+const originalInsertBefore = Element.prototype.insertBefore;
+const originalRemoveChild = Element.prototype.removeChild;
+const originalRemoveChildren = Element.prototype.removeChildren;
+
+function assert(condition: unknown, message: string): void {
+  if (!condition) {
+    throw new Error(message);
+  }
+}
+
+export class WidgetElement<WidgetT extends Widget> extends HTMLElement {
+  widgetClass?: new(...args: any[]) => WidgetT;
+  widgetParams: unknown[] = [];
+
+  createWidget(): WidgetT {
+    if (!this.widgetClass) {
+      throw new Error('No widgetClass defined');
+    }
+
+    return new this.widgetClass(...this.widgetParams, this);
+  }
+
+  connectedCallback(): void {
+    Widget.getOrCreateWidget(this).show(this.parentElement as HTMLElement);
+  }
+}
+
+customElements.define('devtools-widget', WidgetElement);
+
+type Constructor<T, Args extends unknown[]> = {
+  new (...args: Args): T,
+};
+
+export function widgetRef<T extends Widget, Args extends unknown[]>(
+    type: Constructor<T, Args>, callback: (_: T) => void): ReturnType<typeof LitHtml.Directives.ref> {
+  return LitHtml.Directives.ref((e?: Element) => {
+    if (!(e instanceof HTMLElement)) {
+      return;
+    }
+    const widget = Widget.getOrCreateWidget(e);
+    if (!(widget instanceof type)) {
+      throw new Error(`Expected an element with a widget of type ${type.name} but got ${e?.constructor?.name}`);
+    }
+    callback(widget);
+  });
+}
+
+const widgetCounterMap = new WeakMap<Node, number>();
+const widgetMap = new WeakMap<Node, Widget>();
+
+function incrementWidgetCounter(parentElement: Element, childElement: Element): void {
+  const count = (widgetCounterMap.get(childElement) || 0) + (widgetMap.get(childElement) ? 1 : 0);
+  for (let el: Element|null = parentElement; el; el = el.parentElementOrShadowHost()) {
+    widgetCounterMap.set(el, (widgetCounterMap.get(el) || 0) + count);
+  }
+}
+
+function decrementWidgetCounter(parentElement: Element, childElement: Element): void {
+  const count = (widgetCounterMap.get(childElement) || 0) + (widgetMap.get(childElement) ? 1 : 0);
+  for (let el: Element|null = parentElement; el; el = el.parentElementOrShadowHost()) {
+    const elCounter = widgetCounterMap.get(el);
+    if (elCounter) {
+      widgetCounterMap.set(el, elCounter - count);
+    }
   }
 }
 
 export class Widget {
-  element!: WidgetElement;
-  contentElement: HTMLDivElement;
+  readonly element: HTMLElement;
+  contentElement: HTMLElement;
   private shadowRoot: ShadowRoot|undefined;
-  private readonly isWebComponent: boolean|undefined;
   protected visibleInternal: boolean;
   private isRoot: boolean;
   private isShowingInternal: boolean;
@@ -63,29 +122,28 @@ export class Widget {
   private invalidationsSuspended: number;
   defaultFocusedChild: Widget|null;
   private parentWidgetInternal: Widget|null;
-  private registeredCSSFiles: boolean;
   private defaultFocusedElement?: Element|null;
   private cachedConstraints?: Constraints;
   private constraintsInternal?: Constraints;
   private invalidationsRequested?: boolean;
   private externallyManaged?: boolean;
-  constructor(isWebComponent?: boolean, delegatesFocus?: boolean) {
-    this.contentElement = document.createElement('div');
-    this.contentElement.classList.add('widget');
-    if (isWebComponent) {
-      this.element = (document.createElement('div') as WidgetElement);
+  constructor(useShadowDom?: boolean, delegatesFocus?: boolean, element?: HTMLElement) {
+    this.element = element || document.createElement('div');
+    this.shadowRoot = this.element.shadowRoot || undefined;
+    if (useShadowDom && !this.shadowRoot) {
       this.element.classList.add('vbox');
       this.element.classList.add('flex-auto');
-      this.shadowRoot = Utils.createShadowRootWithCoreStyles(this.element, {
+      this.shadowRoot = createShadowRootWithCoreStyles(this.element, {
         cssFile: undefined,
         delegatesFocus,
       });
+      this.contentElement = document.createElement('div');
       this.shadowRoot.appendChild(this.contentElement);
     } else {
-      this.element = (this.contentElement as WidgetElement);
+      this.contentElement = this.element;
     }
-    this.isWebComponent = isWebComponent;
-    this.element.__widget = this;
+    this.contentElement.classList.add('widget');
+    widgetMap.set(this.element, this);
     this.visibleInternal = false;
     this.isRoot = false;
     this.isShowingInternal = false;
@@ -95,47 +153,32 @@ export class Widget {
     this.invalidationsSuspended = 0;
     this.defaultFocusedChild = null;
     this.parentWidgetInternal = null;
-    this.registeredCSSFiles = false;
   }
 
-  private static incrementWidgetCounter(parentElement: WidgetElement, childElement: WidgetElement): void {
-    const count = (childElement.__widgetCounter || 0) + (childElement.__widget ? 1 : 0);
-    if (!count) {
-      return;
-    }
-
-    let currentElement: (WidgetElement|null)|WidgetElement = parentElement;
-    while (currentElement) {
-      currentElement.__widgetCounter = (currentElement.__widgetCounter || 0) + count;
-      currentElement = parentWidgetElementOrShadowHost(currentElement);
-    }
+  /**
+   * Returns the {@link Widget} whose element is the given `node`, or `undefined`
+   * if the `node` is not an element for a widget.
+   *
+   * @param node a DOM node.
+   * @returns the {@link Widget} that is attached to the `node` or `undefined`.
+   */
+  static get(node: Node): Widget|undefined {
+    return widgetMap.get(node);
   }
 
-  private static decrementWidgetCounter(parentElement: WidgetElement, childElement: WidgetElement): void {
-    const count = (childElement.__widgetCounter || 0) + (childElement.__widget ? 1 : 0);
-    if (!count) {
-      return;
+  static getOrCreateWidget(element: HTMLElement): Widget {
+    const widget = Widget.get(element);
+    if (widget) {
+      return widget;
     }
-
-    let currentElement: (WidgetElement|null)|WidgetElement = parentElement;
-    while (currentElement) {
-      if (currentElement.__widgetCounter) {
-        currentElement.__widgetCounter -= count;
-      }
-      currentElement = parentWidgetElementOrShadowHost(currentElement);
+    if (element instanceof WidgetElement) {
+      return element.createWidget();
     }
-  }
-
-  // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/naming-convention
-  private static assert(condition: any, message: string): void {
-    if (!condition) {
-      throw new Error(message);
-    }
+    return new Widget(undefined, undefined, element);
   }
 
   markAsRoot(): void {
-    Widget.assert(!this.element.parentElement, 'Attempt to mark as root attached node');
+    assert(!this.element.parentElement, 'Attempt to mark as root attached node');
     this.isRoot = true;
   }
 
@@ -255,24 +298,29 @@ export class Widget {
   onLayout(): void {
   }
 
+  onDetach(): void {
+  }
+
   async ownerViewDisposed(): Promise<void> {
   }
 
   show(parentElement: Element, insertBefore?: Node|null): void {
-    Widget.assert(parentElement, 'Attempt to attach widget with no parent element');
+    assert(parentElement, 'Attempt to attach widget with no parent element');
 
     if (!this.isRoot) {
       // Update widget hierarchy.
-      let currentParent: (WidgetElement|null) = (parentElement as WidgetElement | null);
-      while (currentParent && !currentParent.__widget) {
-        currentParent = parentWidgetElementOrShadowHost(currentParent);
+      let currentParent: Element|null = parentElement;
+      let currentWidget = undefined;
+      while (!currentWidget) {
+        if (!currentParent) {
+          throw new Error('Attempt to attach widget to orphan node');
+        }
+        currentWidget = widgetMap.get(currentParent);
+        currentParent = currentParent.parentElementOrShadowHost();
       }
-      if (!currentParent || !currentParent.__widget) {
-        throw new Error('Attempt to attach widget to orphan node');
-      }
-      this.attach(currentParent.__widget);
+      this.attach(currentWidget);
     }
-    this.showWidgetInternal((parentElement as WidgetElement), insertBefore);
+    this.showWidgetInternal(parentElement, insertBefore);
   }
 
   private attach(parentWidget: Widget): void {
@@ -294,20 +342,20 @@ export class Widget {
     if (!this.element.parentElement) {
       throw new Error('Attempt to show widget that is not hidden using hideWidget().');
     }
-    this.showWidgetInternal((this.element.parentElement as WidgetElement), this.element.nextSibling);
+    this.showWidgetInternal(this.element.parentElement, this.element.nextSibling);
   }
 
-  private showWidgetInternal(parentElement: WidgetElement, insertBefore?: Node|null): void {
-    let currentParent: (WidgetElement|null)|WidgetElement = parentElement;
-    while (currentParent && !currentParent.__widget) {
-      currentParent = parentWidgetElementOrShadowHost(currentParent);
+  private showWidgetInternal(parentElement: Element, insertBefore?: Node|null): void {
+    let currentParent: Element|null = parentElement;
+    while (currentParent && !widgetMap.get(currentParent)) {
+      currentParent = currentParent.parentElementOrShadowHost();
     }
 
     if (this.isRoot) {
-      Widget.assert(!currentParent, 'Attempt to show root widget under another widget');
+      assert(!currentParent, 'Attempt to show root widget under another widget');
     } else {
-      Widget.assert(
-          currentParent && currentParent.__widget === this.parentWidgetInternal,
+      assert(
+          currentParent && widgetMap.get(currentParent) === this.parentWidgetInternal,
           'Attempt to show under node belonging to alien widget');
     }
 
@@ -327,12 +375,12 @@ export class Widget {
     // Reparent
     if (this.element.parentElement !== parentElement) {
       if (!this.externallyManaged) {
-        Widget.incrementWidgetCounter(parentElement, this.element);
+        incrementWidgetCounter(parentElement, this.element);
       }
       if (insertBefore) {
-        DOMExtension.DOMExtension.originalInsertBefore.call(parentElement, this.element, insertBefore);
+        originalInsertBefore.call(parentElement, this.element, insertBefore);
       } else {
-        DOMExtension.DOMExtension.originalAppendChild.call(parentElement, this.element);
+        originalAppendChild.call(parentElement, this.element);
       }
     }
 
@@ -356,16 +404,19 @@ export class Widget {
 
   private hideWidgetInternal(removeFromDOM: boolean): void {
     this.visibleInternal = false;
-    const parentElement = (this.element.parentElement as WidgetElement);
+    const {parentElement} = this.element;
 
     if (this.parentIsShowing()) {
       this.processWillHide();
     }
 
     if (removeFromDOM) {
-      // Force legal removal
-      Widget.decrementWidgetCounter(parentElement, this.element);
-      DOMExtension.DOMExtension.originalRemoveChild.call(parentElement, this.element);
+      if (parentElement) {
+        // Force legal removal
+        decrementWidgetCounter(parentElement, this.element);
+        originalRemoveChild.call(parentElement, this.element);
+      }
+      this.onDetach();
     } else {
       this.element.classList.add('hidden');
     }
@@ -391,17 +442,19 @@ export class Widget {
     const removeFromDOM = overrideHideOnDetach || !this.shouldHideOnDetach();
     if (this.visibleInternal) {
       this.hideWidgetInternal(removeFromDOM);
-    } else if (removeFromDOM && this.element.parentElement) {
-      const parentElement = (this.element.parentElement as WidgetElement);
-      // Force kick out from DOM.
-      Widget.decrementWidgetCounter(parentElement, this.element);
-      DOMExtension.DOMExtension.originalRemoveChild.call(parentElement, this.element);
+    } else if (removeFromDOM) {
+      const {parentElement} = this.element;
+      if (parentElement) {
+        // Force kick out from DOM.
+        decrementWidgetCounter(parentElement, this.element);
+        originalRemoveChild.call(parentElement, this.element);
+      }
     }
 
     // Update widget hierarchy.
     if (this.parentWidgetInternal) {
       const childIndex = this.parentWidgetInternal.childrenInternal.indexOf(this);
-      Widget.assert(childIndex >= 0, 'Attempt to remove non-child widget');
+      assert(childIndex >= 0, 'Attempt to remove non-child widget');
       this.parentWidgetInternal.childrenInternal.splice(childIndex, 1);
       if (this.parentWidgetInternal.defaultFocusedChild === this) {
         this.parentWidgetInternal.defaultFocusedChild = null;
@@ -409,7 +462,7 @@ export class Widget {
       this.parentWidgetInternal.childWasDetached(this);
       this.parentWidgetInternal = null;
     } else {
-      Widget.assert(this.isRoot, 'Removing non-root widget from DOM');
+      assert(this.isRoot, 'Removing non-root widget from DOM');
     }
   }
 
@@ -461,7 +514,7 @@ export class Widget {
   }
 
   registerRequiredCSS(cssFile: {cssContent: string}): void {
-    if (this.isWebComponent) {
+    if (this.shadowRoot) {
       ThemeSupport.ThemeSupport.instance().appendStyle((this.shadowRoot as DocumentFragment), cssFile);
     } else {
       ThemeSupport.ThemeSupport.instance().appendStyle(this.element, cssFile);
@@ -470,13 +523,12 @@ export class Widget {
 
   registerCSSFiles(cssFiles: CSSStyleSheet[]): void {
     let root: ShadowRoot|Document;
-    if (this.isWebComponent && this.shadowRoot !== undefined) {
+    if (this.shadowRoot) {
       root = this.shadowRoot;
     } else {
       root = Helpers.GetRootNode.getRootNode(this.contentElement);
     }
     root.adoptedStyleSheets = root.adoptedStyleSheets.concat(cssFiles);
-    this.registeredCSSFiles = true;
   }
 
   printWidgetHierarchy(): void {
@@ -502,7 +554,7 @@ export class Widget {
   }
 
   setDefaultFocusedChild(child: Widget): void {
-    Widget.assert(child.parentWidgetInternal === this, 'Attempt to set non-child widget as default focused.');
+    assert(child.parentWidgetInternal === this, 'Attempt to set non-child widget as default focused.');
     this.defaultFocusedChild = child;
   }
 
@@ -610,8 +662,7 @@ export class Widget {
   // Also note that this must be called before the widget is shown so that
   // so that its ancestor's widgetCounter is not incremented.
   markAsExternallyManaged(): void {
-    Widget.assert(
-        !this.parentWidgetInternal, 'Attempt to mark widget as externally managed after insertion to the DOM');
+    assert(!this.parentWidgetInternal, 'Attempt to mark widget as externally managed after insertion to the DOM');
     this.externallyManaged = true;
   }
 }
@@ -622,8 +673,8 @@ const storedScrollPositions = new WeakMap<Element, {
 }>();
 
 export class VBox extends Widget {
-  constructor(isWebComponent?: boolean, delegatesFocus?: boolean) {
-    super(isWebComponent, delegatesFocus);
+  constructor(useShadowDom?: boolean, delegatesFocus?: boolean, element?: HTMLElement) {
+    super(useShadowDom, delegatesFocus, element);
     this.contentElement.classList.add('vbox');
   }
 
@@ -642,8 +693,8 @@ export class VBox extends Widget {
 }
 
 export class HBox extends Widget {
-  constructor(isWebComponent?: boolean) {
-    super(isWebComponent);
+  constructor(useShadowDom?: boolean) {
+    super(useShadowDom);
     this.contentElement.classList.add('hbox');
   }
 
@@ -694,6 +745,30 @@ export class WidgetFocusRestorer {
   }
 }
 
-function parentWidgetElementOrShadowHost(element: WidgetElement): WidgetElement|null {
-  return element.parentElementOrShadowHost() as WidgetElement | null;
-}
+Element.prototype.appendChild = function<T extends Node>(node: T): T {
+  if (widgetMap.get(node) && node.parentElement !== this) {
+    throw new Error('Attempt to add widget via regular DOM operation.');
+  }
+  return originalAppendChild.call(this, node) as T;
+};
+
+Element.prototype.insertBefore = function<T extends Node>(node: T, child: Node|null): T {
+  if (widgetMap.get(node) && node.parentElement !== this) {
+    throw new Error('Attempt to add widget via regular DOM operation.');
+  }
+  return originalInsertBefore.call(this, node, child) as T;
+};
+
+Element.prototype.removeChild = function<T extends Node>(child: T): T {
+  if (widgetCounterMap.get(child) || widgetMap.get(child)) {
+    throw new Error('Attempt to remove element containing widget via regular DOM operation');
+  }
+  return originalRemoveChild.call(this, child) as T;
+};
+
+Element.prototype.removeChildren = function(): void {
+  if (widgetCounterMap.get(this)) {
+    throw new Error('Attempt to remove element containing widget via regular DOM operation');
+  }
+  return originalRemoveChildren.call(this);
+};

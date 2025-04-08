@@ -1,18 +1,16 @@
 // Copyright 2020 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+
 import './emulation/emulation-meta.js';
 
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Root from '../../core/root/root.js';
+import * as LegacyWrapper from '../../ui/components/legacy_wrapper/legacy_wrapper.js';
 import * as UI from '../../ui/legacy/legacy.js';
 
 import type * as Settings from './settings.js';
-
-// #ifdef OHOS_DEVTOOLS
-const adaptForOhos = true;
-// #endif OHOS_DEVTOOLS
 
 const UIStrings = {
   /**
@@ -28,9 +26,9 @@ const UIStrings = {
    */
   experiments: 'Experiments',
   /**
-   *@description Title of Ignore List settings
+   *@description Title of Ignore list settings
    */
-  ignoreList: 'Ignore List',
+  ignoreList: 'Ignore list',
   /**
    *@description Command for showing the keyboard shortcuts in Settings
    */
@@ -44,9 +42,9 @@ const UIStrings = {
    */
   showExperiments: 'Show Experiments',
   /**
-   *@description Command for showing the Ignore List settings
+   *@description Command for showing the Ignore list settings
    */
-  showIgnoreList: 'Show Ignore List',
+  showIgnoreList: 'Show Ignore list',
   /**
    *@description Name of the Settings view
    */
@@ -55,6 +53,14 @@ const UIStrings = {
    *@description Text for the documentation of something
    */
   documentation: 'Documentation',
+  /**
+   *@description Text for AI innovation settings
+   */
+  aiInnovations: 'AI innovations',
+  /**
+   *@description Command for showing the AI innovation settings
+   */
+  showAiInnovations: 'Show AI innovations',
 };
 
 const str_ = i18n.i18n.registerUIStrings('panels/settings/settings-meta.ts', UIStrings);
@@ -77,7 +83,25 @@ UI.ViewManager.registerViewExtension({
   order: 0,
   async loadView() {
     const Settings = await loadSettingsModule();
-    return Settings.SettingsScreen.GenericSettingsTab.instance();
+    return new Settings.SettingsScreen.GenericSettingsTab();
+  },
+  iconName: 'gear',
+});
+
+UI.ViewManager.registerViewExtension({
+  location: UI.ViewManager.ViewLocationValues.SETTINGS_VIEW,
+  id: 'chrome-ai',
+  title: i18nLazyString(UIStrings.aiInnovations),
+  commandPrompt: i18nLazyString(UIStrings.showAiInnovations),
+  order: 2,
+  async loadView() {
+    const Settings = await loadSettingsModule();
+    return LegacyWrapper.LegacyWrapper.legacyWrapper(UI.Widget.VBox, new Settings.AISettingsTab.AISettingsTab());
+  },
+  iconName: 'button-magic',
+  settings: ['console-insights-enabled'],
+  condition: config => {
+    return (config?.devToolsConsoleInsights?.enabled || config?.devToolsFreestyler?.enabled) ?? false;
   },
 });
 
@@ -90,8 +114,9 @@ UI.ViewManager.registerViewExtension({
   experiment: Root.Runtime.ExperimentName.ALL,
   async loadView() {
     const Settings = await loadSettingsModule();
-    return Settings.SettingsScreen.ExperimentsSettingsTab.instance();
+    return new Settings.SettingsScreen.ExperimentsSettingsTab();
   },
+  iconName: 'experiment',
 });
 
 UI.ViewManager.registerViewExtension({
@@ -102,8 +127,9 @@ UI.ViewManager.registerViewExtension({
   order: 4,
   async loadView() {
     const Settings = await loadSettingsModule();
-    return Settings.FrameworkIgnoreListSettingsTab.FrameworkIgnoreListSettingsTab.instance();
+    return new Settings.FrameworkIgnoreListSettingsTab.FrameworkIgnoreListSettingsTab();
   },
+  iconName: 'clear-list',
 });
 
 UI.ViewManager.registerViewExtension({
@@ -114,51 +140,46 @@ UI.ViewManager.registerViewExtension({
   order: 100,
   async loadView() {
     const Settings = await loadSettingsModule();
-    return Settings.KeybindsSettingsTab.KeybindsSettingsTab.instance();
+    return new Settings.KeybindsSettingsTab.KeybindsSettingsTab();
   },
+  iconName: 'keyboard',
 });
 
-// #ifdef OHOS_DEVTOOLS
-if (adaptForOhos) {
-  // arkweb does't support settings.
-} else {
-  UI.ActionRegistration.registerActionExtension({
-    category: UI.ActionRegistration.ActionCategory.SETTINGS,
-    actionId: 'settings.show',
-    title: i18nLazyString(UIStrings.settings),
-    async loadActionDelegate() {
-      const Settings = await loadSettingsModule();
-      return Settings.SettingsScreen.ActionDelegate.instance();
+UI.ActionRegistration.registerActionExtension({
+  category: UI.ActionRegistration.ActionCategory.SETTINGS,
+  actionId: 'settings.show',
+  title: i18nLazyString(UIStrings.settings),
+  async loadActionDelegate() {
+    const Settings = await loadSettingsModule();
+    return new Settings.SettingsScreen.ActionDelegate();
+  },
+  iconClass: UI.ActionRegistration.IconClass.LARGEICON_SETTINGS_GEAR,
+  bindings: [
+    {
+      shortcut: 'F1',
+      keybindSets: [
+        UI.ActionRegistration.KeybindSet.DEVTOOLS_DEFAULT,
+      ],
     },
-    iconClass: UI.ActionRegistration.IconClass.LARGEICON_SETTINGS_GEAR,
-    bindings: [
-      {
-        shortcut: 'F1',
-        keybindSets: [
-          UI.ActionRegistration.KeybindSet.DEVTOOLS_DEFAULT,
-        ],
-      },
-      {
-        shortcut: 'Shift+?',
-      },
-      {
-        platform: UI.ActionRegistration.Platforms.WindowsLinux,
-        shortcut: 'Ctrl+,',
-        keybindSets: [
-          UI.ActionRegistration.KeybindSet.VS_CODE,
-        ],
-      },
-      {
-        platform: UI.ActionRegistration.Platforms.Mac,
-        shortcut: 'Meta+,',
-        keybindSets: [
-          UI.ActionRegistration.KeybindSet.VS_CODE,
-        ],
-      },
-    ],
-  });
-}
-// #endif OHOS_DEVTOOLS
+    {
+      shortcut: 'Shift+?',
+    },
+    {
+      platform: UI.ActionRegistration.Platforms.WINDOWS_LINUX,
+      shortcut: 'Ctrl+,',
+      keybindSets: [
+        UI.ActionRegistration.KeybindSet.VS_CODE,
+      ],
+    },
+    {
+      platform: UI.ActionRegistration.Platforms.MAC,
+      shortcut: 'Meta+,',
+      keybindSets: [
+        UI.ActionRegistration.KeybindSet.VS_CODE,
+      ],
+    },
+  ],
+});
 
 UI.ActionRegistration.registerActionExtension({
   category: UI.ActionRegistration.ActionCategory.SETTINGS,
@@ -166,42 +187,35 @@ UI.ActionRegistration.registerActionExtension({
   title: i18nLazyString(UIStrings.documentation),
   async loadActionDelegate() {
     const Settings = await loadSettingsModule();
-    return Settings.SettingsScreen.ActionDelegate.instance();
+    return new Settings.SettingsScreen.ActionDelegate();
   },
 });
 
-// #ifdef OHOS_DEVTOOLS
-if (adaptForOhos) {
-  // arkweb doesn't support shortcuts.
-} else {
-  UI.ActionRegistration.registerActionExtension({
-    category: UI.ActionRegistration.ActionCategory.SETTINGS,
-    actionId: 'settings.shortcuts',
-    title: i18nLazyString(UIStrings.shortcuts),
-    async loadActionDelegate() {
-      const Settings = await loadSettingsModule();
-      return Settings.SettingsScreen.ActionDelegate.instance();
+UI.ActionRegistration.registerActionExtension({
+  category: UI.ActionRegistration.ActionCategory.SETTINGS,
+  actionId: 'settings.shortcuts',
+  title: i18nLazyString(UIStrings.showShortcuts),
+  async loadActionDelegate() {
+    const Settings = await loadSettingsModule();
+    return new Settings.SettingsScreen.ActionDelegate();
+  },
+  bindings: [
+    {
+      platform: UI.ActionRegistration.Platforms.WINDOWS_LINUX,
+      shortcut: 'Ctrl+K Ctrl+S',
+      keybindSets: [
+        UI.ActionRegistration.KeybindSet.VS_CODE,
+      ],
     },
-    bindings: [
-      {
-        platform: UI.ActionRegistration.Platforms.WindowsLinux,
-        shortcut: 'Ctrl+K Ctrl+S',
-        keybindSets: [
-          UI.ActionRegistration.KeybindSet.VS_CODE,
-        ],
-      },
-      {
-        platform: UI.ActionRegistration.Platforms.Mac,
-        shortcut: 'Meta+K Meta+S',
-        keybindSets: [
-          UI.ActionRegistration.KeybindSet.VS_CODE,
-        ],
-      },
-    ],
-  });
-}
-// #endif OHOS_DEVTOOLS
-
+    {
+      platform: UI.ActionRegistration.Platforms.MAC,
+      shortcut: 'Meta+K Meta+S',
+      keybindSets: [
+        UI.ActionRegistration.KeybindSet.VS_CODE,
+      ],
+    },
+  ],
+});
 
 UI.ViewManager.registerLocationResolver({
   name: UI.ViewManager.ViewLocationValues.SETTINGS_VIEW,
@@ -219,24 +233,18 @@ Common.Revealer.registerRevealer({
       Root.Runtime.Experiment,
     ];
   },
+  destination: undefined,
   async loadRevealer() {
     const Settings = await loadSettingsModule();
-    return Settings.SettingsScreen.Revealer.instance();
+    return new Settings.SettingsScreen.Revealer();
   },
-  destination: undefined,
 });
 
-// #ifdef OHOS_DEVTOOLS
-if (adaptForOhos) {
-  // arkweb doesn't support shortcuts.
-} else {
-  UI.ContextMenu.registerItem({
-    location: UI.ContextMenu.ItemLocation.MAIN_MENU_FOOTER,
-    actionId: 'settings.shortcuts',
-    order: undefined,
-  });
-}
-// #endif OHOS_DEVTOOLS
+UI.ContextMenu.registerItem({
+  location: UI.ContextMenu.ItemLocation.MAIN_MENU_FOOTER,
+  actionId: 'settings.shortcuts',
+  order: undefined,
+});
 
 UI.ContextMenu.registerItem({
   location: UI.ContextMenu.ItemLocation.MAIN_MENU_HELP_DEFAULT,

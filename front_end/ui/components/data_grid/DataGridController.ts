@@ -2,24 +2,26 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as LitHtml from '../../../ui/lit-html/lit-html.js';
-import * as ComponentHelpers from '../helpers/helpers.js';
-import type * as TextUtils from '../../../models/text_utils/text_utils.js';
-import * as i18n from '../../../core/i18n/i18n.js';
+import './DataGrid.js';
 
+import * as i18n from '../../../core/i18n/i18n.js';
+import type * as TextUtils from '../../../models/text_utils/text_utils.js';
+import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import * as UI from '../../legacy/legacy.js';
+
+import type {DataGridContextMenusConfiguration} from './DataGrid.js';
+import dataGridControllerStyles from './dataGridController.css.js';
+import type {ColumnHeaderClickEvent, ContextMenuColumnSortClickEvent} from './DataGridEvents.js';
 import {
-  SortDirection,
+  type Column,
   getRowEntryForColumnId,
   getStringifiedCellValues,
-  type SortState,
-  type Column,
   type Row,
+  SortDirection,
+  type SortState,
 } from './DataGridUtils.js';
 
-import {type ContextMenuColumnSortClickEvent, type ColumnHeaderClickEvent} from './DataGridEvents.js';
-import {DataGrid, type DataGridData, type DataGridContextMenusConfiguration} from './DataGrid.js';
-import dataGridControllerStyles from './dataGridController.css.js';
-import {alert} from '../../legacy/ARIAUtils.js';
+const {html} = LitHtml;
 
 const UIStrings = {
   /**
@@ -55,10 +57,14 @@ export interface DataGridControllerData {
   label?: string;
   paddingRowsCount?: number;
   showScrollbar?: boolean;
+  striped?: boolean;
+  /**
+   * Disable the auto-scroll on new data feature. This is enabled by default.
+   */
+  autoScrollToBottom?: boolean;
 }
 
 export class DataGridController extends HTMLElement {
-  static readonly litTagName = LitHtml.literal`devtools-data-grid-controller`;
   readonly #shadow = this.attachShadow({mode: 'open'});
 
   #hasRenderedAtLeastOnce = false;
@@ -67,6 +73,7 @@ export class DataGridController extends HTMLElement {
   #contextMenus?: DataGridContextMenusConfiguration = undefined;
   #label?: string = undefined;
   #showScrollbar?: boolean = false;
+  #striped?: boolean = false;
 
   /**
    * Because the controller will sort data in place (e.g. mutate it) when we get
@@ -80,6 +87,8 @@ export class DataGridController extends HTMLElement {
   #sortState: Readonly<SortState>|null = null;
   #filters: readonly TextUtils.TextUtils.ParsedFilter[] = [];
 
+  #autoScrollToBottom = true;
+
   #paddingRowsCount?: number;
 
   connectedCallback(): void {
@@ -91,10 +100,12 @@ export class DataGridController extends HTMLElement {
       columns: this.#originalColumns as Column[],
       rows: this.#originalRows as Row[],
       filters: this.#filters,
+      autoScrollToBottom: this.#autoScrollToBottom,
       contextMenus: this.#contextMenus,
       label: this.#label,
       paddingRowsCount: this.#paddingRowsCount,
       showScrollbar: this.#showScrollbar,
+      striped: this.#striped,
     };
   }
 
@@ -106,6 +117,10 @@ export class DataGridController extends HTMLElement {
     this.#contextMenus = data.contextMenus;
     this.#label = data.label;
     this.#showScrollbar = data.showScrollbar;
+    this.#striped = data.striped;
+    if (typeof data.autoScrollToBottom === 'boolean') {
+      this.#autoScrollToBottom = data.autoScrollToBottom;
+    }
 
     this.#columns = [...this.#originalColumns];
     this.#rows = this.#cloneAndFilterRows(data.rows, this.#filters);
@@ -229,7 +244,7 @@ export class DataGridController extends HTMLElement {
 
     if (this.#sortState) {
       this.#sortRows(this.#sortState);
-      alert(
+      UI.ARIAUtils.alert(
           this.#sortState.direction === SortDirection.ASC ?
               i18nString(UIStrings.sortInAscendingOrder, {PH1: headerName || ''}) :
               i18nString(UIStrings.sortInDescendingOrder, {PH1: headerName || ''}));
@@ -237,7 +252,7 @@ export class DataGridController extends HTMLElement {
       // No sortstate = render the original rows.
       this.#rows = this.#cloneAndFilterRows(this.#originalRows, this.#filters);
       this.#render();
-      alert(i18nString(UIStrings.sortingCanceled, {PH1: headerName || ''}));
+      UI.ARIAUtils.alert(i18nString(UIStrings.sortingCanceled, {PH1: headerName || ''}));
     }
   }
 
@@ -254,8 +269,8 @@ export class DataGridController extends HTMLElement {
   #render(): void {
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
-    LitHtml.render(LitHtml.html`
-      <${DataGrid.litTagName} .data=${{
+    LitHtml.render(html`
+      <devtools-data-grid .data=${{
           columns: this.#columns,
           rows: this.#rows,
           activeSort: this.#sortState,
@@ -263,11 +278,13 @@ export class DataGridController extends HTMLElement {
           label: this.#label,
           paddingRowsCount: this.#paddingRowsCount,
           showScrollbar: this.#showScrollbar,
-        } as DataGridData}
+          striped: this.#striped,
+          autoScrollToBottom: this.#autoScrollToBottom,
+        }}
         @columnheaderclick=${this.#onColumnHeaderClick}
         @contextmenucolumnsortclick=${this.#onContextMenuColumnSortClick}
         @contextmenuheaderresetclick=${this.#onContextMenuHeaderResetClick}
-     ></${DataGrid.litTagName}>
+     ></devtools-data-grid>
     `, this.#shadow, {
       host: this,
     });
@@ -276,10 +293,9 @@ export class DataGridController extends HTMLElement {
   }
 }
 
-ComponentHelpers.CustomElements.defineComponent('devtools-data-grid-controller', DataGridController);
+customElements.define('devtools-data-grid-controller', DataGridController);
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface HTMLElementTagNameMap {
     'devtools-data-grid-controller': DataGridController;
   }

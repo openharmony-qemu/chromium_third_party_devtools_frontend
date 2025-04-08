@@ -3,23 +3,24 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import type * as puppeteer from 'puppeteer';
+import type * as puppeteer from 'puppeteer-core';
 
 import {
   $,
   click,
   enableExperiment,
   getBrowserAndPages,
+  getResourcesPath,
   goToResource,
   platform,
   pressKey,
-  reloadDevTools,
   scrollElementIntoView,
   typeText,
   waitFor,
   waitForFunction,
 } from '../../shared/helper.js';
-import {describe, it} from '../../shared/mocha-extensions.js';
+import {CONSOLE_MESSAGES_SELECTOR, navigateToConsoleTab} from '../helpers/console-helpers.js';
+import {reloadDevTools} from '../helpers/cross-tool-helper.js';
 import {navigateToCssOverviewTab, startCaptureCSSOverview} from '../helpers/css-overview-helpers.js';
 import {
   editCSSProperty,
@@ -28,9 +29,10 @@ import {
   waitForContentOfSelectedElementsNode,
   waitForElementsStyleSection,
 } from '../helpers/elements-helpers.js';
+import {navigateToNetworkTab, openNetworkTab} from '../helpers/network-helpers.js';
 import {openCommandMenu} from '../helpers/quick_open-helpers.js';
-import {closeSecurityTab, navigateToSecurityTab} from '../helpers/security-helpers.js';
 import {openPanelViaMoreTools, openSettingsTab} from '../helpers/settings-helpers.js';
+import {waitForSourcesPanel} from '../helpers/sources-helpers.js';
 
 interface UserMetrics {
   // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -89,12 +91,14 @@ async function assertHistogramEventsInclude(expected: EnumHistogramEvent[]) {
   });
 }
 
-async function waitForHistogramEvent(expected: EnumHistogramEventWithOptionalCode) {
+async function waitForHistogramEvent(expected: EnumHistogramEventWithOptionalCode, expectedCount = 1) {
   const {frontend} = getBrowserAndPages();
   await waitForFunction(async () => {
     const events = await retrieveRecordedHistogramEvents(frontend);
-    return events.find(
-        e => e.actionName === expected.actionName && (!('value' in expected) || e.actionCode === expected.actionCode));
+    const matchedEvents = events.filter(
+        e => e.actionName === expected.actionName &&
+            (!('actionCode' in expected) || e.actionCode === expected.actionCode));
+    return matchedEvents.length >= expectedCount;
   });
 }
 
@@ -142,9 +146,33 @@ describe('User Metrics', () => {
     await click('#tab-timeline');
     await frontend.waitForSelector('.timeline');
 
+    await assertHistogramEventsInclude([
+      {
+        actionName: 'DevTools.PanelShown',
+        actionCode: 1,  // Elements (at launch).
+      },
+      {
+        actionName: 'DevTools.PanelShown',
+        actionCode: 5,  // Timeline.
+      },
+    ]);
+  });
+
+  it('dispatches events for view shown at launch', async () => {
+    await reloadDevTools({selectedPanel: {name: 'timeline'}});
+
     await assertHistogramEventsInclude([{
       actionName: 'DevTools.PanelShown',
       actionCode: 5,  // Timeline.
+    }]);
+  });
+
+  it('dispatches events for drawer shown at launch', async () => {
+    await reloadDevTools({drawerShown: true});
+
+    await assertHistogramEventsInclude([{
+      actionName: 'DevTools.PanelShown',
+      actionCode: 10,  // drawer-console-view.
     }]);
   });
 
@@ -152,10 +180,6 @@ describe('User Metrics', () => {
     await openPanelViaMoreTools('Animations');
 
     await assertHistogramEventsInclude([
-      {
-        actionName: 'DevTools.PanelShown',
-        actionCode: 10,  // 'console-view'.
-      },
       {
         actionName: 'DevTools.PanelShown',
         actionCode: 11,  // 'animations'.
@@ -170,10 +194,6 @@ describe('User Metrics', () => {
       {
         actionName: 'DevTools.IssuesPanelOpenedFrom',
         actionCode: 3,  // 'HamburgerMenu'.
-      },
-      {
-        actionName: 'DevTools.PanelShown',
-        actionCode: 10,  // 'console-view'.
       },
       {
         actionName: 'DevTools.PanelShown',
@@ -290,30 +310,9 @@ describe('User Metrics', () => {
     ]);
   });
 
-  it('dispatches closed panel events for views', async () => {
-    // Focus and close a tab
-    await navigateToSecurityTab();
-    await closeSecurityTab();
-
-    await assertHistogramEventsInclude([
-      {
-        actionName: 'DevTools.PanelShown',
-        actionCode: 16,  // Security
-      },
-      {
-        actionName: 'DevTools.PanelShown',
-        actionCode: 1,
-      },
-      {
-        actionName: 'DevTools.PanelClosed',
-        actionCode: 16,  // Security
-      },
-    ]);
-  });
-
   it('dispatches an event when experiments are enabled and disabled', async () => {
     await openSettingsTab('Experiments');
-    const customThemeCheckbox = await waitFor('[aria-label="Allow extensions to load custom stylesheets"]');
+    const customThemeCheckbox = await waitFor('[title="Protocol Monitor"]');
     // Enable the experiment
     await customThemeCheckbox.click();
     // Disable the experiment
@@ -330,11 +329,24 @@ describe('User Metrics', () => {
       },
       {
         actionName: 'DevTools.ExperimentEnabled',
-        actionCode: 0,  // Allow extensions to load custom stylesheets
+        actionCode: 13,  // Protocol Monitor
       },
       {
         actionName: 'DevTools.ExperimentDisabled',
-        actionCode: 0,  // Allow extensions to load custom stylesheets
+        actionCode: 13,  // Protocol Monitor
+      },
+    ]);
+  });
+
+  it('dispatches an event when experiments are initialized at launch', async () => {
+    await assertHistogramEventsInclude([
+      {
+        actionName: 'DevTools.ExperimentEnabledAtLaunch',
+        actionCode: 82,  // Enabled by default: Autofill View
+      },
+      {
+        actionName: 'DevTools.ExperimentDisabledAtLaunch',
+        actionCode: 41,  // Disabled by default: FontEditor
       },
     ]);
   });
@@ -352,8 +364,7 @@ describe('User Metrics', () => {
 
     const events = await retrieveRecordedPerformanceHistogramEvents(frontend);
 
-    assert.strictEqual(events.length, 1);
-    assert.strictEqual(events[0].histogramName, 'DevTools.Launch.Timeline');
+    assert.include(events.map(e => e.histogramName), 'DevTools.Launch.Timeline');
   });
 
   it('records the selected language', async () => {
@@ -373,7 +384,7 @@ describe('User Metrics', () => {
   });
 });
 
-describe('User Metrics for CSS Overview', () => {
+describe('User metrics for CSS overview', () => {
   it('dispatch events when capture overview button hit', async () => {
     await goToResource('css_overview/default.html');
     await navigateToCssOverviewTab();
@@ -393,31 +404,9 @@ describe('User Metrics for CSS Overview', () => {
   });
 });
 
-describe('User Metrics for sidebar panes', () => {
-  it('dispatches sidebar panes events for navigating Elements Panel sidebar panes', async () => {
-    await navigateToSidePane('Computed');
-    await assertHistogramEventsInclude([
-      {
-        actionName: 'DevTools.SidebarPaneShown',
-        actionCode: 2,  // Computed
-      },
-    ]);
-  });
-
-  it('should not dispatch sidebar panes events for navigating to the same pane', async () => {
-    await navigateToSidePane('Styles');
-
-    const {frontend} = getBrowserAndPages();
-    const events = await retrieveRecordedHistogramEvents(frontend);
-    const eventNames = events.map(event => event.actionName);
-
-    assert.notInclude(eventNames, 'DevTools.SidebarPaneShown');
-  });
-});
-
 describe('User Metrics for Issue Panel', () => {
   beforeEach(async () => {
-    await enableExperiment('contrastIssues');
+    await enableExperiment('contrast-issues');
     await openPanelViaMoreTools('Issues');
   });
 
@@ -467,7 +456,6 @@ describe('User Metrics for Issue Panel', () => {
 
   it('dispatch events when a link to an element is clicked', async () => {
     await goToResource('elements/element-reveal-inline-issue.html');
-    await waitFor('.issue');
     await click('.issue');
 
     await waitFor('.element-reveal-icon');
@@ -490,35 +478,6 @@ describe('User Metrics for Issue Panel', () => {
       {
         actionName: 'DevTools.IssuesPanelResourceOpened',
         actionCode: 7,  // ContentSecurityPolicyElement
-      },
-    ]);
-  });
-
-  it('dispatch events when a "Learn More" link is clicked', async () => {
-    await goToResource('elements/element-reveal-inline-issue.html');
-    await waitFor('.issue');
-    await click('.issue');
-
-    await waitFor('.link-list x-link');
-    await scrollElementIntoView('.link-list x-link');
-    await click('.link-list x-link');
-
-    await assertHistogramEventsInclude([
-      {
-        actionName: 'DevTools.IssueCreated',
-        actionCode: 1,  // ContentSecurityPolicyIssue
-      },
-      {
-        actionName: 'DevTools.IssueCreated',
-        actionCode: 1,  // ContentSecurityPolicyIssue
-      },
-      {
-        actionName: 'DevTools.IssuesPanelIssueExpanded',
-        actionCode: 4,  // ContentSecurityPolicy
-      },
-      {
-        actionName: 'DevTools.IssuesPanelResourceOpened',
-        actionCode: 12,  // ContentSecurityPolicyLearnMore
       },
     ]);
   });
@@ -616,5 +575,56 @@ describe('User Metrics for the Page Resource Loader', () => {
           actionName: 'DevTools.DeveloperResourceScheme',
         },
     );
+  });
+});
+
+describe('User Metrics for clicking stylesheet request initiators', () => {
+  const expectedAction = {
+    actionName: 'DevTools.ActionTaken',
+    actionCode: 80,  // StyleSheetInitiatorLinkClicked
+  };
+  it('dispatches an event when clicked in the console', async () => {
+    async function clickOnLinkWithText(text: string, root?: puppeteer.JSHandle) {
+      const element = await click(`text/${text}`, {root});
+      assert.isTrue(
+          await element.evaluate(e => e.classList.contains('devtools-link')),
+          'Clicked element was not a devtools link');
+    }
+
+    await navigateToConsoleTab();
+    await goToResource('network/stylesheet-resources.html');
+    const consoleMessages = await waitFor(CONSOLE_MESSAGES_SELECTOR);
+
+    await clickOnLinkWithText('stylesheet-resources.html:2', consoleMessages);
+    await waitForHistogramEvent(expectedAction, 1);
+    await waitForSourcesPanel();
+    await navigateToConsoleTab();
+    await clickOnLinkWithText('stylesheet-resources.html:8', consoleMessages);
+    await waitForHistogramEvent(expectedAction, 2);
+    await waitForSourcesPanel();
+    await navigateToConsoleTab();
+    await clickOnLinkWithText('stylesheet-resources.css:8', consoleMessages);
+    await waitForHistogramEvent(expectedAction, 3);
+  });
+  it('dispatches an event when clicked in the Network panel', async () => {
+    async function clickOnInitiatorLink(resource: string) {
+      const resourceURL = `${getResourcesPath()}/network/${resource}`;
+      const element = await click(`[title="${resourceURL}"] ~ .initiator-column .devtools-link`);
+      assert.isTrue(
+          await element.evaluate(e => e.classList.contains('devtools-link')),
+          'Clicked element was not a devtools link');
+    }
+    await navigateToNetworkTab('stylesheet-resources.html');
+
+    await clickOnInitiatorLink('missing.css');
+    await waitForHistogramEvent(expectedAction, 1);
+    await waitForSourcesPanel();
+    await openNetworkTab();
+    await clickOnInitiatorLink('missing2.css');
+    await waitForHistogramEvent(expectedAction, 2);
+    await waitForSourcesPanel();
+    await openNetworkTab();
+    await clickOnInitiatorLink('missing3.css');
+    await waitForHistogramEvent(expectedAction, 3);
   });
 });

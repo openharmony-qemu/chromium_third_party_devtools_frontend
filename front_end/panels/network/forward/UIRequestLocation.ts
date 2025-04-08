@@ -5,12 +5,11 @@
 import type * as SDK from '../../../core/sdk/sdk.js';
 import type * as TextUtils from '../../../models/text_utils/text_utils.js';
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export enum UIHeaderSection {
-  General = 'General',
-  Request = 'Request',
-  Response = 'Response',
+export const enum UIHeaderSection {
+  GENERAL = 'General',
+  REQUEST = 'Request',
+  RESPONSE = 'Response',
+  EARLY_HINTS = 'EarlyHints',
 }
 
 interface UIHeaderLocation {
@@ -18,20 +17,17 @@ interface UIHeaderLocation {
   header: SDK.NetworkRequest.NameValue|null;
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export enum UIRequestTabs {
-  Cookies = 'cookies',
-  EventSource = 'eventSource',
-  Headers = 'headers',
-  HeadersComponent = 'headersComponent',
-  Payload = 'payload',
-  Initiator = 'initiator',
-  Preview = 'preview',
-  Response = 'response',
-  Timing = 'timing',
-  TrustTokens = 'trustTokens',
-  WsFrames = 'webSocketFrames',
+export const enum UIRequestTabs {
+  COOKIES = 'cookies',
+  EVENT_SOURCE = 'eventSource',
+  HEADERS_COMPONENT = 'headers-component',
+  PAYLOAD = 'payload',
+  INITIATOR = 'initiator',
+  PREVIEW = 'preview',
+  RESPONSE = 'response',
+  TIMING = 'timing',
+  TRUST_TOKENS = 'trust-tokens',
+  WS_FRAMES = 'web-socket-frames',
 }
 
 export interface FilterOptions {
@@ -46,7 +42,7 @@ export class UIRequestLocation {
   readonly tab: UIRequestTabs|undefined;
   readonly filterOptions: FilterOptions|undefined;
 
-  private constructor(
+  constructor(
       request: SDK.NetworkRequest.NetworkRequest, header: UIHeaderLocation|null,
       searchMatch: TextUtils.ContentProvider.SearchMatch|null, urlMatch: boolean, tab: UIRequestTabs|undefined,
       filterOptions: FilterOptions|undefined) {
@@ -61,13 +57,13 @@ export class UIRequestLocation {
   static requestHeaderMatch(request: SDK.NetworkRequest.NetworkRequest, header: SDK.NetworkRequest.NameValue|null):
       UIRequestLocation {
     return new UIRequestLocation(
-        request, {section: UIHeaderSection.Request, header}, null, false, undefined, undefined);
+        request, {section: UIHeaderSection.REQUEST, header}, null, false, undefined, undefined);
   }
 
   static responseHeaderMatch(request: SDK.NetworkRequest.NetworkRequest, header: SDK.NetworkRequest.NameValue|null):
       UIRequestLocation {
     return new UIRequestLocation(
-        request, {section: UIHeaderSection.Response, header}, null, false, undefined, undefined);
+        request, {section: UIHeaderSection.RESPONSE, header}, null, false, undefined, undefined);
   }
 
   static bodyMatch(request: SDK.NetworkRequest.NetworkRequest, searchMatch: TextUtils.ContentProvider.SearchMatch|null):

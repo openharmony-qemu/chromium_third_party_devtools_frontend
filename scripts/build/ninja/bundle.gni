@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("../../../third_party/typescript/typescript.gni")
+import("../../../scripts/build/typescript/typescript.gni")
 import("./node.gni")
 import("./vars.gni")
 
@@ -11,9 +11,12 @@ declare_args() {
   # bundle JavaScript files.
   devtools_fast_bundle = devtools_skip_typecheck
 
-  # If this is enabled, rollup will also emit source maps for the bundles.
-  # As rollup is only used for release builds, this flag can only be set
-  # for release builds.
+  # If this is enabled, we will emit source maps for the entrypoint bundles.
+  # Since we only bundle release builds, this flag can't be used with
+  # is_debug = true.
+  # Note that this flag works regardless of the devtools_skip_typecheck or
+  # devtools_fast_bundle GN arg. Both rollup.js or ESBuild will emit source
+  # maps if this flag is set.
   devtools_release_sourcemaps = false
 }
 
@@ -56,11 +59,15 @@ template("bundle") {
         rebase_path(invoker.output_file_location, root_build_dir),
       ]
 
+      if (devtools_release_sourcemaps) {
+        args += [ "--configSourcemaps" ]
+      }
+
       outputs = [ invoker.output_file_location ]
     }
   } else {
     node_action(target_name) {
-      script = "node_modules/rollup/dist/bin/rollup"
+      script = "node_modules/@rollup/wasm-node/dist/bin/rollup"
 
       forward_variables_from(invoker,
                              [
@@ -71,7 +78,7 @@ template("bundle") {
 
       inputs = [
         invoker.entrypoint,
-        devtools_location_prepend + "scripts/build/rollup.config.js",
+        devtools_location_prepend + "scripts/build/rollup.config.mjs",
         devtools_location_prepend + "scripts/build/devtools_plugin.js",
         devtools_location_prepend + "scripts/devtools_paths.js",
       ]
@@ -83,17 +90,13 @@ template("bundle") {
         "--silent",
         "--config",
         rebase_path(
-            devtools_location_prepend + "scripts/build/rollup.config.js",
+            devtools_location_prepend + "scripts/build/rollup.config.mjs",
             root_build_dir),
         "--input",
         rebase_path(invoker.entrypoint, root_build_dir),
         "--file",
         rebase_path(invoker.output_file_location, root_build_dir),
       ]
-
-      if (!devtools_dcheck_always_on) {
-        args += [ "--configDCHECK" ]
-      }
 
       if (devtools_release_sourcemaps) {
         args += [ "--configSourcemaps" ]

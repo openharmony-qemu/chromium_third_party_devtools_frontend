@@ -3,9 +3,9 @@
 // found in the LICENSE file.
 import type * as UI from '../../legacy/legacy.js';
 
-import {type DataGrid} from './DataGrid.js';
+import type {DataGrid} from './DataGrid.js';
 import {ContextMenuColumnSortClickEvent} from './DataGridEvents.js';
-import {type Column} from './DataGridUtils.js';
+import type {Column} from './DataGridUtils.js';
 
 function toggleColumnVisibility(dataGrid: DataGrid, column: Column): void {
   const newVisibility = !column.visible;
@@ -42,7 +42,7 @@ export function addColumnVisibilityCheckboxes(
      */
     contextMenu.defaultSection().appendCheckboxItem(column.title, () => {
       toggleColumnVisibility(dataGrid, column);
-    }, column.visible);
+    }, {checked: column.visible, jslogContext: column.id});
   }
 }
 
@@ -61,7 +61,7 @@ export function addSortableColumnItems(
     for (const column of sortableColumns) {
       contextMenu.defaultSection().appendItem(column.title, () => {
         dataGrid.dispatchEvent(new ContextMenuColumnSortClickEvent(column));
-      });
+      }, {jslogContext: column.id});
     }
   }
 }

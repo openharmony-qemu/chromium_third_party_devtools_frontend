@@ -142,11 +142,11 @@ export class LayerTreeModel extends SDK.SDKModel.SDKModel<EventTypes> {
 
 SDK.SDKModel.SDKModel.register(LayerTreeModel, {capabilities: SDK.Target.Capability.DOM, autostart: false});
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export enum Events {
+  /* eslint-disable @typescript-eslint/naming-convention -- Used by web_tests. */
   LayerTreeChanged = 'LayerTreeChanged',
   LayerPainted = 'LayerPainted',
+  /* eslint-enable @typescript-eslint/naming-convention */
 }
 
 export type EventTypes = {
@@ -351,7 +351,6 @@ export class AgentLayer implements SDK.LayerTreeBase.Layer {
     return reasons.compositingReasons || [];
   }
 
-  // TODO(wangxianzhu): Remove this function after updating blink web tests.
   async requestCompositingReasonIds(): Promise<string[]> {
     const reasons = await this.layerTreeModel.layerTreeAgent.invoke_compositingReasons({layerId: this.id()});
     return reasons.compositingReasonIds || [];
@@ -371,7 +370,7 @@ export class AgentLayer implements SDK.LayerTreeBase.Layer {
       if (!snapshot) {
         return null;
       }
-      return {rect: {x: 0, y: 0, width: this.width(), height: this.height()}, snapshot: snapshot};
+      return {rect: {x: 0, y: 0, width: this.width(), height: this.height()}, snapshot};
     });
     return [promise];
   }

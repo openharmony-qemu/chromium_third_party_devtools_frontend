@@ -5,13 +5,11 @@
 import * as Common from '../../core/common/common.js';
 import * as Root from '../../core/root/root.js';  // eslint-disable-line @typescript-eslint/no-unused-vars
 
-import {type ContextFlavorListener} from './ContextFlavorListener.js';
+import type {ContextFlavorListener} from './ContextFlavorListener.js';
 
 let contextInstance: Context|undefined;
 
 interface ConstructorFn<T> {
-  // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   new(...args: any[]): T;
 }
 
@@ -63,7 +61,7 @@ export class Context {
     if (!dispatcher) {
       return;
     }
-    dispatcher.dispatchEventToListeners(Events.FlavorChanged, flavorValue);
+    dispatcher.dispatchEventToListeners(Events.FLAVOR_CHANGED, flavorValue);
   }
 
   addFlavorChangeListener<T>(
@@ -74,7 +72,7 @@ export class Context {
       dispatcher = new Common.ObjectWrapper.ObjectWrapper<EventTypes>();
       this.eventDispatchers.set(flavorType, dispatcher);
     }
-    dispatcher.addEventListener(Events.FlavorChanged, listener, thisObject);
+    dispatcher.addEventListener(Events.FLAVOR_CHANGED, listener, thisObject);
   }
 
   removeFlavorChangeListener<T>(
@@ -84,8 +82,8 @@ export class Context {
     if (!dispatcher) {
       return;
     }
-    dispatcher.removeEventListener(Events.FlavorChanged, listener, thisObject);
-    if (!dispatcher.hasEventListeners(Events.FlavorChanged)) {
+    dispatcher.removeEventListener(Events.FLAVOR_CHANGED, listener, thisObject);
+    if (!dispatcher.hasEventListeners(Events.FLAVOR_CHANGED)) {
       this.eventDispatchers.delete(flavorType);
     }
   }
@@ -99,15 +97,13 @@ export class Context {
   }
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-enum Events {
-  FlavorChanged = 'FlavorChanged',
+const enum Events {
+  FLAVOR_CHANGED = 'FlavorChanged',
 }
 
 export type EventTypes = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [Events.FlavorChanged]: any,
+  [Events.FLAVOR_CHANGED]: any,
 };
 
 const registeredListeners: ContextFlavorListenerRegistration[] = [];

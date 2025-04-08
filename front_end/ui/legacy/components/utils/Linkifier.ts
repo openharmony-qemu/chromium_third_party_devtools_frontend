@@ -33,11 +33,14 @@ import * as Host from '../../../../core/host/host.js';
 import * as i18n from '../../../../core/i18n/i18n.js';
 import * as Platform from '../../../../core/platform/platform.js';
 import * as SDK from '../../../../core/sdk/sdk.js';
-import * as Bindings from '../../../../models/bindings/bindings.js';
-import * as TextUtils from '../../../../models/text_utils/text_utils.js';
-import * as Workspace from '../../../../models/workspace/workspace.js';
 import type * as Protocol from '../../../../generated/protocol.js';
+import * as Bindings from '../../../../models/bindings/bindings.js';
+import * as Breakpoints from '../../../../models/breakpoints/breakpoints.js';
+import * as TextUtils from '../../../../models/text_utils/text_utils.js';
+import type * as Trace from '../../../../models/trace/trace.js';
+import * as Workspace from '../../../../models/workspace/workspace.js';
 import type * as IconButton from '../../../components/icon_button/icon_button.js';
+import * as VisualLogging from '../../../visual_logging/visual_logging.js';
 import * as UI from '../../legacy.js';
 
 const UIStrings = {
@@ -78,7 +81,7 @@ let decorator: LinkDecorator|null = null;
 
 const anchorsByUISourceCode = new WeakMap<Workspace.UISourceCode.UISourceCode, Set<Element>>();
 
-const infoByAnchor = new WeakMap<Node, _LinkInfo>();
+const infoByAnchor = new WeakMap<Node, LinkInfo>();
 
 const textByAnchor = new WeakMap<Node, string>();
 
@@ -86,20 +89,17 @@ const linkHandlers = new Map<string, LinkHandler>();
 
 let linkHandlerSettingInstance: Common.Settings.Setting<string>;
 
-export class Linkifier implements SDK.TargetManager.Observer {
+export class Linkifier extends Common.ObjectWrapper.ObjectWrapper<EventTypes> implements SDK.TargetManager.Observer {
   private readonly maxLength: number;
   private readonly anchorsByTarget: Map<SDK.Target.Target, Element[]>;
   private readonly locationPoolByTarget: Map<SDK.Target.Target, Bindings.LiveLocation.LiveLocationPool>;
-  private onLiveLocationUpdate: (() => void);
   private useLinkDecorator: boolean;
 
-  constructor(
-      maxLengthForDisplayedURLs?: number, useLinkDecorator?: boolean,
-      onLiveLocationUpdate: (() => void) = (): void => {}) {
+  constructor(maxLengthForDisplayedURLs?: number, useLinkDecorator?: boolean) {
+    super();
     this.maxLength = maxLengthForDisplayedURLs || UI.UIUtils.MaxLengthForDisplayedURLs;
     this.anchorsByTarget = new Map();
     this.locationPoolByTarget = new Map();
-    this.onLiveLocationUpdate = onLiveLocationUpdate;
     this.useLinkDecorator = Boolean(useLinkDecorator);
     instances.add(this);
     SDK.TargetManager.TargetManager.instance().observeTargets(this);
@@ -108,7 +108,7 @@ export class Linkifier implements SDK.TargetManager.Observer {
   static setLinkDecorator(linkDecorator: LinkDecorator): void {
     console.assert(!decorator, 'Cannot re-register link decorator.');
     decorator = linkDecorator;
-    linkDecorator.addEventListener(LinkDecorator.Events.LinkIconChanged, onLinkIconChanged);
+    linkDecorator.addEventListener(LinkDecorator.Events.LINK_ICON_CHANGED, onLinkIconChanged);
     for (const linkifier of instances) {
       linkifier.updateAllAnchorDecorations();
     }
@@ -148,6 +148,10 @@ export class Linkifier implements SDK.TargetManager.Observer {
     sourceCodeAnchors.add(anchor);
   }
 
+  static bindUILocationForTest(anchor: Element, uiLocation: Workspace.UISourceCode.UILocation): void {
+    Linkifier.bindUILocation(anchor, uiLocation);
+  }
+
   private static unbindUILocation(anchor: Element): void {
     const info = Linkifier.linkInfo(anchor);
     if (!info || !info.uiLocation) {
@@ -172,7 +176,7 @@ export class Linkifier implements SDK.TargetManager.Observer {
       return;
     }
 
-    const breakpoint = Bindings.BreakpointManager.BreakpointManager.instance().findBreakpoint(uiLocation);
+    const breakpoint = Breakpoints.BreakpointManager.BreakpointManager.instance().findBreakpoint(uiLocation);
     if (breakpoint) {
       info.revealable = breakpoint;
     }
@@ -233,6 +237,8 @@ export class Linkifier implements SDK.TargetManager.Observer {
       className: options?.className,
       tabStop: options?.tabStop,
       inlineFrameIndex: options?.inlineFrameIndex ?? 0,
+      userMetric: options?.userMetric,
+      jslogContext: options?.jslogContext || 'script-location',
     };
     const {columnNumber, className = ''} = linkifyURLOptions;
     if (sourceURL) {
@@ -257,13 +263,15 @@ export class Linkifier implements SDK.TargetManager.Observer {
       return fallbackAnchor;
     }
 
-    const createLinkOptions: _CreateLinkOptions = {
+    const createLinkOptions: CreateLinkOptions = {
       tabStop: options?.tabStop,
+      jslogContext: 'script-location',
     };
     const {link, linkInfo} = Linkifier.createLink(
         fallbackAnchor && fallbackAnchor.textContent ? fallbackAnchor.textContent : '', className, createLinkOptions);
     linkInfo.enableDecorator = this.useLinkDecorator;
     linkInfo.fallback = fallbackAnchor;
+    linkInfo.userMetric = options?.userMetric;
 
     const pool = this.locationPoolByTarget.get(rawLocation.debuggerModel.target());
     if (!pool) {
@@ -271,17 +279,19 @@ export class Linkifier implements SDK.TargetManager.Observer {
     }
 
     const linkDisplayOptions: LinkDisplayOptions = {
-      showColumnNumber: linkifyURLOptions.showColumnNumber,
+      showColumnNumber: linkifyURLOptions.showColumnNumber ?? false,
       revealBreakpoint: options?.revealBreakpoint,
     };
 
-    const currentOnLiveLocationUpdate = this.onLiveLocationUpdate;
+    const updateDelegate = async(liveLocation: Bindings.LiveLocation.LiveLocation): Promise<void> => {
+      await this.updateAnchor(link, linkDisplayOptions, liveLocation);
+      this.dispatchEventToListeners(Events.LIVE_LOCATION_UPDATED, liveLocation);
+    };
     void Bindings.DebuggerWorkspaceBinding.DebuggerWorkspaceBinding.instance()
-        .createLiveLocation(rawLocation, this.updateAnchor.bind(this, link, linkDisplayOptions), pool)
+        .createLiveLocation(rawLocation, updateDelegate.bind(this), pool)
         .then(liveLocation => {
           if (liveLocation) {
             linkInfo.liveLocation = liveLocation;
-            currentOnLiveLocationUpdate();
           }
         });
 
@@ -302,6 +312,8 @@ export class Linkifier implements SDK.TargetManager.Observer {
       showColumnNumber: Boolean(options?.showColumnNumber),
       inlineFrameIndex: options?.inlineFrameIndex ?? 0,
       tabStop: options?.tabStop,
+      userMetric: options?.userMetric,
+      jslogContext: options?.jslogContext || 'script-source-url',
     };
 
     return scriptLink || Linkifier.linkifyURL(sourceURL, linkifyURLOptions);
@@ -319,16 +331,16 @@ export class Linkifier implements SDK.TargetManager.Observer {
   }
 
   maybeLinkifyConsoleCallFrame(
-      target: SDK.Target.Target|null, callFrame: Protocol.Runtime.CallFrame, options?: LinkifyOptions): HTMLElement
-      |null {
+      target: SDK.Target.Target|null, callFrame: Protocol.Runtime.CallFrame|Trace.Types.Events.CallFrame,
+      options?: LinkifyOptions): HTMLElement|null {
     const linkifyOptions: LinkifyOptions = {
       ...options,
       columnNumber: callFrame.columnNumber,
       inlineFrameIndex: options?.inlineFrameIndex ?? 0,
     };
     return this.maybeLinkifyScriptLocation(
-        target, callFrame.scriptId, callFrame.url as Platform.DevToolsPath.UrlString, callFrame.lineNumber,
-        linkifyOptions);
+        target, String(callFrame.scriptId) as Protocol.Runtime.ScriptId,
+        callFrame.url as Platform.DevToolsPath.UrlString, callFrame.lineNumber, linkifyOptions);
   }
 
   linkifyStackTraceTopFrame(target: SDK.Target.Target|null, stackTrace: Protocol.Runtime.StackTrace): HTMLElement {
@@ -342,6 +354,7 @@ export class Linkifier implements SDK.TargetManager.Observer {
       inlineFrameIndex: 0,
       maxLength: this.maxLength,
       preventClick: true,
+      jslogContext: 'script-source-url',
     });
 
     // HAR imported network logs have no associated NetworkManager.
@@ -362,20 +375,21 @@ export class Linkifier implements SDK.TargetManager.Observer {
     // All targets that can report stack traces also have a debugger model.
     const debuggerModel = target.model(SDK.DebuggerModel.DebuggerModel) as SDK.DebuggerModel.DebuggerModel;
 
-    const {link, linkInfo} = Linkifier.createLink('', '');
+    const {link, linkInfo} = Linkifier.createLink('', '', {jslogContext: 'script-location'});
     linkInfo.enableDecorator = this.useLinkDecorator;
     linkInfo.fallback = fallbackAnchor;
 
     const linkDisplayOptions = {showColumnNumber: false};
 
-    const currentOnLiveLocationUpdate = this.onLiveLocationUpdate;
+    const updateDelegate = async(liveLocation: Bindings.LiveLocation.LiveLocation): Promise<void> => {
+      await this.updateAnchor(link, linkDisplayOptions, liveLocation);
+      this.dispatchEventToListeners(Events.LIVE_LOCATION_UPDATED, liveLocation);
+    };
     void Bindings.DebuggerWorkspaceBinding.DebuggerWorkspaceBinding.instance()
         .createStackTraceTopFrameLiveLocation(
-            debuggerModel.createRawLocationsByStackTrace(stackTrace),
-            this.updateAnchor.bind(this, link, linkDisplayOptions), pool)
+            debuggerModel.createRawLocationsByStackTrace(stackTrace), updateDelegate.bind(this), pool)
         .then(liveLocation => {
           linkInfo.liveLocation = liveLocation;
-          currentOnLiveLocationUpdate();
         });
 
     const anchors = (this.anchorsByTarget.get(target) as Element[]);
@@ -384,8 +398,9 @@ export class Linkifier implements SDK.TargetManager.Observer {
   }
 
   linkifyCSSLocation(rawLocation: SDK.CSSModel.CSSLocation, classes?: string): Element {
-    const createLinkOptions: _CreateLinkOptions = {
+    const createLinkOptions: CreateLinkOptions = {
       tabStop: true,
+      jslogContext: 'css-location',
     };
     const {link, linkInfo} = Linkifier.createLink('', classes || '', createLinkOptions);
     linkInfo.enableDecorator = this.useLinkDecorator;
@@ -397,12 +412,14 @@ export class Linkifier implements SDK.TargetManager.Observer {
 
     const linkDisplayOptions = {showColumnNumber: false};
 
-    const currentOnLiveLocationUpdate = this.onLiveLocationUpdate;
+    const updateDelegate = async(liveLocation: Bindings.LiveLocation.LiveLocation): Promise<void> => {
+      await this.updateAnchor(link, linkDisplayOptions, liveLocation);
+      this.dispatchEventToListeners(Events.LIVE_LOCATION_UPDATED, liveLocation);
+    };
     void Bindings.CSSWorkspaceBinding.CSSWorkspaceBinding.instance()
-        .createLiveLocation(rawLocation, this.updateAnchor.bind(this, link, linkDisplayOptions), pool)
+        .createLiveLocation(rawLocation, updateDelegate.bind(this), pool)
         .then(liveLocation => {
           linkInfo.liveLocation = liveLocation;
-          currentOnLiveLocationUpdate();
         });
 
     const anchors = (this.anchorsByTarget.get(rawLocation.cssModel().target()) as Element[]);
@@ -416,6 +433,7 @@ export class Linkifier implements SDK.TargetManager.Observer {
       this.targetRemoved(target);
       this.targetAdded(target);
     }
+    this.listeners?.clear();
   }
 
   dispose(): void {
@@ -443,14 +461,12 @@ export class Linkifier implements SDK.TargetManager.Observer {
             event.consume(true);
             void Common.Revealer.reveal(header.ownerNode || null);
           }, false);
-          // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-          // This workaround is needed to make stylelint happy
-          Linkifier.setTrimmedText(
-              anchor,
-              '<' +
-                  'style>');
+          Linkifier.setTrimmedText(anchor, '<style>');
         }
       }
+
+      anchor.classList.add('invalid-link');
+      anchor.removeAttribute('role');
       return;
     }
 
@@ -477,10 +493,6 @@ export class Linkifier implements SDK.TargetManager.Observer {
     UI.Tooltip.Tooltip.install(anchor, titleText);
     anchor.classList.toggle('ignore-list-link', await liveLocation.isIgnoreListed());
     Linkifier.updateLinkDecorations(anchor);
-  }
-
-  setLiveLocationUpdateCallback(callback: () => void): void {
-    this.onLiveLocationUpdate = callback;
   }
 
   private static updateLinkDecorations(anchor: Element): void {
@@ -534,7 +546,15 @@ export class Linkifier implements SDK.TargetManager.Observer {
       }
     }
     const title = linkText !== url ? url : '';
-    const linkOptions = {maxLength, title, href: url, preventClick, tabStop: options.tabStop, bypassURLTrimming};
+    const linkOptions = {
+      maxLength,
+      title,
+      href: url,
+      preventClick,
+      tabStop: options.tabStop,
+      bypassURLTrimming,
+      jslogContext: options.jslogContext || 'url',
+    };
     const {link, linkInfo} = Linkifier.createLink(linkText, className, linkOptions);
     if (lineNumber) {
       linkInfo.lineNumber = lineNumber;
@@ -542,30 +562,35 @@ export class Linkifier implements SDK.TargetManager.Observer {
     if (columnNumber) {
       linkInfo.columnNumber = columnNumber;
     }
+    linkInfo.userMetric = options?.userMetric;
     return link;
   }
 
   static linkifyRevealable(
       revealable: Object, text: string|HTMLElement, fallbackHref?: Platform.DevToolsPath.UrlString, title?: string,
-      className?: string): HTMLElement {
-    const createLinkOptions: _CreateLinkOptions = {
+      className?: string, jslogContext?: string): HTMLElement {
+    const createLinkOptions: CreateLinkOptions = {
       maxLength: UI.UIUtils.MaxLengthForDisplayedURLs,
       href: (fallbackHref),
       title,
+      jslogContext,
     };
     const {link, linkInfo} = Linkifier.createLink(text, className || '', createLinkOptions);
     linkInfo.revealable = revealable;
     return link;
   }
 
-  private static createLink(text: string|HTMLElement, className: string, options: _CreateLinkOptions = {}):
-      {link: HTMLElement, linkInfo: _LinkInfo} {
-    const {maxLength, title, href, preventClick, tabStop, bypassURLTrimming} = options;
-    const link = document.createElement('span');
+  private static createLink(text: string|HTMLElement, className: string, options: CreateLinkOptions = {}):
+      {link: HTMLElement, linkInfo: LinkInfo} {
+    const {maxLength, title, href, preventClick, tabStop, bypassURLTrimming, jslogContext} = options;
+    const link = document.createElement(options.preventClick ? 'span' : 'button');
     if (className) {
       link.className = className;
     }
     link.classList.add('devtools-link');
+    if (!options.preventClick) {
+      link.classList.add('text-button', 'link-style');
+    }
     if (title) {
       UI.Tooltip.Tooltip.install(link, title);
     }
@@ -573,6 +598,7 @@ export class Linkifier implements SDK.TargetManager.Observer {
       // @ts-ignore
       link.href = href;
     }
+    link.setAttribute('jslog', `${VisualLogging.link(jslogContext).track({click: true})}`);
 
     if (text instanceof HTMLElement) {
       link.appendChild(text);
@@ -601,11 +627,6 @@ export class Linkifier implements SDK.TargetManager.Observer {
     if (!preventClick) {
       link.addEventListener('click', event => {
         if (Linkifier.handleClick(event)) {
-          event.consume(true);
-        }
-      }, false);
-      link.addEventListener('keydown', event => {
-        if (event.key === 'Enter' && Linkifier.handleClick(event)) {
           event.consume(true);
         }
       }, false);
@@ -667,8 +688,8 @@ export class Linkifier implements SDK.TargetManager.Observer {
     return textByAnchor.get(node) || node.textContent || '';
   }
 
-  static linkInfo(link: Element|null): _LinkInfo|null {
-    return link ? infoByAnchor.get(link) || null : null as _LinkInfo | null;
+  static linkInfo(link: Element|null): LinkInfo|null {
+    return link ? infoByAnchor.get(link) || null : null as LinkInfo | null;
   }
 
   private static handleClick(event: Event): boolean {
@@ -683,14 +704,17 @@ export class Linkifier implements SDK.TargetManager.Observer {
     return Linkifier.invokeFirstAction(linkInfo);
   }
 
-  static handleClickFromNewComponentLand(linkInfo: _LinkInfo): void {
+  static handleClickFromNewComponentLand(linkInfo: LinkInfo): void {
     Linkifier.invokeFirstAction(linkInfo);
   }
 
-  static invokeFirstAction(linkInfo: _LinkInfo): boolean {
+  static invokeFirstAction(linkInfo: LinkInfo): boolean {
     const actions = Linkifier.linkActions(linkInfo);
     if (actions.length) {
       void actions[0].handler.call(null);
+      if (linkInfo.userMetric) {
+        Host.userMetrics.actionTaken(linkInfo.userMetric);
+      }
       return true;
     }
     return false;
@@ -699,7 +723,7 @@ export class Linkifier implements SDK.TargetManager.Observer {
   static linkHandlerSetting(): Common.Settings.Setting<string> {
     if (!linkHandlerSettingInstance) {
       linkHandlerSettingInstance =
-          Common.Settings.Settings.instance().createSetting('openLinkHandler', i18nString(UIStrings.auto));
+          Common.Settings.Settings.instance().createSetting('open-link-handler', i18nString(UIStrings.auto));
     }
     return linkHandlerSettingInstance;
   }
@@ -719,14 +743,16 @@ export class Linkifier implements SDK.TargetManager.Observer {
     return info ? info.uiLocation : null;
   }
 
-  static linkActions(info: _LinkInfo): {
+  static linkActions(info: LinkInfo): {
     section: string,
     title: string,
+    jslogContext: string,
     handler: () => Promise<void>| void,
   }[] {
     const result: {
       section: string,
       title: string,
+      jslogContext: string,
       handler: () => Promise<void>| void,
     }[] = [];
 
@@ -755,13 +781,8 @@ export class Linkifier implements SDK.TargetManager.Observer {
       result.push({
         section: 'reveal',
         title: destination ? i18nString(UIStrings.revealInS, {PH1: destination}) : i18nString(UIStrings.reveal),
-        handler: (): Promise<void> => {
-          if (revealable instanceof Bindings.BreakpointManager.BreakpointLocation) {
-            Host.userMetrics.breakpointEditDialogRevealedFrom(
-                Host.UserMetrics.BreakpointEditDialogRevealedFrom.Linkifier);
-          }
-          return Common.Revealer.reveal(revealable);
-        },
+        jslogContext: 'reveal',
+        handler: () => Common.Revealer.reveal(revealable),
       });
     }
     if (contentProvider) {
@@ -774,6 +795,7 @@ export class Linkifier implements SDK.TargetManager.Observer {
         const action = {
           section: 'reveal',
           title: i18nString(UIStrings.openUsingS, {PH1: title}),
+          jslogContext: 'open-using',
           handler: handler.bind(null, contentProvider, lineNumber),
         };
         if (title === Linkifier.linkHandlerSetting().get()) {
@@ -787,12 +809,14 @@ export class Linkifier implements SDK.TargetManager.Observer {
       result.push({
         section: 'reveal',
         title: UI.UIUtils.openLinkExternallyLabel(),
-        handler: (): void => Host.InspectorFrontendHost.InspectorFrontendHostInstance.openInNewTab(url),
+        jslogContext: 'open-in-new-tab',
+        handler: () => Host.InspectorFrontendHost.InspectorFrontendHostInstance.openInNewTab(url),
       });
       result.push({
         section: 'clipboard',
         title: UI.UIUtils.copyLinkAddressLabel(),
-        handler: (): void => Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(url),
+        jslogContext: 'copy-link-address',
+        handler: () => Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(url),
       });
     }
 
@@ -801,8 +825,8 @@ export class Linkifier implements SDK.TargetManager.Observer {
       result.push({
         section: 'clipboard',
         title: UI.UIUtils.copyFileNameLabel(),
-        handler: (): void =>
-            Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(contentProvider.displayName()),
+        jslogContext: 'copy-file-name',
+        handler: () => Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(contentProvider.displayName()),
       });
     }
 
@@ -815,32 +839,18 @@ export interface LinkDecorator extends Common.EventTarget.EventTarget<LinkDecora
 }
 
 export namespace LinkDecorator {
-  // TODO(crbug.com/1167717): Make this a const enum again
-  // eslint-disable-next-line rulesdir/const_enum
-  export enum Events {
-    LinkIconChanged = 'LinkIconChanged',
+  export const enum Events {
+    LINK_ICON_CHANGED = 'LinkIconChanged',
   }
 
   export type EventTypes = {
-    [Events.LinkIconChanged]: Workspace.UISourceCode.UISourceCode,
+    [Events.LINK_ICON_CHANGED]: Workspace.UISourceCode.UISourceCode,
   };
 }
 
-let linkContextMenuProviderInstance: LinkContextMenuProvider;
-
-export class LinkContextMenuProvider implements UI.ContextMenu.Provider {
-  static instance(opts: {
-    forceNew: boolean|null,
-  } = {forceNew: null}): LinkContextMenuProvider {
-    const {forceNew} = opts;
-    if (!linkContextMenuProviderInstance || forceNew) {
-      linkContextMenuProviderInstance = new LinkContextMenuProvider();
-    }
-
-    return linkContextMenuProviderInstance;
-  }
-  appendApplicableItems(event: Event, contextMenu: UI.ContextMenu.ContextMenu, target: Object): void {
-    let targetNode: (Node|null) = (target as Node | null);
+export class LinkContextMenuProvider implements UI.ContextMenu.Provider<Node> {
+  appendApplicableItems(_event: Event, contextMenu: UI.ContextMenu.ContextMenu, target: Node): void {
+    let targetNode: Node|null = target;
     while (targetNode && !infoByAnchor.get(targetNode)) {
       targetNode = targetNode.parentNodeOrShadowHost();
     }
@@ -852,7 +862,7 @@ export class LinkContextMenuProvider implements UI.ContextMenu.Provider {
 
     const actions = Linkifier.linkActions(linkInfo);
     for (const action of actions) {
-      contextMenu.section(action.section).appendItem(action.title, action.handler);
+      contextMenu.section(action.section).appendItem(action.title, action.handler, {jslogContext: action.jslogContext});
     }
   }
 }
@@ -919,7 +929,7 @@ function listenForNewComponentLinkifierEvents(): void {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const unknownEvent = (event as any);
     const eventWithData = (unknownEvent as {
-      data: _LinkInfo,
+      data: LinkInfo,
     });
     Linkifier.handleClickFromNewComponentLand(eventWithData.data);
   });
@@ -927,22 +937,13 @@ function listenForNewComponentLinkifierEvents(): void {
 
 listenForNewComponentLinkifierEvents();
 
-let contentProviderContextMenuProviderInstance: ContentProviderContextMenuProvider;
-
-export class ContentProviderContextMenuProvider implements UI.ContextMenu.Provider {
-  static instance(opts: {
-    forceNew: boolean|null,
-  } = {forceNew: null}): ContentProviderContextMenuProvider {
-    const {forceNew} = opts;
-    if (!contentProviderContextMenuProviderInstance || forceNew) {
-      contentProviderContextMenuProviderInstance = new ContentProviderContextMenuProvider();
-    }
-
-    return contentProviderContextMenuProviderInstance;
-  }
-
-  appendApplicableItems(event: Event, contextMenu: UI.ContextMenu.ContextMenu, target: Object): void {
-    const contentProvider = (target as Workspace.UISourceCode.UISourceCode);
+export class ContentProviderContextMenuProvider implements
+    UI.ContextMenu
+        .Provider<Workspace.UISourceCode.UISourceCode|SDK.Resource.Resource|SDK.NetworkRequest.NetworkRequest> {
+  appendApplicableItems(
+      _event: Event, contextMenu: UI.ContextMenu.ContextMenu,
+      contentProvider: Workspace.UISourceCode.UISourceCode|SDK.Resource.Resource|
+      SDK.NetworkRequest.NetworkRequest): void {
     const contentUrl = contentProvider.contentURL();
     if (!contentUrl) {
       return;
@@ -954,7 +955,8 @@ export class ContentProviderContextMenuProvider implements UI.ContextMenu.Provid
           () => Host.InspectorFrontendHost.InspectorFrontendHostInstance.openInNewTab(
               contentUrl.endsWith(':formatted') ?
                   Common.ParsedURL.ParsedURL.slice(contentUrl, 0, contentUrl.lastIndexOf(':')) :
-                  contentUrl));
+                  contentUrl),
+          {jslogContext: 'open-in-new-tab'});
     }
     for (const title of linkHandlers.keys()) {
       const handler = linkHandlers.get(title);
@@ -962,7 +964,8 @@ export class ContentProviderContextMenuProvider implements UI.ContextMenu.Provid
         continue;
       }
       contextMenu.revealSection().appendItem(
-          i18nString(UIStrings.openUsingS, {PH1: title}), handler.bind(null, contentProvider, 0));
+          i18nString(UIStrings.openUsingS, {PH1: title}), handler.bind(null, contentProvider, 0),
+          {jslogContext: 'open-using'});
     }
     if (contentProvider instanceof SDK.NetworkRequest.NetworkRequest) {
       return;
@@ -970,17 +973,25 @@ export class ContentProviderContextMenuProvider implements UI.ContextMenu.Provid
 
     contextMenu.clipboardSection().appendItem(
         UI.UIUtils.copyLinkAddressLabel(),
-        () => Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(contentUrl));
+        () => Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(contentUrl),
+        {jslogContext: 'copy-link-address'});
 
-    contextMenu.clipboardSection().appendItem(
-        UI.UIUtils.copyFileNameLabel(),
-        () => Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(contentProvider.displayName()));
+    // TODO(bmeurer): `displayName` should be an accessor/data property consistently.
+    if (contentProvider instanceof Workspace.UISourceCode.UISourceCode) {
+      contextMenu.clipboardSection().appendItem(
+          UI.UIUtils.copyFileNameLabel(),
+          () => Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(contentProvider.displayName()),
+          {jslogContext: 'copy-file-name'});
+    } else {
+      contextMenu.clipboardSection().appendItem(
+          UI.UIUtils.copyFileNameLabel(),
+          () => Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(contentProvider.displayName),
+          {jslogContext: 'copy-file-name'});
+    }
   }
 }
 
-// TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export interface _LinkInfo {
+interface LinkInfo {
   icon: IconButton.Icon.Icon|null;
   enableDecorator: boolean;
   uiLocation: Workspace.UISourceCode.UILocation|null;
@@ -991,6 +1002,8 @@ export interface _LinkInfo {
   inlineFrameIndex: number;
   revealable: Object|null;
   fallback: Element|null;
+  userMetric?: Host.UserMetrics.Action;
+  jslogContext?: string;
 }
 
 export interface LinkifyURLOptions {
@@ -998,12 +1011,14 @@ export interface LinkifyURLOptions {
   className?: string;
   lineNumber?: number;
   columnNumber?: number;
-  showColumnNumber: boolean;
-  inlineFrameIndex: number;
+  showColumnNumber?: boolean;
+  inlineFrameIndex?: number;
   preventClick?: boolean;
   maxLength?: number;
   tabStop?: boolean;
   bypassURLTrimming?: boolean;
+  userMetric?: Host.UserMetrics.Action;
+  jslogContext?: string;
 }
 
 export interface LinkifyOptions {
@@ -1012,6 +1027,8 @@ export interface LinkifyOptions {
   showColumnNumber?: boolean;
   inlineFrameIndex: number;
   tabStop?: boolean;
+  userMetric?: Host.UserMetrics.Action;
+  jslogContext?: string;
 
   /**
    * {@link LinkDisplayOptions.revealBreakpoint}
@@ -1019,15 +1036,14 @@ export interface LinkifyOptions {
   revealBreakpoint?: boolean;
 }
 
-// TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export interface _CreateLinkOptions {
+interface CreateLinkOptions {
   maxLength?: number;
   title?: string;
   href?: Platform.DevToolsPath.UrlString;
   preventClick?: boolean;
   tabStop?: boolean;
   bypassURLTrimming?: boolean;
+  jslogContext?: string;
 }
 
 interface LinkDisplayOptions {
@@ -1036,10 +1052,18 @@ interface LinkDisplayOptions {
   /**
    * If true, we'll check if there is a breakpoint at the UILocation we get
    * from the LiveLocation. If we find a breakpoint, we'll reveal the corresponding
-   * {@link Bindings.BreakpointManager.BreakpointLocation}. Which opens the
+   * {@link Breakpoints.BreakpointManager.BreakpointLocation}. Which opens the
    * breakpoint edit dialog.
    */
   revealBreakpoint?: boolean;
 }
 
 export type LinkHandler = (arg0: TextUtils.ContentProvider.ContentProvider, arg1: number) => void;
+
+export const enum Events {
+  LIVE_LOCATION_UPDATED = 'liveLocationUpdated',
+}
+
+export type EventTypes = {
+  [Events.LIVE_LOCATION_UPDATED]: Bindings.LiveLocation.LiveLocation,
+};

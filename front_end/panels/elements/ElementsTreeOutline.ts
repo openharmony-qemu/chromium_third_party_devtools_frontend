@@ -36,20 +36,22 @@ import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Root from '../../core/root/root.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import * as Protocol from '../../generated/protocol.js';
 import * as IssuesManager from '../../models/issues_manager/issues_manager.js';
 import * as Adorners from '../../ui/components/adorners/adorners.js';
 import * as CodeHighlighter from '../../ui/components/code_highlighter/code_highlighter.js';
 import * as IconButton from '../../ui/components/icon_button/icon_button.js';
+import * as IssueCounter from '../../ui/components/issue_counter/issue_counter.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 
 import * as ElementsComponents from './components/components.js';
 import {ElementsPanel} from './ElementsPanel.js';
-import {ElementsTreeElement, InitialChildrenLimit} from './ElementsTreeElement.js';
+import {ElementsTreeElement, InitialChildrenLimit, isOpeningTag} from './ElementsTreeElement.js';
 import elementsTreeOutlineStyles from './elementsTreeOutline.css.js';
 import {ImagePreviewPopover} from './ImagePreviewPopover.js';
+import type {MarkerDecoratorRegistration} from './MarkerDecorator.js';
 import {TopLayerContainer} from './TopLayerContainer.js';
-
-import {type MarkerDecoratorRegistration} from './MarkerDecorator.js';
 
 const UIStrings = {
   /**
@@ -64,7 +66,7 @@ const UIStrings = {
    *@description Tree element expand all button element button text content in Elements Tree Outline of the Elements panel
    *@example {3} PH1
    */
-  showAllNodesDMore: 'Show All Nodes ({PH1} More)',
+  showAllNodesDMore: 'Show all nodes ({PH1} more)',
   /**
    *@description Link text content in Elements Tree Outline of the Elements panel
    */
@@ -108,6 +110,8 @@ export class ElementsTreeOutline extends
   #genericIssues: Array<IssuesManager.GenericIssue.GenericIssue> = [];
   #topLayerContainerByParent: Map<UI.TreeOutline.TreeElement, TopLayerContainer> = new Map();
   #issuesManager?: IssuesManager.IssuesManager.IssuesManager;
+  #popupHelper?: UI.PopoverHelper.PopoverHelper;
+  #nodeElementToIssue: Map<Element, IssuesManager.GenericIssue.GenericIssue> = new Map();
 
   constructor(omitRootDOMNode?: boolean, selectEnabled?: boolean, hideGutter?: boolean) {
     super();
@@ -115,7 +119,7 @@ export class ElementsTreeOutline extends
     if (Root.Runtime.experiments.isEnabled(Root.Runtime.ExperimentName.HIGHLIGHT_ERRORS_ELEMENTS_PANEL)) {
       this.#issuesManager = IssuesManager.IssuesManager.IssuesManager.instance();
       this.#issuesManager.addEventListener(
-          IssuesManager.IssuesManager.Events.IssueAdded, this.#onIssueEventReceived, this);
+          IssuesManager.IssuesManager.Events.ISSUE_ADDED, this.#onIssueEventReceived, this);
       for (const issue of this.#issuesManager.issues()) {
         if (issue instanceof IssuesManager.GenericIssue.GenericIssue) {
           this.#onIssueAdded(issue);
@@ -125,7 +129,7 @@ export class ElementsTreeOutline extends
 
     this.treeElementByNode = new WeakMap();
     const shadowContainer = document.createElement('div');
-    this.shadowRoot = UI.Utils.createShadowRootWithCoreStyles(
+    this.shadowRoot = UI.UIUtils.createShadowRootWithCoreStyles(
         shadowContainer,
         {cssFile: [elementsTreeOutlineStyles, CodeHighlighter.Style.default], delegatesFocus: undefined});
     const outlineDisclosureElement = this.shadowRoot.createChild('div', 'elements-disclosure');
@@ -135,7 +139,7 @@ export class ElementsTreeOutline extends
     if (hideGutter) {
       this.elementInternal.classList.add('elements-hide-gutter');
     }
-    UI.ARIAUtils.setAccessibleName(this.elementInternal, i18nString(UIStrings.pageDom));
+    UI.ARIAUtils.setLabel(this.elementInternal, i18nString(UIStrings.pageDom));
     this.elementInternal.addEventListener('focusout', this.onfocusout.bind(this), false);
     this.elementInternal.addEventListener('mousedown', this.onmousedown.bind(this), false);
     this.elementInternal.addEventListener('mousemove', this.onmousemove.bind(this), false);
@@ -154,6 +158,7 @@ export class ElementsTreeOutline extends
 
     outlineDisclosureElement.appendChild(this.elementInternal);
     this.element = shadowContainer;
+    this.contentElement.setAttribute('jslog', `${VisualLogging.tree('elements')}`);
 
     this.includeRootDOMNode = !omitRootDOMNode;
     this.selectEnabled = selectEnabled;
@@ -190,9 +195,83 @@ export class ElementsTreeOutline extends
 
     this.decoratorExtensions = null;
 
-    this.showHTMLCommentsSetting = Common.Settings.Settings.instance().moduleSetting('showHTMLComments');
+    this.showHTMLCommentsSetting = Common.Settings.Settings.instance().moduleSetting('show-html-comments');
     this.showHTMLCommentsSetting.addChangeListener(this.onShowHTMLCommentsChange.bind(this));
     this.setUseLightSelectionColor(true);
+    if (Root.Runtime.experiments.isEnabled(Root.Runtime.ExperimentName.HIGHLIGHT_ERRORS_ELEMENTS_PANEL)) {
+      this.#popupHelper = new UI.PopoverHelper.PopoverHelper(this.elementInternal, event => {
+        const hoveredNode = event.composedPath()[0] as Element;
+        if (!hoveredNode || !hoveredNode.matches('.violating-element')) {
+          return null;
+        }
+
+        const issue = this.#nodeElementToIssue.get(hoveredNode);
+        if (!issue) {
+          return null;
+        }
+        const issueDetails = issue.details();
+
+        const tooltipTitle = this.#issueCodeToTooltipTitle(issueDetails.errorType);
+        const issueKindIcon = new IconButton.Icon.Icon();
+        issueKindIcon.data = IssueCounter.IssueCounter.getIssueKindIconData(issue.getKind());
+        issueKindIcon.style.cursor = 'pointer';
+        const viewIssueElement = document.createElement('a');
+        viewIssueElement.href = '#';
+        viewIssueElement.textContent = 'View issue:';
+
+        const issueTitle = document.createElement('span');
+        issueTitle.textContent = tooltipTitle;
+
+        const element = document.createElement('div');
+        element.appendChild(issueKindIcon);
+        element.appendChild(viewIssueElement);
+        element.appendChild(issueTitle);
+        element.style.display = 'flex';
+        element.style.alignItems = 'center';
+        element.style.gap = '5px';
+
+        return {
+          box: hoveredNode.boxInWindow(),
+          show: async (popover: UI.GlassPane.GlassPane) => {
+            popover.setIgnoreLeftMargin(true);
+            const openIssueEvent = (): Promise<void> => Common.Revealer.reveal(issue);
+            viewIssueElement.addEventListener('click', () => openIssueEvent());
+            issueKindIcon.addEventListener('click', () => openIssueEvent());
+            popover.contentElement.appendChild(element);
+            return true;
+          },
+        };
+      }, 'elements.issue');
+      this.#popupHelper.setTimeout(300);
+      this.#popupHelper.setHasPadding(true);
+    }
+  }
+
+  #issueCodeToTooltipTitle(errorType: Protocol.Audits.GenericIssueErrorType): string {
+    switch (errorType) {
+      case Protocol.Audits.GenericIssueErrorType.FormLabelForNameError:
+        return 'Incorrect use of <label for=FORM_ELEMENT>';
+      case Protocol.Audits.GenericIssueErrorType.FormDuplicateIdForInputError:
+        return 'Duplicate form field id in the same form';
+      case Protocol.Audits.GenericIssueErrorType.FormInputWithNoLabelError:
+        return 'Form field without valid aria-labelledby attribute or associated label';
+      case Protocol.Audits.GenericIssueErrorType.FormAutocompleteAttributeEmptyError:
+        return 'Incorrect use of autocomplete attribute';
+      case Protocol.Audits.GenericIssueErrorType.FormEmptyIdAndNameAttributesForInputError:
+        return 'A form field element should have an id or name attribute';
+      case Protocol.Audits.GenericIssueErrorType.FormAriaLabelledByToNonExistingId:
+        return 'An aria-labelledby attribute doesn\'t match any element id';
+      case Protocol.Audits.GenericIssueErrorType.FormInputAssignedAutocompleteValueToIdOrNameAttributeError:
+        return 'An element doesn\'t have an autocomplete attribute';
+      case Protocol.Audits.GenericIssueErrorType.FormLabelHasNeitherForNorNestedInput:
+        return 'No label associated with a form field';
+      case Protocol.Audits.GenericIssueErrorType.FormLabelForMatchesNonExistingIdError:
+        return 'Incorrect use of <label for=FORM_ELEMENT>';
+      case Protocol.Audits.GenericIssueErrorType.FormInputHasWrongButWellIntendedAutocompleteValueError:
+        return 'Non-standard autocomplete attribute value';
+      default:
+        return '';
+    }
   }
 
   static forDOMModel(domModel: SDK.DOMModel.DOMModel): ElementsTreeOutline|null {
@@ -220,6 +299,10 @@ export class ElementsTreeOutline extends
   async #addTreeElementIssue(issue: IssuesManager.GenericIssue.GenericIssue): Promise<void> {
     const issueDetails = issue.details();
 
+    const tooltipTitle = this.#issueCodeToTooltipTitle(issueDetails.errorType);
+    if (!tooltipTitle) {
+      return;
+    }
     if (!this.rootDOMNode || !issueDetails.violatingNodeId) {
       return;
     }
@@ -234,6 +317,11 @@ export class ElementsTreeOutline extends
     const treeElement = this.findTreeElement(node);
     if (treeElement) {
       treeElement.addIssue(issue);
+      const treeElementNodeElementsToIssue = treeElement.issuesByNodeElement;
+      // This element could be the treeElement tags name or an attribute.
+      for (const [element, issue] of treeElementNodeElementsToIssue) {
+        this.#nodeElementToIssue.set(element, issue);
+      }
     }
   }
 
@@ -334,7 +422,7 @@ export class ElementsTreeOutline extends
     }
 
     void node.copyNode();
-    this.setClipboardData({node: node, isCut: isCut});
+    this.setClipboardData({node, isCut});
   }
 
   canPaste(targetNode: SDK.DOMModel.DOMNode): boolean {
@@ -506,8 +594,9 @@ export class ElementsTreeOutline extends
         this.appendChild(treeElement);
       }
     }
-
-    void this.createTopLayerContainer(this.rootElement(), this.rootDOMNode.domModel());
+    if (this.rootDOMNode instanceof SDK.DOMModel.DOMDocument) {
+      void this.createTopLayerContainer(this.rootElement(), this.rootDOMNode);
+    }
 
     if (selectedNode) {
       this.revealAndSelectNode(selectedNode, true);
@@ -516,7 +605,7 @@ export class ElementsTreeOutline extends
 
   selectedNodeChanged(focus: boolean): void {
     this.dispatchEventToListeners(
-        ElementsTreeOutline.Events.SelectedNodeChanged, {node: this.selectedDOMNodeInternal, focus: focus});
+        ElementsTreeOutline.Events.SelectedNodeChanged, {node: this.selectedDOMNodeInternal, focus});
   }
 
   private fireElementsTreeUpdated(nodes: SDK.DOMModel.DOMNode[]): void {
@@ -784,13 +873,14 @@ export class ElementsTreeOutline extends
     if (treeElement.isClosingTag()) {
       // Drop onto closing tag -> insert as last child.
       parentNode = treeElement.node();
+      anchorNode = null;
     } else {
       const dragTargetNode = treeElement.node();
       parentNode = dragTargetNode.parentNode;
       anchorNode = dragTargetNode;
     }
 
-    if (!parentNode || !anchorNode) {
+    if (!parentNode) {
       return;
     }
     const wasExpanded = this.treeElementBeingDragged.expanded;
@@ -838,7 +928,8 @@ export class ElementsTreeOutline extends
     }
     const commentNode = node.enclosingNodeOrSelfWithClass('webkit-html-comment');
     contextMenu.saveSection().appendItem(
-        i18nString(UIStrings.storeAsGlobalVariable), this.saveNodeToTempVariable.bind(this, treeElement.node()));
+        i18nString(UIStrings.storeAsGlobalVariable), this.saveNodeToTempVariable.bind(this, treeElement.node()),
+        {jslogContext: 'store-as-global-variable'});
     if (textNode) {
       treeElement.populateTextContextMenu(contextMenu, textNode);
     } else if (isTag) {
@@ -846,12 +937,12 @@ export class ElementsTreeOutline extends
     } else if (commentNode) {
       treeElement.populateNodeContextMenu(contextMenu);
     } else if (isPseudoElement) {
-      treeElement.populateScrollIntoView(contextMenu);
+      treeElement.populatePseudoElementContextMenu(contextMenu);
     }
 
     contextMenu.viewSection().appendItem(i18nString(UIStrings.adornerSettings), () => {
       ElementsPanel.instance().showAdornerSettingsPane();
-    });
+    }, {jslogContext: 'show-adorner-settings'});
 
     contextMenu.appendApplicableItems(treeElement.node());
     void contextMenu.show();
@@ -1056,6 +1147,7 @@ export class ElementsTreeOutline extends
     domModel.addEventListener(SDK.DOMModel.Events.ChildNodeCountUpdated, this.childNodeCountUpdated, this);
     domModel.addEventListener(SDK.DOMModel.Events.DistributedNodesChanged, this.distributedNodesChanged, this);
     domModel.addEventListener(SDK.DOMModel.Events.TopLayerElementsChanged, this.topLayerElementsChanged, this);
+    domModel.addEventListener(SDK.DOMModel.Events.ScrollableFlagUpdated, this.scrollableFlagUpdated, this);
   }
 
   unwireFromDOMModel(domModel: SDK.DOMModel.DOMModel): void {
@@ -1069,6 +1161,7 @@ export class ElementsTreeOutline extends
     domModel.removeEventListener(SDK.DOMModel.Events.ChildNodeCountUpdated, this.childNodeCountUpdated, this);
     domModel.removeEventListener(SDK.DOMModel.Events.DistributedNodesChanged, this.distributedNodesChanged, this);
     domModel.removeEventListener(SDK.DOMModel.Events.TopLayerElementsChanged, this.topLayerElementsChanged, this);
+    domModel.removeEventListener(SDK.DOMModel.Events.ScrollableFlagUpdated, this.scrollableFlagUpdated, this);
     elementsTreeOutlineByDOMModel.delete(domModel);
   }
 
@@ -1232,11 +1325,11 @@ export class ElementsTreeOutline extends
     });
   }
 
-  async createTopLayerContainer(parent: UI.TreeOutline.TreeElement, domModel: SDK.DOMModel.DOMModel): Promise<void> {
+  async createTopLayerContainer(parent: UI.TreeOutline.TreeElement, document: SDK.DOMModel.DOMDocument): Promise<void> {
     if (!parent.treeOutline || !(parent.treeOutline instanceof ElementsTreeOutline)) {
       return;
     }
-    const container = new TopLayerContainer(parent.treeOutline, domModel);
+    const container = new TopLayerContainer(parent.treeOutline, document);
     await container.throttledUpdateTopLayerElements();
     if (container.currentTopLayerDOMNodes.size > 0) {
       parent.appendChild(container);
@@ -1327,9 +1420,6 @@ export class ElementsTreeOutline extends
     if (node.isIframe()) {
       return true;
     }
-    if (node.isPortal()) {
-      return true;
-    }
     if (node.contentDocument()) {
       return true;
     }
@@ -1398,8 +1488,8 @@ export class ElementsTreeOutline extends
       isClosingTag?: boolean): ElementsTreeElement {
     const newElement = this.createElementTreeElement(child, isClosingTag);
     treeElement.insertChild(newElement, index);
-    if (child.nodeType() === Node.DOCUMENT_NODE) {
-      void this.createTopLayerContainer(newElement, child.domModel());
+    if (child instanceof SDK.DOMModel.DOMDocument) {
+      void this.createTopLayerContainer(newElement, child);
     }
     return newElement;
   }
@@ -1516,15 +1606,30 @@ export class ElementsTreeOutline extends
     }
   }
 
+  private scrollableFlagUpdated(event: Common.EventTarget.EventTargetEvent<{node: SDK.DOMModel.DOMNode}>): void {
+    let {node} = event.data;
+    if (node.nodeName() === '#document') {
+      // We show the scroll badge of the document on the <html> element.
+      if (!node.ownerDocument?.documentElement) {
+        return;
+      }
+      node = node.ownerDocument.documentElement;
+    }
+    const treeElement = this.treeElementByNode.get(node);
+    if (treeElement && isOpeningTag(treeElement.tagTypeContext)) {
+      void treeElement.tagTypeContext.adornersThrottler.schedule(async () => treeElement.updateScrollAdorner());
+    }
+  }
+
   private static treeOutlineSymbol = Symbol('treeOutline');
 }
 
 export namespace ElementsTreeOutline {
-  // TODO(crbug.com/1167717): Make this a const enum again
-  // eslint-disable-next-line rulesdir/const_enum
   export enum Events {
+    /* eslint-disable @typescript-eslint/naming-convention -- Used by web_tests. */
     SelectedNodeChanged = 'SelectedNodeChanged',
     ElementsTreeUpdated = 'ElementsTreeUpdated',
+    /* eslint-enable @typescript-eslint/naming-convention */
   }
 
   export type EventTypes = {
@@ -1692,7 +1797,7 @@ export class ShortcutTreeElement extends UI.TreeOutline.TreeElement {
     const name = config.name;
     const adornerContent = document.createElement('span');
     const linkIcon = new IconButton.Icon.Icon();
-    linkIcon.data = {iconName: 'select-element', color: 'var(--icon-default)', width: '14px', height: '14px'};
+    linkIcon.name = 'select-element';
     const slotText = document.createElement('span');
     slotText.textContent = name;
     adornerContent.append(linkIcon);
@@ -1701,9 +1806,10 @@ export class ShortcutTreeElement extends UI.TreeOutline.TreeElement {
     adorner.data = {
       name,
       content: adornerContent,
+      jslogContext: 'reveal',
     };
     this.listItemElement.appendChild(adorner);
-    const onClick = (((): void => {
+    const onClick = ((() => {
                        this.nodeShortcut.deferredNode.resolve(
                            node => {
                              void Common.Revealer.reveal(node);

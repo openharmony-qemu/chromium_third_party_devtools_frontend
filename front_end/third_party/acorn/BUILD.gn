@@ -12,6 +12,7 @@ devtools_pre_built("acorn") {
 
   sources = [
     "acorn-tsconfig.json",
+    "package/dist/acorn.d.mts",
     "package/dist/acorn.d.ts",
     "package/dist/acorn.mjs",
     "package/dist/acorn.mjs.d.ts",
@@ -37,7 +38,10 @@ devtools_entrypoint("bundle") {
     ":estree",
   ]
 
-  visibility = [ "../../entrypoints/formatter_worker/*" ]
+  visibility = [
+    "../../entrypoints/formatter_worker/*",
+    "../../ui/legacy/components/object_ui/*",
+  ]
 
   visibility += devtools_third_party_visibility
 }

@@ -67,29 +67,29 @@ export class LayersPanel extends UI.Panel.PanelWithSidebar implements SDK.Target
     super('layers', 225);
     this.model = null;
 
-    SDK.TargetManager.TargetManager.instance().observeTargets(this);
+    SDK.TargetManager.TargetManager.instance().observeTargets(this, {scoped: true});
     this.layerViewHost = new LayerViewer.LayerViewHost.LayerViewHost();
     this.layerTreeOutline = new LayerViewer.LayerTreeOutline.LayerTreeOutline(this.layerViewHost);
     this.layerTreeOutline.addEventListener(
-        LayerViewer.LayerTreeOutline.Events.PaintProfilerRequested, this.onPaintProfileRequested, this);
+        LayerViewer.LayerTreeOutline.Events.PAINT_PROFILER_REQUESTED, this.onPaintProfileRequested, this);
     this.panelSidebarElement().appendChild(this.layerTreeOutline.element);
     this.setDefaultFocusedElement(this.layerTreeOutline.element);
 
-    this.rightSplitWidget = new UI.SplitWidget.SplitWidget(false, true, 'layerDetailsSplitViewState');
+    this.rightSplitWidget = new UI.SplitWidget.SplitWidget(false, true, 'layer-details-split-view-state');
     this.splitWidget().setMainWidget(this.rightSplitWidget);
 
     this.layers3DView = new LayerViewer.Layers3DView.Layers3DView(this.layerViewHost);
     this.rightSplitWidget.setMainWidget(this.layers3DView);
     this.layers3DView.addEventListener(
-        LayerViewer.Layers3DView.Events.PaintProfilerRequested, this.onPaintProfileRequested, this);
-    this.layers3DView.addEventListener(LayerViewer.Layers3DView.Events.ScaleChanged, this.onScaleChanged, this);
+        LayerViewer.Layers3DView.Events.PAINT_PROFILER_REQUESTED, this.onPaintProfileRequested, this);
+    this.layers3DView.addEventListener(LayerViewer.Layers3DView.Events.SCALE_CHANGED, this.onScaleChanged, this);
 
     this.tabbedPane = new UI.TabbedPane.TabbedPane();
     this.rightSplitWidget.setSidebarWidget(this.tabbedPane);
 
     this.layerDetailsView = new LayerViewer.LayerDetailsView.LayerDetailsView(this.layerViewHost);
     this.layerDetailsView.addEventListener(
-        LayerViewer.LayerDetailsView.Events.PaintProfilerRequested, this.onPaintProfileRequested, this);
+        LayerViewer.LayerDetailsView.Events.PAINT_PROFILER_REQUESTED, this.onPaintProfileRequested, this);
     this.tabbedPane.appendTab(DetailsViewTabs.Details, i18nString(UIStrings.details), this.layerDetailsView);
 
     this.paintProfilerView = new LayerPaintProfilerView(this.showImage.bind(this));
@@ -124,7 +124,7 @@ export class LayersPanel extends UI.Panel.PanelWithSidebar implements SDK.Target
   }
 
   targetAdded(target: SDK.Target.Target): void {
-    if (target !== SDK.TargetManager.TargetManager.instance().primaryPageTarget()) {
+    if (target !== target.outermostTarget()) {
       return;
     }
     this.model = target.model(LayerTreeModel);
@@ -135,6 +135,7 @@ export class LayersPanel extends UI.Panel.PanelWithSidebar implements SDK.Target
     this.model.addEventListener(Events.LayerPainted, this.onLayerPainted, this);
     if (this.isShowing()) {
       this.model.enable();
+      void this.update();
     }
   }
 

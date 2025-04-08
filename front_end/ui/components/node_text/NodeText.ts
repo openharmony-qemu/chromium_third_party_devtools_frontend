@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import * as LitHtml from '../../../ui/lit-html/lit-html.js';
-import * as ComponentHelpers from '../helpers/helpers.js';
 
 import nodeTextStyles from './nodeText.css.js';
 
@@ -16,7 +15,6 @@ export interface NodeTextData {
 }
 
 export class NodeText extends HTMLElement {
-  static readonly litTagName = LitHtml.literal`devtools-node-text`;
 
   readonly #shadow = this.attachShadow({mode: 'open'});
   #nodeTitle: string = '';
@@ -70,10 +68,9 @@ export class NodeText extends HTMLElement {
   }
 }
 
-ComponentHelpers.CustomElements.defineComponent('devtools-node-text', NodeText);
+customElements.define('devtools-node-text', NodeText);
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface HTMLElementTagNameMap {
     'devtools-node-text': NodeText;
   }

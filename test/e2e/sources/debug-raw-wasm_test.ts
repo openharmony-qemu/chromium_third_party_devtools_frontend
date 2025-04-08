@@ -15,7 +15,7 @@ import {
   waitFor,
   waitForFunction,
 } from '../../shared/helper.js';
-import {describe, it} from '../../shared/mocha-extensions.js';
+
 import {
   addBreakpointForLine,
   captureAddedSourceFiles,
@@ -29,6 +29,7 @@ import {
   isBreakpointSet,
   openSourceCodeEditorForFile,
   openSourcesPanel,
+  PAUSE_BUTTON,
   reloadPageAndWaitForSourceFile,
   removeBreakpointForLine,
   RESUME_BUTTON,
@@ -37,10 +38,10 @@ import {
   SELECTED_THREAD_SELECTOR,
   stepThroughTheCode,
   switchToCallFrame,
-  TURNED_OFF_PAUSE_BUTTON_SELECTOR,
+  THREADS_SELECTOR,
 } from '../helpers/sources-helpers.js';
 
-describe('Sources Tab', async function() {
+describe('Sources Tab', function() {
   // The tests in this suite are particularly slow, as they perform a lot of actions
   if (this.timeout() > 0) {
     this.timeout(10000);
@@ -114,7 +115,7 @@ describe('Sources Tab', async function() {
 
     await step('resume script execution', async () => {
       await frontend.keyboard.press('F8');
-      await waitFor(TURNED_OFF_PAUSE_BUTTON_SELECTOR);
+      await waitFor(PAUSE_BUTTON);
     });
 
     await step('reload the page', async () => {
@@ -228,7 +229,7 @@ describe('Sources Tab', async function() {
 
     await step('resume script execution', async () => {
       await frontend.keyboard.press('F8');
-      await waitFor(TURNED_OFF_PAUSE_BUTTON_SELECTOR);
+      await waitFor(PAUSE_BUTTON);
     });
 
     await step('remove the breakpoint from the line 0x060', async () => {
@@ -265,20 +266,27 @@ describe('Sources Tab', async function() {
 
     await step('resume script execution', async () => {
       await frontend.keyboard.press('F8');
-      await waitFor(TURNED_OFF_PAUSE_BUTTON_SELECTOR);
+      await waitFor(PAUSE_BUTTON);
     });
 
     await checkBreakpointDidNotActivate();
   });
 
   it('is able to step with state in multi-threaded code in main thread', async () => {
-    await enableExperiment('instrumentationBreakpoints');
+    await enableExperiment('instrumentation-breakpoints');
     const {target, frontend} = getBrowserAndPages();
     // enableExperiment() reloads the devtools page, so we need to reinstall the listener on the new window.
     await installEventListener(frontend, DEBUGGER_PAUSED_EVENT);
     const fileName = 'stepping-with-state.wasm';
     await step('navigate to a page and open the Sources tab', async () => {
       await openSourceCodeEditorForFile('stepping-with-state.wasm', 'wasm/stepping-with-state-and-threads.html');
+    });
+
+    await step('expand the Threads list', async () => {
+      await Promise.all([
+        click(THREADS_SELECTOR),
+        waitFor(THREADS_SELECTOR + '[aria-expanded="true"]'),
+      ]);
     });
 
     await step('check that the main thread is selected', async () => {
@@ -330,7 +338,7 @@ describe('Sources Tab', async function() {
 
     await step('resume script execution', async () => {
       await frontend.keyboard.press('F8');
-      await waitFor(TURNED_OFF_PAUSE_BUTTON_SELECTOR);
+      await waitFor(PAUSE_BUTTON);
     });
 
     await step('remove the breakpoint from the line 0x060', async () => {
@@ -379,14 +387,14 @@ describe('Sources Tab', async function() {
 
     await step('resume script execution', async () => {
       await frontend.keyboard.press('F8');
-      await waitFor(TURNED_OFF_PAUSE_BUTTON_SELECTOR);
+      await waitFor(PAUSE_BUTTON);
     });
 
     await checkBreakpointDidNotActivate();
   });
 
   it('is able to step with state in multi-threaded code in worker thread', async () => {
-    await enableExperiment('instrumentationBreakpoints');
+    await enableExperiment('instrumentation-breakpoints');
     const {target, frontend} = getBrowserAndPages();
     // enableExperiment() reloads the devtools page, so we need to reinstall the listener on the new window.
     await installEventListener(frontend, DEBUGGER_PAUSED_EVENT);
@@ -394,6 +402,13 @@ describe('Sources Tab', async function() {
 
     await step('navigate to a page and open the Sources tab', async () => {
       await openSourceCodeEditorForFile(fileName, 'wasm/stepping-with-state-and-threads.html');
+    });
+
+    await step('expand the Threads list', async () => {
+      await Promise.all([
+        click(THREADS_SELECTOR),
+        waitFor(THREADS_SELECTOR + '[aria-expanded="true"]'),
+      ]);
     });
 
     await step('check that the main thread is selected', async () => {
@@ -485,14 +500,14 @@ describe('Sources Tab', async function() {
 
     await step('resume script execution', async () => {
       await frontend.keyboard.press('F8');
-      await waitFor(TURNED_OFF_PAUSE_BUTTON_SELECTOR);
+      await waitFor(PAUSE_BUTTON);
     });
 
     await checkBreakpointDidNotActivate();
   });
 });
 
-describe('Raw-Wasm', async () => {
+describe('Raw-Wasm', () => {
   it('displays correct location in Wasm source', async () => {
     const {target} = getBrowserAndPages();
 

@@ -3,7 +3,8 @@
 // found in the LICENSE file.
 
 import * as Common from '../common/common.js';
-import {type Target} from './Target.js';
+
+import type {Target} from './Target.js';
 
 export interface RegistrationInfo {
   capabilities: number;

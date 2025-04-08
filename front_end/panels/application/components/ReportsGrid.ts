@@ -2,14 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as i18n from '../../../core/i18n/i18n.js';
-import * as DataGrid from '../../../ui/components/data_grid/data_grid.js';
-import * as ComponentHelpers from '../../../ui/components/helpers/helpers.js';
-import * as IconButton from '../../../ui/components/icon_button/icon_button.js';
-import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import '../../../ui/components/data_grid/data_grid.js';
+import '../../../ui/components/icon_button/icon_button.js';
+import '../../../ui/legacy/legacy.js';
 
-import type * as Protocol from '../../../generated/protocol.js';
+import * as i18n from '../../../core/i18n/i18n.js';
 import * as Root from '../../../core/root/root.js';
+import type * as Protocol from '../../../generated/protocol.js';
+import type * as DataGrid from '../../../ui/components/data_grid/data_grid.js';
+import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import * as VisualLogging from '../../../ui/visual_logging/visual_logging.js';
 
 import reportingApiGridStyles from './reportingApiGrid.css.js';
 
@@ -41,7 +43,6 @@ export const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 const {render, html} = LitHtml;
 
 export class ReportsGridStatusHeader extends HTMLElement {
-  static readonly litTagName = LitHtml.literal`devtools-resources-reports-grid-status-header`;
   readonly #shadow = this.attachShadow({mode: 'open'});
 
   connectedCallback(): void {
@@ -54,13 +55,14 @@ export class ReportsGridStatusHeader extends HTMLElement {
     // clang-format off
     render(html`
       ${i18nString(UIStrings.status)}
-      <x-link href="https://web.dev/reporting-api/#report-status">
-        <${IconButton.Icon.Icon.litTagName} class="inline-icon" .data=${{
+      <x-link href="https://web.dev/reporting-api/#report-status"
+      jslog=${VisualLogging.link('report-status').track({click: true})}>
+        <devtools-icon class="inline-icon" .data=${{
           iconName: 'help',
           color: 'var(--icon-link)',
           width: '16px',
           height: '16px',
-          } as IconButton.Icon.IconData}></${IconButton.Icon.Icon.litTagName}>
+          }}></devtools-icon>
       </x-link>
     `, this.#shadow, {host: this});
     // clang-format on
@@ -72,7 +74,6 @@ export interface ReportsGridData {
 }
 
 export class ReportsGrid extends HTMLElement {
-  static readonly litTagName = LitHtml.literal`devtools-resources-reports-grid`;
 
   readonly #shadow = this.attachShadow({mode: 'open'});
   #reports: Protocol.Network.ReportingApiReport[] = [];
@@ -80,7 +81,7 @@ export class ReportsGrid extends HTMLElement {
 
   connectedCallback(): void {
     this.#shadow.adoptedStyleSheets = [reportingApiGridStyles];
-    this.#protocolMonitorExperimentEnabled = Root.Runtime.experiments.isEnabled('protocolMonitor');
+    this.#protocolMonitorExperimentEnabled = Root.Runtime.experiments.isEnabled('protocol-monitor');
     this.#render();
   }
 
@@ -113,7 +114,7 @@ export class ReportsGrid extends HTMLElement {
           hideable: false,
           visible: true,
           titleElement: html`
-          <${ReportsGridStatusHeader.litTagName}></${ReportsGridStatusHeader.litTagName}>
+          <devtools-resources-reports-grid-status-header></devtools-resources-reports-grid-status-header>
           `,
         },
         {
@@ -150,12 +151,11 @@ export class ReportsGrid extends HTMLElement {
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
     render(html`
-      <div class="reporting-container">
+      <div class="reporting-container" jslog=${VisualLogging.section('reports')}>
         <div class="reporting-header">${i18n.i18n.lockedString('Reports')}</div>
         ${this.#reports.length > 0 ? html`
-          <${DataGrid.DataGridController.DataGridController.litTagName} .data=${
-              reportsGridData as DataGrid.DataGridController.DataGridControllerData}>
-          </${DataGrid.DataGridController.DataGridController.litTagName}>
+          <devtools-data-grid-controller .data=${reportsGridData}>
+          </devtools-data-grid-controller>
         ` : html`
           <div class="reporting-placeholder">
             <div>${i18nString(UIStrings.noReportsToDisplay)}</div>
@@ -181,9 +181,8 @@ export class ReportsGrid extends HTMLElement {
   }
 }
 
-ComponentHelpers.CustomElements.defineComponent(
-    'devtools-resources-reports-grid-status-header', ReportsGridStatusHeader);
-ComponentHelpers.CustomElements.defineComponent('devtools-resources-reports-grid', ReportsGrid);
+customElements.define('devtools-resources-reports-grid-status-header', ReportsGridStatusHeader);
+customElements.define('devtools-resources-reports-grid', ReportsGrid);
 
 declare global {
   interface HTMLElementTagNameMap {

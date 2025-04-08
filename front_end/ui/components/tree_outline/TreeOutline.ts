@@ -4,22 +4,24 @@
 
 import * as Platform from '../../../core/platform/platform.js';
 import * as LitHtml from '../../lit-html/lit-html.js';
+import * as VisualLogging from '../../visual_logging/visual_logging.js';
 import * as CodeHighlighter from '../code_highlighter/code_highlighter.js';
 import * as ComponentHelpers from '../helpers/helpers.js';
 import * as Coordinator from '../render_coordinator/render_coordinator.js';
 
 import treeOutlineStyles from './treeOutline.css.js';
-
 import {
   findNextNodeForTreeOutlineKeyboardNavigation,
   getNodeChildren,
   getPathToTreeNode,
   isExpandableNode,
   trackDOMNodeToTreeNode,
-  type TreeNodeId,
   type TreeNode,
+  type TreeNodeId,
   type TreeNodeWithChildren,
 } from './TreeOutlineUtils.js';
+
+const {html, Directives: {ifDefined}} = LitHtml;
 
 const coordinator = Coordinator.RenderCoordinator.RenderCoordinator.instance();
 
@@ -37,7 +39,7 @@ export interface TreeOutlineData<TreeNodeDataType> {
 }
 
 export function defaultRenderer(node: TreeNode<string>): LitHtml.TemplateResult {
-  return LitHtml.html`${node.treeNodeData}`;
+  return html`${node.treeNodeData}`;
 }
 
 export class ItemSelectedEvent<TreeNodeDataType> extends Event {
@@ -90,7 +92,6 @@ export const enum FilterOption {
 }
 
 export class TreeOutline<TreeNodeDataType> extends HTMLElement {
-  static readonly litTagName = LitHtml.literal`devtools-tree-outline`;
   readonly #shadow = this.attachShadow({mode: 'open'});
   #treeData: readonly TreeNode<TreeNodeDataType>[] = [];
   #nodeExpandedMap: Map<string, boolean> = new Map();
@@ -111,7 +112,7 @@ export class TreeOutline<TreeNodeDataType> extends HTMLElement {
               node.treeNodeData, null,
               2)}. Consider providing a different defaultRenderer that can handle nodes of this type.`);
     }
-    return LitHtml.html`${String(node.treeNodeData)}`;
+    return html`${String(node.treeNodeData)}`;
   };
   #nodeFilter?: ((node: TreeNodeDataType) => FilterOption);
   #compact = false;
@@ -239,13 +240,11 @@ export class TreeOutline<TreeNodeDataType> extends HTMLElement {
   }
 
   #setNodeKeyNoWrapCSSVariable(attributeValue: string|null): void {
-    ComponentHelpers.SetCSSProperty.set(
-        this, '--override-key-whitespace-wrapping', attributeValue !== null ? 'nowrap' : 'initial');
+    this.style.setProperty('--override-key-whitespace-wrapping', attributeValue !== null ? 'nowrap' : 'initial');
   }
 
   #setTopLevelNodeBorderColorCSSVariable(attributeValue: string|null): void {
-    ComponentHelpers.SetCSSProperty.set(
-        this, '--override-top-node-border', attributeValue ? `1px solid ${attributeValue}` : '');
+    this.style.setProperty('--override-top-node-border', attributeValue ? `1px solid ${attributeValue}` : '');
   }
 
   async #recursivelyCollapseTreeNodeChildren(treeNode: TreeNode<TreeNodeDataType>): Promise<void> {
@@ -441,7 +440,7 @@ export class TreeOutline<TreeNodeDataType> extends HTMLElement {
       });
       // Disabled until https://crbug.com/1079231 is fixed.
       // clang-format off
-      childrenToRender = LitHtml.html`<ul role="group">${LitHtml.Directives.until(childNodes)}</ul>`;
+      childrenToRender = html`<ul role="group">${LitHtml.Directives.until(childNodes)}</ul>`;
       // clang-format on
     }
 
@@ -454,8 +453,7 @@ export class TreeOutline<TreeNodeDataType> extends HTMLElement {
       'is-top-level': depth === 0,
       compact: this.#compact,
     });
-    const ariaExpandedAttribute =
-        LitHtml.Directives.ifDefined(isExpandableNode(node) ? String(nodeIsExpanded) : undefined);
+    const ariaExpandedAttribute = !isExpandableNode(node) ? undefined : nodeIsExpanded ? 'true' : 'false';
 
     let renderedNodeKey: LitHtml.TemplateResult;
     if (node.renderer) {
@@ -466,14 +464,15 @@ export class TreeOutline<TreeNodeDataType> extends HTMLElement {
 
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
-    return LitHtml.html`
+    return html`
       <li role="treeitem"
         tabindex=${tabIndex}
         aria-setsize=${setSize}
-        aria-expanded=${ariaExpandedAttribute}
+        aria-expanded=${ifDefined(ariaExpandedAttribute)}
         aria-level=${depth + 1}
         aria-posinset=${positionInSet + 1}
         class=${listItemClasses}
+        jslog=${VisualLogging.treeItem(node.jslogContext).track({click: true, keydown: 'ArrowUp|ArrowDown|ArrowLeft|ArrowRight|Enter|Space|Home|End'})}
         @click=${this.#onNodeClick}
         track-dom-node-to-tree-node=${trackDOMNodeToTreeNode(this.#domNodeToTreeNodeMap, node)}
         on-render=${ComponentHelpers.Directives.nodeRenderedCallback(domNode => {
@@ -494,14 +493,14 @@ export class TreeOutline<TreeNodeDataType> extends HTMLElement {
         })}
       >
         <span class="arrow-and-key-wrapper"
-          @mouseover=${(): void => {
+          @mouseover=${() => {
             this.dispatchEvent(new ItemMouseOverEvent(node));
           }}
-          @mouseout=${(): void => {
+          @mouseout=${() => {
             this.dispatchEvent(new ItemMouseOutEvent(node));
           }}
         >
-          <span class="arrow-icon" @click=${this.#onArrowClick(node)}>
+          <span class="arrow-icon" @click=${this.#onArrowClick(node)} jslog=${VisualLogging.expand().track({click: true})}>
           </span>
           <span class="tree-node-key" data-node-key=${node.treeNodeData}>${renderedNodeKey}</span>
         </span>
@@ -524,7 +523,7 @@ export class TreeOutline<TreeNodeDataType> extends HTMLElement {
     await coordinator.write('TreeOutline render', () => {
       // Disabled until https://crbug.com/1079231 is fixed.
       // clang-format off
-      LitHtml.render(LitHtml.html`
+      LitHtml.render(html`
       <div class="wrapping-container">
         <ul role="tree" @keydown=${this.#onTreeKeyDown}>
           ${this.#treeData.map((topLevelNode, index) => {
@@ -553,10 +552,9 @@ export class TreeOutline<TreeNodeDataType> extends HTMLElement {
   }
 }
 
-ComponentHelpers.CustomElements.defineComponent('devtools-tree-outline', TreeOutline);
+customElements.define('devtools-tree-outline', TreeOutline);
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface HTMLElementTagNameMap {
     'devtools-tree-outline': TreeOutline<unknown>;
   }

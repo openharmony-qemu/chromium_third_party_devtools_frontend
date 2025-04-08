@@ -32,12 +32,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
+import type * as Protocol from '../../generated/protocol.js';
 import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as Common from '../common/common.js';
 import * as Host from '../host/host.js';
 import * as Platform from '../platform/platform.js';
-import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
-import type * as Protocol from '../../generated/protocol.js';
 
 import {CSSFontFace} from './CSSFontFace.js';
 import {CSSMatchedStyles} from './CSSMatchedStyles.js';
@@ -45,19 +45,21 @@ import {CSSMedia} from './CSSMedia.js';
 import {CSSStyleRule} from './CSSRule.js';
 import {CSSStyleDeclaration, Type} from './CSSStyleDeclaration.js';
 import {CSSStyleSheetHeader} from './CSSStyleSheetHeader.js';
-
 import {DOMModel, type DOMNode} from './DOMModel.js';
-
 import {
   Events as ResourceTreeModelEvents,
-  ResourceTreeModel,
+  PrimaryPageChangeType,
   type ResourceTreeFrame,
-  type PrimaryPageChangeType,
+  ResourceTreeModel,
 } from './ResourceTreeModel.js';
-
-import {Capability, type Target} from './Target.js';
 import {SDKModel} from './SDKModel.js';
 import {SourceMapManager} from './SourceMapManager.js';
+import {Capability, type Target} from './Target.js';
+
+export const enum ColorScheme {
+  LIGHT = 'light',
+  DARK = 'dark',
+}
 
 export class CSSModel extends SDKModel<EventTypes> {
   readonly agent: ProtocolProxyApi.CSSApi;
@@ -77,6 +79,7 @@ export class CSSModel extends SDKModel<EventTypes> {
   #isEnabled: boolean;
   #isRuleUsageTrackingEnabled: boolean;
   #isTrackingRequestPending: boolean;
+  #colorScheme: ColorScheme|undefined;
 
   constructor(target: Target) {
     super(target);
@@ -110,10 +113,22 @@ export class CSSModel extends SDKModel<EventTypes> {
     this.#isTrackingRequestPending = false;
     this.#stylePollingThrottler = new Common.Throttler.Throttler(StylePollingInterval);
 
-    this.#sourceMapManager.setEnabled(Common.Settings.Settings.instance().moduleSetting('cssSourceMapsEnabled').get());
+    this.#sourceMapManager.setEnabled(
+        Common.Settings.Settings.instance().moduleSetting('css-source-maps-enabled').get());
     Common.Settings.Settings.instance()
-        .moduleSetting('cssSourceMapsEnabled')
+        .moduleSetting('css-source-maps-enabled')
         .addChangeListener(event => this.#sourceMapManager.setEnabled((event.data as boolean)));
+  }
+
+  async colorScheme(): Promise<ColorScheme|undefined> {
+    if (!this.#colorScheme) {
+      const colorSchemeResponse = await this.domModel()?.target().runtimeAgent().invoke_evaluate(
+          {expression: 'window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches'});
+      if (colorSchemeResponse && !colorSchemeResponse.exceptionDetails && !colorSchemeResponse.getError()) {
+        this.#colorScheme = colorSchemeResponse.result.value ? ColorScheme.DARK : ColorScheme.LIGHT;
+      }
+    }
+    return this.#colorScheme;
   }
 
   headersForSourceURL(sourceURL: Platform.DevToolsPath.UrlString): CSSStyleSheetHeader[] {
@@ -174,7 +189,7 @@ export class CSSModel extends SDKModel<EventTypes> {
       return text;
     }
     const sourceURLLine = text.substr(sourceURLLineIndex + 1).split('\n', 1)[0];
-    const sourceURLRegex = /[\040\t]*\/\*[#@] sourceURL=[\040\t]*([^\s]*)[\040\t]*\*\/[\040\t]*$/;
+    const sourceURLRegex = /[\x20\t]*\/\*[#@] sourceURL=[\x20\t]*([^\s]*)[\x20\t]*\*\/[\x20\t]*$/;
     if (sourceURLLine.search(sourceURLRegex) === -1) {
       return text;
     }
@@ -185,14 +200,18 @@ export class CSSModel extends SDKModel<EventTypes> {
     return this.#domModel;
   }
 
+  async trackComputedStyleUpdatesForNode(nodeId: Protocol.DOM.NodeId|undefined): Promise<void> {
+    await this.agent.invoke_trackComputedStyleUpdatesForNode({nodeId});
+  }
+
   async setStyleText(
       styleSheetId: Protocol.CSS.StyleSheetId, range: TextUtils.TextRange.TextRange, text: string,
       majorChange: boolean): Promise<boolean> {
     try {
       await this.ensureOriginalStyleSheetText(styleSheetId);
 
-      const {styles} = await this.agent.invoke_setStyleTexts(
-          {edits: [{styleSheetId: styleSheetId, range: range.serializeToObject(), text}]});
+      const {styles} =
+          await this.agent.invoke_setStyleTexts({edits: [{styleSheetId, range: range.serializeToObject(), text}]});
       if (!styles || styles.length !== 1) {
         return false;
       }
@@ -202,6 +221,7 @@ export class CSSModel extends SDKModel<EventTypes> {
       this.fireStyleSheetChanged(styleSheetId, edit);
       return true;
     } catch (e) {
+      console.error(e);
       return false;
     }
   }
@@ -222,6 +242,29 @@ export class CSSModel extends SDKModel<EventTypes> {
       this.fireStyleSheetChanged(styleSheetId, edit);
       return true;
     } catch (e) {
+      console.error(e);
+      return false;
+    }
+  }
+
+  async setPropertyRulePropertyName(
+      styleSheetId: Protocol.CSS.StyleSheetId, range: TextUtils.TextRange.TextRange, text: string): Promise<boolean> {
+    Host.userMetrics.actionTaken(Host.UserMetrics.Action.StyleRuleEdited);
+
+    try {
+      await this.ensureOriginalStyleSheetText(styleSheetId);
+      const {propertyName} =
+          await this.agent.invoke_setPropertyRulePropertyName({styleSheetId, range, propertyName: text});
+
+      if (!propertyName) {
+        return false;
+      }
+      this.#domModel.markUndoableState();
+      const edit = new Edit(styleSheetId, range, text, propertyName);
+      this.fireStyleSheetChanged(styleSheetId, edit);
+      return true;
+    } catch (e) {
+      console.error(e);
       return false;
     }
   }
@@ -242,6 +285,7 @@ export class CSSModel extends SDKModel<EventTypes> {
       this.fireStyleSheetChanged(styleSheetId, edit);
       return true;
     } catch (e) {
+      console.error(e);
       return false;
     }
   }
@@ -307,7 +351,7 @@ export class CSSModel extends SDKModel<EventTypes> {
       return null;
     }
 
-    return new CSSMatchedStyles({
+    return await CSSMatchedStyles.create({
       cssModel: this,
       node: (node as DOMNode),
       inlinePayload: response.inlineStyle || null,
@@ -318,7 +362,11 @@ export class CSSModel extends SDKModel<EventTypes> {
       inheritedPseudoPayload: response.inheritedPseudoElements || [],
       animationsPayload: response.cssKeyframesRules || [],
       parentLayoutNodeId: response.parentLayoutNodeId,
-      positionFallbackRules: response.cssPositionFallbackRules || [],
+      positionTryRules: response.cssPositionTryRules || [],
+      propertyRules: response.cssPropertyRules ?? [],
+      cssPropertyRegistrations: response.cssPropertyRegistrations ?? [],
+      fontPaletteValuesRule: response.cssFontPaletteValuesRule,
+      activePositionFallbackIndex: response.activePositionFallbackIndex ?? -1,
     });
   }
 
@@ -406,7 +454,7 @@ export class CSSModel extends SDKModel<EventTypes> {
       return false;
     }
     void this.agent.invoke_forcePseudoState({nodeId: node.id, forcedPseudoClasses});
-    this.dispatchEventToListeners(Events.PseudoStateForced, {node: node, pseudoClass: pseudoClass, enable: enable});
+    this.dispatchEventToListeners(Events.PseudoStateForced, {node, pseudoClass, enable});
     return true;
   }
 
@@ -431,6 +479,7 @@ export class CSSModel extends SDKModel<EventTypes> {
       this.fireStyleSheetChanged(styleSheetId, edit);
       return true;
     } catch (e) {
+      console.error(e);
       return false;
     }
   }
@@ -453,6 +502,7 @@ export class CSSModel extends SDKModel<EventTypes> {
       this.fireStyleSheetChanged(styleSheetId, edit);
       return true;
     } catch (e) {
+      console.error(e);
       return false;
     }
   }
@@ -474,6 +524,7 @@ export class CSSModel extends SDKModel<EventTypes> {
       this.fireStyleSheetChanged(styleSheetId, edit);
       return true;
     } catch (e) {
+      console.error(e);
       return false;
     }
   }
@@ -514,12 +565,13 @@ export class CSSModel extends SDKModel<EventTypes> {
       this.fireStyleSheetChanged(styleSheetId, edit);
       return new CSSStyleRule(this, rule);
     } catch (e) {
+      console.error(e);
       return null;
     }
   }
 
-  async requestViaInspectorStylesheet(node: DOMNode): Promise<CSSStyleSheetHeader|null> {
-    const frameId = node.frameId() ||
+  async requestViaInspectorStylesheet(maybeFrameId?: Protocol.Page.FrameId|null): Promise<CSSStyleSheetHeader|null> {
+    const frameId = maybeFrameId ||
         (this.#resourceTreeModel && this.#resourceTreeModel.mainFrame ? this.#resourceTreeModel.mainFrame.id : null);
     const headers = [...this.#styleSheetIdToHeader.values()];
     const styleSheetHeader = headers.find(header => header.frameId === frameId && header.isViaInspector());
@@ -531,17 +583,23 @@ export class CSSModel extends SDKModel<EventTypes> {
     }
 
     try {
-      const {styleSheetId} = await this.agent.invoke_createStyleSheet({frameId});
-      if (!styleSheetId) {
-        return null;
-      }
-      return this.#styleSheetIdToHeader.get(styleSheetId) || null;
+      return await this.createInspectorStylesheet(frameId);
     } catch (e) {
+      console.error(e);
       return null;
     }
   }
 
+  async createInspectorStylesheet(frameId: Protocol.Page.FrameId): Promise<CSSStyleSheetHeader|null> {
+    const result = await this.agent.invoke_createStyleSheet({frameId});
+    if (result.getError()) {
+      throw new Error(result.getError());
+    }
+    return this.#styleSheetIdToHeader.get(result.styleSheetId) || null;
+  }
+
   mediaQueryResultChanged(): void {
+    this.#colorScheme = undefined;
     this.dispatchEventToListeners(Events.MediaQueryResultChanged);
   }
 
@@ -569,7 +627,7 @@ export class CSSModel extends SDKModel<EventTypes> {
   }
 
   fireStyleSheetChanged(styleSheetId: Protocol.CSS.StyleSheetId, edit?: Edit): void {
-    this.dispatchEventToListeners(Events.StyleSheetChanged, {styleSheetId: styleSheetId, edit: edit});
+    this.dispatchEventToListeners(Events.StyleSheetChanged, {styleSheetId, edit});
   }
 
   private ensureOriginalStyleSheetText(styleSheetId: Protocol.CSS.StyleSheetId): Promise<string|null> {
@@ -595,6 +653,10 @@ export class CSSModel extends SDKModel<EventTypes> {
 
   getAllStyleSheetHeaders(): Iterable<CSSStyleSheetHeader> {
     return this.#styleSheetIdToHeader.values();
+  }
+
+  computedStyleUpdated(nodeId: Protocol.DOM.NodeId): void {
+    this.dispatchEventToListeners(Events.ComputedStyleUpdated, {nodeId});
   }
 
   styleSheetAdded(header: Protocol.CSS.CSSStyleSheetHeader): void {
@@ -699,12 +761,12 @@ export class CSSModel extends SDKModel<EventTypes> {
   }
 
   async getStyleSheetText(styleSheetId: Protocol.CSS.StyleSheetId): Promise<string|null> {
-    try {
-      const {text} = await this.agent.invoke_getStyleSheetText({styleSheetId});
-      return text && CSSModel.trimSourceURL(text);
-    } catch (e) {
+    const response = await this.agent.invoke_getStyleSheetText({styleSheetId});
+    if (response.getError()) {
       return null;
     }
+    const {text} = response;
+    return text && CSSModel.trimSourceURL(text);
   }
 
   private async onPrimaryPageChanged(
@@ -719,7 +781,7 @@ export class CSSModel extends SDKModel<EventTypes> {
     if (event.data.frame.backForwardCacheDetails.restoredFromCache) {
       await this.suspendModel();
       await this.resumeModel();
-    } else {
+    } else if (event.data.type !== PrimaryPageChangeType.ACTIVATION) {
       this.resetStyleSheets();
       this.resetFontFaces();
     }
@@ -815,7 +877,7 @@ export class CSSModel extends SDKModel<EventTypes> {
 
       if (this.#cssPropertyTracker) {
         this.#cssPropertyTracker.dispatchEventToListeners(
-            CSSPropertyTrackerEvents.TrackedCSSPropertiesUpdated,
+            CSSPropertyTrackerEvents.TRACKED_CSS_PROPERTIES_UPDATED,
             result.nodeIds.map(nodeId => this.#domModel.nodeForId(nodeId)));
       }
     }
@@ -828,7 +890,7 @@ export class CSSModel extends SDKModel<EventTypes> {
   override dispose(): void {
     this.disableCSSPropertyTracker();
     super.dispose();
-    this.#sourceMapManager.dispose();
+    this.dispatchEventToListeners(Events.ModelDisposed, this);
   }
 
   getAgent(): ProtocolProxyApi.CSSApi {
@@ -836,16 +898,18 @@ export class CSSModel extends SDKModel<EventTypes> {
   }
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export enum Events {
+  /* eslint-disable @typescript-eslint/naming-convention -- Used by web_tests. */
   FontsUpdated = 'FontsUpdated',
   MediaQueryResultChanged = 'MediaQueryResultChanged',
   ModelWasEnabled = 'ModelWasEnabled',
+  ModelDisposed = 'ModelDisposed',
   PseudoStateForced = 'PseudoStateForced',
   StyleSheetAdded = 'StyleSheetAdded',
   StyleSheetChanged = 'StyleSheetChanged',
   StyleSheetRemoved = 'StyleSheetRemoved',
+  ComputedStyleUpdated = 'ComputedStyleUpdated',
+  /* eslint-enable @typescript-eslint/naming-convention */
 }
 
 export interface StyleSheetChangedEvent {
@@ -859,14 +923,20 @@ export interface PseudoStateForcedEvent {
   enable: boolean;
 }
 
+export interface ComputedStyleUpdatedEvent {
+  nodeId: Protocol.DOM.NodeId;
+}
+
 export type EventTypes = {
   [Events.FontsUpdated]: void,
   [Events.MediaQueryResultChanged]: void,
   [Events.ModelWasEnabled]: void,
+  [Events.ModelDisposed]: CSSModel,
   [Events.PseudoStateForced]: PseudoStateForcedEvent,
   [Events.StyleSheetAdded]: CSSStyleSheetHeader,
   [Events.StyleSheetChanged]: StyleSheetChangedEvent,
   [Events.StyleSheetRemoved]: CSSStyleSheetHeader,
+  [Events.ComputedStyleUpdated]: ComputedStyleUpdatedEvent,
 };
 
 const PseudoStateMarker = 'pseudo-state-marker';
@@ -934,6 +1004,10 @@ class CSSDispatcher implements ProtocolProxyApi.CSSDispatcher {
   styleSheetRemoved({styleSheetId}: Protocol.CSS.StyleSheetRemovedEvent): void {
     this.#cssModel.styleSheetRemoved(styleSheetId);
   }
+
+  computedStyleUpdated({nodeId}: Protocol.CSS.ComputedStyleUpdatedEvent): void {
+    this.#cssModel.computedStyleUpdated(nodeId);
+  }
 }
 
 class ComputedStyleLoader {
@@ -998,14 +1072,12 @@ export class CSSPropertyTracker extends Common.ObjectWrapper.ObjectWrapper<CSSPr
 
 const StylePollingInterval = 1000;  // throttling interval for style polling, in milliseconds
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export enum CSSPropertyTrackerEvents {
-  TrackedCSSPropertiesUpdated = 'TrackedCSSPropertiesUpdated',
+export const enum CSSPropertyTrackerEvents {
+  TRACKED_CSS_PROPERTIES_UPDATED = 'TrackedCSSPropertiesUpdated',
 }
 
 export type CSSPropertyTrackerEventTypes = {
-  [CSSPropertyTrackerEvents.TrackedCSSPropertiesUpdated]: (DOMNode|null)[],
+  [CSSPropertyTrackerEvents.TRACKED_CSS_PROPERTIES_UPDATED]: (DOMNode|null)[],
 };
 
 SDKModel.register(CSSModel, {capabilities: Capability.DOM, autostart: true});

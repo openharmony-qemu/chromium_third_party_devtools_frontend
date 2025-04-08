@@ -1,6 +1,7 @@
 {
   "extends": "./config/typescript/tsconfig.base.json",
   "compilerOptions": {
+    "allowUmdGlobalAccess": true,
     "lib": [
       "esnext",
       "dom",
@@ -8,7 +9,17 @@
       "webworker",
       "webworker.iterable"
     ],
-    "outDir": "ignored-for-vscode"
+    "outDir": "ignored-for-vscode",
+    "plugins": [
+      {
+        "name": "ts-lit-plugin",
+        "rules": {
+          "no-complex-attribute-binding": "off",
+          "no-missing-import": "error",
+          "no-unknown-tag-name": "error"
+        }
+      }
+    ]
   },
   "include": [
     "front_end/",

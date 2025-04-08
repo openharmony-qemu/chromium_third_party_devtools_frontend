@@ -9,21 +9,20 @@ import {
   getTestServerPort,
   goToResource,
 } from '../../shared/helper.js';
-import {describe, it} from '../../shared/mocha-extensions.js';
+
 import {
   getCurrentConsoleMessages,
   Level,
-  LOG_XML_HTTP_REQUESTS_SELECTOR,
   navigateToConsoleTab,
-  toggleConsoleSetting,
+  toggleShowLogXmlHttpRequests,
   typeIntoConsoleAndWaitForResult,
 } from '../helpers/console-helpers.js';
 
-describe('The Console Tab', async () => {
+describe('The Console Tab', () => {
   it('is able to log fetching when XMLHttpRequest Logging is enabled', async () => {
     await goToResource('../resources/console/console-fetch-logging.html');
     await navigateToConsoleTab();
-    await toggleConsoleSetting(LOG_XML_HTTP_REQUESTS_SELECTOR);
+    await toggleShowLogXmlHttpRequests();
     const expectedResults = [
       `Fetch finished loading: GET "https://localhost:${
           getTestServerPort()}/test/e2e/resources/console/xhr-exists.html".`,
@@ -34,7 +33,7 @@ describe('The Console Tab', async () => {
       'Fetch failed loading: GET "http://localhost:8000/devtools/resources/xhr-exists.html".',
     ];
 
-    await typeIntoConsoleAndWaitForResult(getBrowserAndPages().frontend, 'await makeRequests();');
+    await typeIntoConsoleAndWaitForResult(getBrowserAndPages().frontend, 'await makeRequests();', 4, Level.Info);
 
     const result = await getCurrentConsoleMessages(false, Level.Info);
     assert.deepStrictEqual(result.slice(0, -1), expectedResults, 'Fetching was not logged correctly');
@@ -53,7 +52,7 @@ describe('The Console Tab', async () => {
       'Fetch failed loading: GET "http://localhost:8000/devtools/resources/xhr-exists.html".',
     ];
 
-    await typeIntoConsoleAndWaitForResult(getBrowserAndPages().frontend, 'await makeRequests();');
+    await typeIntoConsoleAndWaitForResult(getBrowserAndPages().frontend, 'await makeRequests();', 1, Level.Info);
 
     const result = await getCurrentConsoleMessages(false, Level.Info);
     // Check that fetching is not logged

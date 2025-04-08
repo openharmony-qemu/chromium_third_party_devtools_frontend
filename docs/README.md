@@ -1,5 +1,7 @@
 # Chromium DevTools docs
 
+[goo.gle/chromium-devtools](http://goo.gle/chromium-devtools)
+
 This directory contains [Chrome DevTools] project
 documentation in [Gitiles-flavored Markdown]. It is automatically
 [rendered by Gitiles].
@@ -8,10 +10,55 @@ documentation in [Gitiles-flavored Markdown]. It is automatically
 [Gitiles-flavored Markdown]: https://gerrit.googlesource.com/gitiles/+/master/Documentation/markdown.md
 [rendered by Gitiles]: https://chromium.googlesource.com/devtools/devtools-frontend/+/main/docs/
 
-**If you add new documents, please also add a link to them in the Document Index
+**If you add new documents, please also add a link to them in the [Document Index](#Document-Index)
 below.**
 
 [TOC]
+
+## Document Index
+
+### Design Documents
+
+*   See the shared [Design Documents](https://drive.google.com/drive/folders/1JbUthATfybvMQR3yAHC4J0P7n6oftYNq) folder in the Chromium drive.
+
+### General Development
+
+*   [Get the Code](./get_the_code.md)
+*   [Contribution Guide](./contributing/README.md)
+*   [UX Style Guide](./styleguide/ux/README.md)
+*   [Testing Guide](../test/README.md)
+*   [Cookbook](./cookbook/README.md)
+*   [Visual logging in DevTools](../front_end/ui/visual_logging/README.md)
+*   [Style Guides](./styleguide/README.md)
+
+### Architectural Documentation
+
+*   [Architecture of DevTools](architecture_of_devtools.md)
+*   [Chrome DevTools Protocol (CDP)](devtools-protocol.md)
+*   [Resource management in DevTools](resource_management.md)
+
+### Chromium
+
+*   [Chromium Docs](https://chromium.googlesource.com/chromium/src/+/main/docs/README.md)
+*   [V8 Documention](https://v8.dev/docs)
+
+### Checklists
+
+*   [DevTools UI feature checklist](./checklist/ui.md)
+*   [DevTools support checklist for Blink Intents](./checklist/README.md)
+*   [DevTools support checklist for JavaScript features](./checklist/javascript.md)
+*   [DevTools support checklist for WebAssembly features](./checklist/webassembly.md)
+
+### Useful Commands
+
+`git cl format --js`
+
+Formats all code using clang-format.
+
+`npm run check`
+
+Runs all static analysis checks on DevTools code.
+
 
 ## Creating Documentation
 
@@ -21,7 +68,7 @@ below.**
     and the
     [Chromium Documentation Best Practices](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/docs/documentation_best_practices.md).
 *   Markdown documents must follow the
-    [style guide](https://github.com/google/styleguide/tree/gh-pages/docguide).
+    [Markdown style guide](styleguide/markdown/markdown.md).
 
 ### Previewing changes
 
@@ -31,10 +78,10 @@ Assuming that `/path/to/src` contains a chromium checkout, you can run:
 
 ```bash
 # in devtools-frontend checkout
-/path/to/src/tools/md_browser/md_browser.py --directory $PWD/docs
+/path/to/src/tools/md_browser/md_browser.py --directory $PWD
 ```
 
-This is only an estimate. The **gitiles** view may differ.
+and preview the result by opening http://localhost:8080/docs/README.md in your browser. This is only an estimate. The **gitiles** view may differ.
 
 #### Online with Gerrit's links to gitiles
 
@@ -43,41 +90,10 @@ This is only an estimate. The **gitiles** view may differ.
 2.  View a specific .md file.
     e.g. https://chromium-review.googlesource.com/c/3362532/2/docs/README.md
 3.  You will see something like <br>
-    Base
-    [preview](https://chromium.googlesource.com/chromium/src/+/ad44f6081ccc6b92479b12f1eb7e9482f474859d/docs/README.md)
-    -> Patchset 3
-    [preview](https://chromium.googlesource.com/chromium/src/+/refs/changes/32/3362532/3/docs/README.md)
-    | DOWNLOAD <br>
+    ![Preview changes with Gitiles from Gerrit](./images/gerrit-preview.png) <br>
     at the top left of the page. Click on the second
     "[preview](https://chromium.googlesource.com/chromium/src/+/refs/changes/32/3362532/3/docs/README.md)"
     link to open the preview for the current patch set.
 
 This **gitiles** view is the authoritative view, exactly the same as will be
 used when committed.
-
-## Document Index
-
-### Design Documents
-*   See the shared [Design Documents](https://drive.google.com/drive/folders/1JbUthATfybvMQR3yAHC4J0P7n6oftYNq) folder in the Chromium drive.
-
-### General Development
-*   [Workflows](workflows.md)
-*   [Chrome DevTools Design Review Guidelines](design_guidelines.md)
-*   [Release Management](release_management.md)
-*   [Third-party Guidelines](third_party_guidelines.md)
-*   [Localization](l10n.md)
-*   [V8 debugger support checklist for new language features](https://goo.gle/v8-checklist)
-*   [Chrome DevTools Protocol](devtools-protocol.md)
-
-### Testing
-*   [E2E test guide](../test/e2e/README.md)
-*   [Unit test guide](../test/unittests/README.md)
-*   [Web tests in the DevTools repo guide](../test/webtests/README)
-
-### Architectural Documentation
-*   [Architecture of DevTools](architecture_of_devtools.md)
-*   [Resource management in DevTools](resource_management.md)
-
-### Chromium
-*   [Chromium Docs](https://chromium.googlesource.com/chromium/src/+/master/docs/README.md)
-*   [V8 Documention](https://v8.dev/docs)

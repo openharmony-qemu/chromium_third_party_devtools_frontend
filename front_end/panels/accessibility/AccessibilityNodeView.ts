@@ -7,6 +7,7 @@ import * as i18n from '../../core/i18n/i18n.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 
 import accessibilityNodeStyles from './accessibilityNode.css.js';
 import {AXAttributes, AXNativeSourceTypes, AXSourceTypes} from './AccessibilityStrings.js';
@@ -41,6 +42,10 @@ const UIStrings = {
    *@description Text which appears in the Accessibility Node View of the Accessibility panel when an element is covered by a modal/popup window
    */
   elementIsHiddenBy: 'Element is hidden by active modal dialog:\xA0',
+  /**
+   *@description Text which appears in the Accessibility Node View of the Accessibility panel when an element is hidden by another accessibility tree.
+   */
+  elementIsHiddenByChildTree: 'Element is hidden by child tree:\xA0',
   /**
    *@description Reason element in Accessibility Node View of the Accessibility panel
    */
@@ -124,6 +129,7 @@ export class AXNodeSubPane extends AccessibilitySubPane {
     this.axNode = null;
 
     this.contentElement.classList.add('ax-subpane');
+    this.contentElement.setAttribute('jslog', `${VisualLogging.section('computed-properties')}`);
 
     this.noNodeInfo = this.createInfo(i18nString(UIStrings.noAccessibilityNode));
     this.ignoredInfo = this.createInfo(i18nString(UIStrings.accessibilityNodeNotExposed), 'ax-ignored-info hidden');
@@ -198,7 +204,7 @@ export class AXNodeSubPane extends AccessibilitySubPane {
     const role = axNode.role();
     if (role) {
       const roleProperty: SDK.AccessibilityModel.CoreOrProtocolAxProperty = {
-        name: SDK.AccessibilityModel.CoreAxPropertyName.Role,
+        name: SDK.AccessibilityModel.CoreAxPropertyName.ROLE,
         value: role,
       };
       addProperty(roleProperty);
@@ -306,15 +312,14 @@ export class AXNodePropertyTreeElement extends UI.TreeOutline.TreeElement {
   appendRelatedNode(relatedNode: Protocol.Accessibility.AXRelatedNode, _index: number): void {
     const deferredNode =
         new SDK.DOMModel.DeferredDOMNode(this.axNode.accessibilityModel().target(), relatedNode.backendDOMNodeId);
-    const nodeTreeElement =
-        new AXRelatedNodeSourceTreeElement({deferredNode: deferredNode, idref: undefined}, relatedNode);
+    const nodeTreeElement = new AXRelatedNodeSourceTreeElement({deferredNode, idref: undefined}, relatedNode);
     this.appendChild(nodeTreeElement);
   }
 
   appendRelatedNodeInline(relatedNode: Protocol.Accessibility.AXRelatedNode): void {
     const deferredNode =
         new SDK.DOMModel.DeferredDOMNode(this.axNode.accessibilityModel().target(), relatedNode.backendDOMNodeId);
-    const linkedNode = new AXRelatedNodeElement({deferredNode: deferredNode, idref: undefined}, relatedNode);
+    const linkedNode = new AXRelatedNodeElement({deferredNode, idref: undefined}, relatedNode);
     this.listItemElement.appendChild(linkedNode.render());
   }
 
@@ -402,7 +407,7 @@ export class AXValueSourceTreeElement extends AXNodePropertyTreeElement {
   appendRelatedNodeWithIdref(relatedNode: Protocol.Accessibility.AXRelatedNode, idref: string): void {
     const deferredNode =
         new SDK.DOMModel.DeferredDOMNode(this.axNode.accessibilityModel().target(), relatedNode.backendDOMNodeId);
-    const nodeTreeElement = new AXRelatedNodeSourceTreeElement({deferredNode: deferredNode, idref: idref}, relatedNode);
+    const nodeTreeElement = new AXRelatedNodeSourceTreeElement({deferredNode, idref}, relatedNode);
     this.appendChild(nodeTreeElement);
   }
 
@@ -434,9 +439,9 @@ export class AXValueSourceTreeElement extends AXNodePropertyTreeElement {
       if (matchingNode) {
         this.appendRelatedNodeWithIdref(matchingNode, idref);
       } else if (idrefs.length === 1) {
-        this.listItemElement.appendChild(new AXRelatedNodeElement({deferredNode: undefined, idref: idref}).render());
+        this.listItemElement.appendChild(new AXRelatedNodeElement({deferredNode: undefined, idref}).render());
       } else {
-        this.appendChild(new AXRelatedNodeSourceTreeElement({deferredNode: undefined, idref: idref}));
+        this.appendChild(new AXRelatedNodeSourceTreeElement({deferredNode: undefined, idref}));
       }
     }
   }
@@ -627,6 +632,9 @@ export class AXNodeIgnoredReasonTreeElement extends AXNodePropertyTreeElement {
     switch (reason) {
       case 'activeModalDialog':
         reasonElement = i18n.i18n.getFormatLocalizedString(str_, UIStrings.elementIsHiddenBy, {});
+        break;
+      case 'hiddenByChildTree':
+        reasonElement = i18n.i18n.getFormatLocalizedString(str_, UIStrings.elementIsHiddenByChildTree, {});
         break;
       case 'ancestorIsLeafNode':
         reasonElement = i18n.i18n.getFormatLocalizedString(str_, UIStrings.ancestorChildrenAreAll, {});

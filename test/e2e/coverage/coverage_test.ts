@@ -10,7 +10,6 @@ import {
   goToResource,
   waitForElementWithTextContent,
 } from '../../shared/helper.js';
-import {describe, it} from '../../shared/mocha-extensions.js';
 import {
   clearCoverageContent,
   getCoverageData,
@@ -20,7 +19,7 @@ import {
   waitForTheCoveragePanelToLoad,
 } from '../helpers/coverage-helpers.js';
 
-describe('The Coverage Panel', async () => {
+describe('The Coverage Panel', () => {
   it('Loads correctly', async () => {
     await waitForTheCoveragePanelToLoad();
   });
@@ -33,6 +32,25 @@ describe('The Coverage Panel', async () => {
     await clearCoverageContent();
   });
 
+  it('Shows coverage data on page loads if the instrumentation has started', async () => {
+    await waitForTheCoveragePanelToLoad();
+    await navigateToCoverageTestSite();
+    await startInstrumentingCoverage();
+    const URL_PREFIX = `https://localhost:${getTestServerPort()}/test/e2e/resources/coverage`;
+    assert.deepEqual(await getCoverageData(2), [
+      {
+        total: '193',
+        unused: '35',
+        url: `${URL_PREFIX}/default.html`,
+      },
+      {
+        total: '43',
+        unused: '31',
+        url: `${URL_PREFIX}/script.js`,
+      },
+    ]);
+  });
+
   // Skip until flake is fixed
   it.skip('[crbug.com/1432922]: Shows completly uncovered css files', async () => {
     const {target} = getBrowserAndPages();
@@ -43,47 +61,47 @@ describe('The Coverage Panel', async () => {
     const URL_PREFIX = `https://localhost:${getTestServerPort()}/test/e2e/resources/coverage`;
     assert.deepEqual(await getCoverageData(5), [
       {
-        'total': '283',
-        'unused': '276',
-        'url': `${URL_PREFIX}/unused-css-coverage.html`,
+        total: '283',
+        unused: '276',
+        url: `${URL_PREFIX}/unused-css-coverage.html`,
       },
       {
-        'total': '198',
-        'unused': '198',
-        'url': `${URL_PREFIX}/not-initially-used.css`,
+        total: '198',
+        unused: '198',
+        url: `${URL_PREFIX}/not-initially-used.css`,
       },
       {
-        'total': '196',
-        'unused': '196',
-        'url': `${URL_PREFIX}/unused.css`,
+        total: '196',
+        unused: '196',
+        url: `${URL_PREFIX}/unused.css`,
       },
       {
-        'total': '198',
-        'unused': '174',
-        'url': `${URL_PREFIX}/used.css`,
+        total: '198',
+        unused: '174',
+        url: `${URL_PREFIX}/used.css`,
       },
       {
-        'total': '0',
-        'unused': '0',
-        'url': `${URL_PREFIX}/empty.css`,
+        total: '0',
+        unused: '0',
+        url: `${URL_PREFIX}/empty.css`,
       },
     ]);
 
     await target.evaluate('appendStylesheet()');
 
     assert.deepInclude(await getCoverageData(6), {
-      'total': '0',
-      'unused': '0',
-      'url': `${URL_PREFIX}/lazily-loaded.css`,
+      total: '0',
+      unused: '0',
+      url: `${URL_PREFIX}/lazily-loaded.css`,
     });
 
     await target.evaluate('appendElement()');
 
     await waitForElementWithTextContent(`${URL_PREFIX}/not-initially-used.cssCSS198198100%`);
     assert.deepInclude(await getCoverageData(6), {
-      'total': '198',
-      'unused': '198',
-      'url': `${URL_PREFIX}/not-initially-used.css`,
+      total: '198',
+      unused: '198',
+      url: `${URL_PREFIX}/not-initially-used.css`,
     });
   });
 });

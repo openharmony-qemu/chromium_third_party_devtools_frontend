@@ -4,9 +4,8 @@
 
 import {assert} from 'chai';
 
-import type * as puppeteer from 'puppeteer';
+import type * as puppeteer from 'puppeteer-core';
 
-import {describe, it} from '../../shared/mocha-extensions.js';
 import {
   addBreakpointForLine,
   getLineNumberElement,
@@ -114,16 +113,15 @@ describe('The Breakpoints Sidebar', () => {
     it('shows the correct code snippets', async () => {
       const {frontend} = getBrowserAndPages();
       await openSourceCodeEditorForFile('memory.wasm', 'wasm/memory.html');
-      await addBreakpointForLine(frontend, '0x039');
+      await addBreakpointForLine(frontend, '0x037');
 
       const codeSnippetHandle = await waitFor(`${BREAKPOINT_ITEM_SELECTOR} ${CODE_SNIPPET_SELECTOR}`);
       const actualCodeSnippet = await extractTextContentIfConnected(codeSnippetHandle);
-      assertNotNullOrUndefined(actualCodeSnippet);
 
       const sourceContent = await retrieveCodeMirrorEditorContent();
 
-      const expectedCodeSnippet = sourceContent[4];
-      assert.deepStrictEqual(actualCodeSnippet, expectedCodeSnippet);
+      const expectedCodeSnippet = sourceContent[3];
+      assert.strictEqual(actualCodeSnippet, expectedCodeSnippet);
     });
   });
 
@@ -161,7 +159,6 @@ describe('The Breakpoints Sidebar', () => {
     });
 
     // Check that the breakpoint item still has focus although the ui location has changed.
-    assertNotNullOrUndefined(breakpointItemTextContent);
     const focusedTextContent = await activeElementTextContent();
     assert.strictEqual(focusedTextContent, breakpointItemTextContent);
   });

@@ -77,12 +77,12 @@ export function rgbaToHwba([r, g, b, a]: Color4DOr3D): Color4DOr3D {
 
 /**
  * Calculate the luminance of this color using the WCAG algorithm.
- * See http://www.w3.org/TR/2008/REC-WCAG20-20081211/#relativeluminancedef
+ * See https://www.w3.org/TR/WCAG21/#dfn-relative-luminance.
  */
 export function luminance([rSRGB, gSRGB, bSRGB]: number[]): number {
-  const r = rSRGB <= 0.03928 ? rSRGB / 12.92 : Math.pow(((rSRGB + 0.055) / 1.055), 2.4);
-  const g = gSRGB <= 0.03928 ? gSRGB / 12.92 : Math.pow(((gSRGB + 0.055) / 1.055), 2.4);
-  const b = bSRGB <= 0.03928 ? bSRGB / 12.92 : Math.pow(((bSRGB + 0.055) / 1.055), 2.4);
+  const r = rSRGB <= 0.04045 ? rSRGB / 12.92 : Math.pow(((rSRGB + 0.055) / 1.055), 2.4);
+  const g = gSRGB <= 0.04045 ? gSRGB / 12.92 : Math.pow(((gSRGB + 0.055) / 1.055), 2.4);
+  const b = bSRGB <= 0.04045 ? bSRGB / 12.92 : Math.pow(((bSRGB + 0.055) / 1.055), 2.4);
 
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
@@ -224,10 +224,10 @@ export function getAPCAThreshold(fontSize: string, fontWeight: string): number|n
 }
 
 export function isLargeFont(fontSize: string, fontWeight: string): boolean {
-  const boldWeights = ['bold', 'bolder', '600', '700', '800', '900'];
+  const boldWeights = ['bold', 'bolder'];
 
   const fontSizePx = parseFloat(fontSize.replace('px', ''));
-  const isBold = (boldWeights.indexOf(fontWeight) !== -1);
+  const isBold = isNaN(Number(fontWeight)) ? boldWeights.includes(fontWeight) : Number(fontWeight) >= 600;
 
   const fontSizePt = fontSizePx * 72 / 96;
   if (isBold) {

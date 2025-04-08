@@ -3,19 +3,20 @@
 // found in the LICENSE file.
 
 import * as Common from '../../core/common/common.js';
-import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
-import * as Platform from '../../core/platform/platform.js';
+import type * as Platform from '../../core/platform/platform.js';
+import {assertNotNullOrUndefined} from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import type * as Protocol from '../../generated/protocol.js';
-import type * as Workspace from '../../models/workspace/workspace.js';
+import * as Bindings from '../../models/bindings/bindings.js';
+import * as Workspace from '../../models/workspace/workspace.js';
+import * as CodeMirror from '../../third_party/codemirror.next/codemirror.next.js';
 import * as ColorPicker from '../../ui/legacy/components/color_picker/color_picker.js';
 import * as InlineEditor from '../../ui/legacy/components/inline_editor/inline_editor.js';
-import * as CodeMirror from '../../third_party/codemirror.next/codemirror.next.js';
 import type * as SourceFrame from '../../ui/legacy/components/source_frame/source_frame.js';
 import * as UI from '../../ui/legacy/legacy.js';
 
-import {assertNotNullOrUndefined} from '../../core/platform/platform.js';
+import {AddDebugInfoURLDialog} from './AddSourceMapURLDialog.js';
 import {Plugin} from './Plugin.js';
 
 // Plugin to add CSS completion, shortcuts, and color/curve swatches
@@ -30,6 +31,10 @@ const UIStrings = {
    *@description Text to open the cubic bezier editor
    */
   openCubicBezierEditor: 'Open cubic bezier editor.',
+  /**
+   *@description Text for a context menu item for attaching a sourcemap to the currently open css file
+   */
+  addSourceMap: 'Add source map…',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/sources/CSSPlugin.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -55,7 +60,7 @@ function getCurrentStyleSheet(
     url: Platform.DevToolsPath.UrlString, cssModel: SDK.CSSModel.CSSModel): Protocol.CSS.StyleSheetId {
   const currentStyleSheet = cssModel.getStyleSheetIdsForURL(url);
   if (currentStyleSheet.length === 0) {
-    Platform.DCHECK(() => currentStyleSheet.length !== 0, 'Can\'t find style sheet ID for current URL');
+    throw new Error('Can\'t find style sheet ID for current URL');
   }
 
   return currentStyleSheet[0];
@@ -153,23 +158,22 @@ class ColorSwatchWidget extends CodeMirror.WidgetType {
   }
 
   toDOM(view: CodeMirror.EditorView): HTMLElement {
-    const swatch = new InlineEditor.ColorSwatch.ColorSwatch();
-    swatch.renderColor(this.#color, false, i18nString(UIStrings.openColorPicker));
+    const swatch = new InlineEditor.ColorSwatch.ColorSwatch(i18nString(UIStrings.openColorPicker));
+    swatch.renderColor(this.#color);
     const value = swatch.createChild('span');
     value.textContent = this.#text;
     value.setAttribute('hidden', 'true');
     swatch.addEventListener(InlineEditor.ColorSwatch.ColorChangedEvent.eventName, event => {
-      view.dispatch({
-        changes: {from: this.#from, to: this.#from + this.#text.length, insert: event.data.text},
-      });
-      this.#text = event.data.text;
+      const insert = event.data.color.getAuthoredText() ?? event.data.color.asString();
+      view.dispatch({changes: {from: this.#from, to: this.#from + this.#text.length, insert}});
+      this.#text = insert;
       this.#color = swatch.getColor() as Common.Color.Color;
     });
     swatch.addEventListener(InlineEditor.ColorSwatch.ClickEvent.eventName, event => {
       event.consume(true);
       view.dispatch({
         effects: setTooltip.of({
-          type: TooltipType.Color,
+          type: TooltipType.COLOR,
           pos: view.posAtDOM(swatch),
           text: this.#text,
           swatch,
@@ -202,7 +206,7 @@ class CurveSwatchWidget extends CodeMirror.WidgetType {
       event.consume(true);
       view.dispatch({
         effects: setTooltip.of({
-          type: TooltipType.Curve,
+          type: TooltipType.CURVE,
           pos: view.posAtDOM(swatch),
           text: this.text,
           swatch,
@@ -220,18 +224,18 @@ class CurveSwatchWidget extends CodeMirror.WidgetType {
 }
 
 const enum TooltipType {
-  Color = 0,
-  Curve = 1,
+  COLOR = 0,
+  CURVE = 1,
 }
 
 type ActiveTooltip = {
-  type: TooltipType.Color,
+  type: TooltipType.COLOR,
   pos: number,
   text: string,
   color: Common.Color.Color,
   swatch: InlineEditor.ColorSwatch.ColorSwatch,
 }|{
-  type: TooltipType.Curve,
+  type: TooltipType.CURVE,
   pos: number,
   text: string,
   curve: UI.Geometry.CubicBezier,
@@ -245,20 +249,19 @@ function createCSSTooltip(active: ActiveTooltip): CodeMirror.Tooltip {
     create(view): CodeMirror.TooltipView {
       let text = active.text;
       let widget: UI.Widget.VBox, addListener: (handler: (event: {data: string}) => void) => void;
-      if (active.type === TooltipType.Color) {
+      if (active.type === TooltipType.COLOR) {
         const spectrum = new ColorPicker.Spectrum.Spectrum();
-        addListener = (handler): void => {
-          spectrum.addEventListener(ColorPicker.Spectrum.Events.ColorChanged, handler);
+        addListener = handler => {
+          spectrum.addEventListener(ColorPicker.Spectrum.Events.COLOR_CHANGED, handler);
         };
-        spectrum.addEventListener(ColorPicker.Spectrum.Events.SizeChanged, () => view.requestMeasure());
-        spectrum.setColor(active.color, active.color.format());
+        spectrum.addEventListener(ColorPicker.Spectrum.Events.SIZE_CHANGED, () => view.requestMeasure());
+        spectrum.setColor(active.color);
         widget = spectrum;
-        Host.userMetrics.colorPickerOpenedFrom(Host.UserMetrics.ColorPickerOpenedFrom.SourcesPanel);
       } else {
         const spectrum = new InlineEditor.BezierEditor.BezierEditor(active.curve);
         widget = spectrum;
-        addListener = (handler): void => {
-          spectrum.addEventListener(InlineEditor.BezierEditor.Events.BezierChanged, handler);
+        addListener = handler => {
+          spectrum.addEventListener(InlineEditor.BezierEditor.Events.BEZIER_CHANGED, handler);
         };
       }
       const dom = document.createElement('div');
@@ -289,10 +292,10 @@ function createCSSTooltip(active: ActiveTooltip): CodeMirror.Tooltip {
         dom,
         resize: false,
         offset: {x: -8, y: 0},
-        mount: (): void => {
+        mount: () => {
           widget.focus();
           widget.wasShown();
-          addListener((event: {data: string}): void => {
+          addListener((event: {data: string}) => {
             view.dispatch({
               changes: {from: active.pos, to: active.pos + text.length, insert: event.data},
               annotations: isSwatchEdit.of(true),
@@ -345,7 +348,8 @@ function computeSwatchDeco(state: CodeMirror.EditorState, from: number, to: numb
 }
 
 const cssSwatchPlugin = CodeMirror.ViewPlugin.fromClass(class {
-  decorations: CodeMirror.DecorationSet;
+decorations:
+  CodeMirror.DecorationSet;
 
   constructor(view: CodeMirror.EditorView) {
     this.decorations = computeSwatchDeco(view.state, view.viewport.from, view.viewport.to);
@@ -408,7 +412,7 @@ export function cssBindings(): CodeMirror.Extension {
   });
 
   return CodeMirror.EditorView.domEventHandlers({
-    keydown: (event, view): boolean => {
+    keydown: (event, view) => {
       const prevView = currentView;
       currentView = view;
       listener(event);
@@ -462,5 +466,24 @@ export class CSSPlugin extends Plugin implements SDK.TargetManager.SDKModelObser
                  return (await specificCssCompletion(cx, uiSourceCode, cssModel)) || cssCompletionSource(cx);
                }],
     });
+  }
+
+  override populateTextAreaContextMenu(contextMenu: UI.ContextMenu.ContextMenu): void {
+    function addSourceMapURL(cssModel: SDK.CSSModel.CSSModel, sourceUrl: Platform.DevToolsPath.UrlString): void {
+      const dialog = AddDebugInfoURLDialog.createAddSourceMapURLDialog(sourceMapUrl => {
+        Bindings.CSSWorkspaceBinding.CSSWorkspaceBinding.instance().modelToInfo.get(cssModel)?.addSourceMap(
+            sourceUrl, sourceMapUrl);
+      });
+      dialog.show();
+    }
+
+    const cssModel = this.#cssModel;
+    const url = this.uiSourceCode.url();
+    if (this.uiSourceCode.project().type() === Workspace.Workspace.projectTypes.Network && cssModel &&
+        !Bindings.IgnoreListManager.IgnoreListManager.instance().isUserIgnoreListedURL(url)) {
+      const addSourceMapURLLabel = i18nString(UIStrings.addSourceMap);
+      contextMenu.debugSection().appendItem(
+          addSourceMapURLLabel, () => addSourceMapURL(cssModel, url), {jslogContext: 'add-source-map'});
+    }
   }
 }

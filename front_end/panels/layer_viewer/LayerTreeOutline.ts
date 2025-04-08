@@ -78,7 +78,7 @@ export class LayerTreeOutline extends Common.ObjectWrapper.eventMixin<EventTypes
     this.treeOutline.element.addEventListener('mousemove', this.onMouseMove.bind(this) as EventListener, false);
     this.treeOutline.element.addEventListener('mouseout', this.onMouseMove.bind(this) as EventListener, false);
     this.treeOutline.element.addEventListener('contextmenu', this.onContextMenu.bind(this) as EventListener, true);
-    UI.ARIAUtils.setAccessibleName(this.treeOutline.contentElement, i18nString(UIStrings.layersTreePane));
+    UI.ARIAUtils.setLabel(this.treeOutline.contentElement, i18nString(UIStrings.layersTreePane));
 
     this.lastHoveredNode = null;
     this.element = this.treeOutline.element;
@@ -225,7 +225,8 @@ export class LayerTreeOutline extends Common.ObjectWrapper.eventMixin<EventTypes
       if (this.layerSnapshotMap.has(layer)) {
         contextMenu.defaultSection().appendItem(
             i18nString(UIStrings.showPaintProfiler),
-            () => this.dispatchEventToListeners(Events.PaintProfilerRequested, selection as Selection), false);
+            () => this.dispatchEventToListeners(Events.PAINT_PROFILER_REQUESTED, selection as Selection),
+            {jslogContext: 'layers.paint-profiler'});
       }
     }
     this.layerViewHost.showContextMenu(contextMenu, selection);
@@ -237,11 +238,11 @@ export class LayerTreeOutline extends Common.ObjectWrapper.eventMixin<EventTypes
 }
 
 export const enum Events {
-  PaintProfilerRequested = 'PaintProfilerRequested',
+  PAINT_PROFILER_REQUESTED = 'PaintProfilerRequested',
 }
 
 export type EventTypes = {
-  [Events.PaintProfilerRequested]: Selection,
+  [Events.PAINT_PROFILER_REQUESTED]: Selection,
 };
 
 export class LayerTreeElement extends UI.TreeOutline.TreeElement {

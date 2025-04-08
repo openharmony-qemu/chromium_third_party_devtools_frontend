@@ -21,10 +21,9 @@ export interface RegisteredAdorner {
   readonly enabledByDefault: boolean;
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export enum RegisteredAdorners {
   GRID = 'grid',
+  SUBGRID = 'subgrid',
   FLEX = 'flex',
   AD = 'ad',
   SCROLL_SNAP = 'scroll-snap',
@@ -32,6 +31,8 @@ export enum RegisteredAdorners {
   SLOT = 'slot',
   TOP_LAYER = 'top-layer',
   REVEAL = 'reveal',
+  MEDIA = 'media',
+  SCROLL = 'scroll',
 }
 
 // This enum-like const object serves as the authoritative registry for all the
@@ -41,6 +42,12 @@ export function getRegisteredAdorner(which: RegisteredAdorners): RegisteredAdorn
     case RegisteredAdorners.GRID:
       return {
         name: 'grid',
+        category: AdornerCategories.LAYOUT,
+        enabledByDefault: true,
+      };
+    case RegisteredAdorners.SUBGRID:
+      return {
+        name: 'subgrid',
         category: AdornerCategories.LAYOUT,
         enabledByDefault: true,
       };
@@ -84,6 +91,18 @@ export function getRegisteredAdorner(which: RegisteredAdorners): RegisteredAdorn
       return {
         name: 'reveal',
         category: AdornerCategories.DEFAULT,
+        enabledByDefault: true,
+      };
+    case RegisteredAdorners.MEDIA:
+      return {
+        name: 'media',
+        category: AdornerCategories.DEFAULT,
+        enabledByDefault: false,
+      };
+    case RegisteredAdorners.SCROLL:
+      return {
+        name: 'scroll',
+        category: AdornerCategories.LAYOUT,
         enabledByDefault: true,
       };
   }

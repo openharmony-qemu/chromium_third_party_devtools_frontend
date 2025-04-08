@@ -5,15 +5,24 @@
 import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
 import type * as Protocol from '../../generated/protocol.js';
 
-import {Capability, type Target} from './Target.js';
 import {SDKModel} from './SDKModel.js';
+import {Capability, type Target} from './Target.js';
 
 export const enum Events {
-  CredentialAdded = 'CredentialAdded',
-  CredentialAsserted = 'CredentialAsserted',
+  CREDENTIAL_ADDED = 'CredentialAdded',
+  CREDENTIAL_ASSERTED = 'CredentialAsserted',
+  CREDENTIAL_DELETED = 'CredentialDeleted',
+  CREDENTIAL_UPDATED = 'CredentialUpdated',
 }
 
-export class WebAuthnModel extends SDKModel {
+export type EventTypes = {
+  [Events.CREDENTIAL_ADDED]: Protocol.WebAuthn.CredentialAddedEvent,
+  [Events.CREDENTIAL_ASSERTED]: Protocol.WebAuthn.CredentialAssertedEvent,
+  [Events.CREDENTIAL_DELETED]: Protocol.WebAuthn.CredentialDeletedEvent,
+  [Events.CREDENTIAL_UPDATED]: Protocol.WebAuthn.CredentialUpdatedEvent,
+};
+
+export class WebAuthnModel extends SDKModel<EventTypes> {
   readonly #agent: ProtocolProxyApi.WebAuthnApi;
   constructor(target: Target) {
     super(target);
@@ -53,11 +62,19 @@ export class WebAuthnModel extends SDKModel {
   }
 
   credentialAdded(params: Protocol.WebAuthn.CredentialAddedEvent): void {
-    this.dispatchEventToListeners(Events.CredentialAdded, params);
+    this.dispatchEventToListeners(Events.CREDENTIAL_ADDED, params);
   }
 
   credentialAsserted(params: Protocol.WebAuthn.CredentialAssertedEvent): void {
-    this.dispatchEventToListeners(Events.CredentialAsserted, params);
+    this.dispatchEventToListeners(Events.CREDENTIAL_ASSERTED, params);
+  }
+
+  credentialDeleted(params: Protocol.WebAuthn.CredentialDeletedEvent): void {
+    this.dispatchEventToListeners(Events.CREDENTIAL_DELETED, params);
+  }
+
+  credentialUpdated(params: Protocol.WebAuthn.CredentialUpdatedEvent): void {
+    this.dispatchEventToListeners(Events.CREDENTIAL_UPDATED, params);
   }
 }
 
@@ -74,6 +91,14 @@ class WebAuthnDispatcher implements ProtocolProxyApi.WebAuthnDispatcher {
   credentialAsserted(params: Protocol.WebAuthn.CredentialAssertedEvent): void {
     this.#model.credentialAsserted(params);
   }
+
+  credentialDeleted(params: Protocol.WebAuthn.CredentialDeletedEvent): void {
+    this.#model.credentialDeleted(params);
+  }
+
+  credentialUpdated(params: Protocol.WebAuthn.CredentialUpdatedEvent): void {
+    this.#model.credentialUpdated(params);
+  }
 }
 
-SDKModel.register(WebAuthnModel, {capabilities: Capability.WebAuthn, autostart: false});
+SDKModel.register(WebAuthnModel, {capabilities: Capability.WEB_AUTHN, autostart: false});

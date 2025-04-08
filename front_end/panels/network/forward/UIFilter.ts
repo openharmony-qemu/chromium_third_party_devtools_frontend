@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export enum FilterType {
+  /* eslint-disable @typescript-eslint/naming-convention -- Used by web_tests. */
   Domain = 'domain',
   HasResponseHeader = 'has-response-header',
+  HasOverrides = 'has-overrides',
   ResponseHeaderValueSetCookie = 'response-header-set-cookie',
   Is = 'is',
   LargerThan = 'larger-than',
@@ -25,24 +25,21 @@ export enum FilterType {
   CookieValue = 'cookie-value',
   StatusCode = 'status-code',
   Url = 'url',
+  /* eslint-enable @typescript-eslint/naming-convention */
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export enum IsFilterType {
-  Running = 'running',
-  FromCache = 'from-cache',
-  ServiceWorkerIntercepted = 'service-worker-intercepted',
-  ServiceWorkerInitiated = 'service-worker-initiated',
+export const enum IsFilterType {
+  RUNNING = 'running',
+  FROM_CACHE = 'from-cache',
+  SERVICE_WORKER_INTERCEPTED = 'service-worker-intercepted',
+  SERVICE_WORKER_INITIATED = 'service-worker-initiated',
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export enum MixedContentFilterValues {
-  All = 'all',
-  Displayed = 'displayed',
-  Blocked = 'blocked',
-  BlockOverridden = 'block-overridden',
+export const enum MixedContentFilterValues {
+  ALL = 'all',
+  DISPLAYED = 'displayed',
+  BLOCKED = 'blocked',
+  BLOCK_OVERRIDDEN = 'block-overridden',
 }
 
 interface UIFilter {
@@ -53,7 +50,7 @@ interface UIFilter {
 export class UIRequestFilter {
   readonly filters: UIFilter[];
 
-  private constructor(filters: UIFilter[]) {
+  constructor(filters: UIFilter[]) {
     this.filters = filters;
   }
 

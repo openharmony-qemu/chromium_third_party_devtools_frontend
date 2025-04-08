@@ -2,25 +2,35 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import * as Helpers from '../helpers/helpers.js';
 import * as Types from '../types/types.js';
 
-export interface AnimationData {
-  animations: readonly Types.TraceEvents.TraceEventAnimation[];
-}
+const animations: Types.Events.Animation[] = [];
+const animationsSyntheticEvents: Types.Events.SyntheticAnimationPair[] = [];
 
-const animations: Types.TraceEvents.TraceEventAnimation[] = [];
+export interface AnimationData {
+  animations: readonly Types.Events.SyntheticAnimationPair[];
+}
 
 export function reset(): void {
   animations.length = 0;
+  animationsSyntheticEvents.length = 0;
 }
 
-export function handleEvent(event: Types.TraceEvents.TraceEventData): void {
-  if (Types.TraceEvents.isTraceEventAnimation(event)) {
+export function handleEvent(event: Types.Events.Event): void {
+  if (Types.Events.isAnimation(event)) {
     animations.push(event);
     return;
   }
 }
 
+export async function finalize(): Promise<void> {
+  const syntheticEvents = Helpers.Trace.createMatchedSortedSyntheticEvents(animations);
+  animationsSyntheticEvents.push(...syntheticEvents);
+}
+
 export function data(): AnimationData {
-  return {animations};
+  return {
+    animations: animationsSyntheticEvents,
+  };
 }

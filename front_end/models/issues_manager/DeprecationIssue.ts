@@ -24,7 +24,7 @@ const UIStrings = {
   /**
    * @description Title of issue raised when a deprecated feature is used
    */
-  title: 'Deprecated Feature Used',
+  title: 'Deprecated feature used',
 };
 
 const str_ = i18n.i18n.registerUIStrings('models/issues_manager/DeprecationIssue.ts', UIStrings);
@@ -47,7 +47,7 @@ export class DeprecationIssue extends Issue {
   }
 
   getCategory(): IssueCategory {
-    return IssueCategory.Other;
+    return IssueCategory.OTHER;
   }
 
   details(): Protocol.Audits.DeprecationIssueDetails {
@@ -99,7 +99,7 @@ export class DeprecationIssue extends Issue {
   }
 
   getKind(): IssueKind {
-    return IssueKind.BreakingChange;
+    return IssueKind.BREAKING_CHANGE;
   }
 
   static fromInspectorIssue(issuesModel: SDK.IssuesModel.IssuesModel, inspectorIssue: Protocol.Audits.InspectorIssue):

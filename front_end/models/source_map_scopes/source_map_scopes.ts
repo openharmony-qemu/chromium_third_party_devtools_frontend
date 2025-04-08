@@ -3,5 +3,11 @@
 // found in the LICENSE file.
 
 import * as NamesResolver from './NamesResolver.js';
+import * as ScopeChainModel from './ScopeChainModel.js';
+import * as ScopeTreeCache from './ScopeTreeCache.js';
 
-export {NamesResolver};
+export {
+  NamesResolver,
+  ScopeChainModel,
+  ScopeTreeCache,
+};

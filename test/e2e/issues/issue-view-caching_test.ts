@@ -12,7 +12,7 @@ import {
   waitFor,
   waitForFunction,
 } from '../../shared/helper.js';
-import {describe, it} from '../../shared/mocha-extensions.js';
+
 import {
   ensureResourceSectionIsExpanded,
   expandIssue,
@@ -22,7 +22,7 @@ import {
   waitForTableFromResourceSectionContents,
 } from '../helpers/issues-helpers.js';
 
-describe('IssueView cache', async () => {
+describe('IssueView cache', () => {
   it('should correctly update the issue', async () => {
     await goToResource('empty.html');
     const {target} = getBrowserAndPages();
@@ -85,7 +85,7 @@ describe('IssueView cache', async () => {
       'false',
     ];
     await waitForResources(2, [header, expectedRow1, expectedRow2]);
-    await setCheckBox('[aria-label="Include third-party cookie issues"]', true);
+    await setCheckBox('[title="Include cookie Issues caused by third-party sites"]', true);
 
     // Trigger issue again to see if resources are updated.
     await triggerIssue();

@@ -5,6 +5,7 @@
 import * as Common from '../../../../core/common/common.js';
 import * as i18n from '../../../../core/i18n/i18n.js';
 import * as Platform from '../../../../core/platform/platform.js';
+import * as Root from '../../../../core/root/root.js';
 import * as Coordinator from '../../../components/render_coordinator/render_coordinator.js';
 import * as UI from '../../legacy.js';
 
@@ -18,6 +19,10 @@ export interface ChartViewportDelegate {
   updateRangeSelection(startTime: number, endTime: number): void;
   setSize(width: number, height: number): void;
   update(): void;
+}
+
+export interface Config {
+  enableCursorElement: boolean;
 }
 
 export class ChartViewport extends UI.Widget.VBox {
@@ -45,15 +50,20 @@ export class ChartViewport extends UI.Widget.VBox {
   private targetLeftTime!: number;
   private targetRightTime!: number;
   private selectionOffsetShiftX!: number;
-  private selectionOffsetShiftY!: number;
   private selectionStartX!: number|null;
-  private lastMouseOffsetX!: number;
+  private lastMouseOffsetX?: number;
   private minimumBoundary!: number;
   private totalTime!: number;
+  private isUpdateScheduled?: boolean;
   private cancelWindowTimesAnimation?: (() => void)|null;
 
-  constructor(delegate: ChartViewportDelegate) {
+  #config: Config;
+
+  #usingNewOverlayForTimeRange = Root.Runtime.experiments.isEnabled(Root.Runtime.ExperimentName.TIMELINE_ANNOTATIONS);
+
+  constructor(delegate: ChartViewportDelegate, config: Config) {
     super();
+    this.#config = config;
     this.registerRequiredCSS(chartViewPortStyles);
 
     this.delegate = delegate;
@@ -82,6 +92,9 @@ export class ChartViewport extends UI.Widget.VBox {
     this.selectedTimeSpanLabel = this.selectionOverlay.createChild('div', 'time-span');
 
     this.cursorElement = this.contentElement.createChild('div', 'chart-cursor-element hidden');
+    if (this.#usingNewOverlayForTimeRange) {
+      this.cursorElement.classList.add('using-new-overlays');
+    }
 
     this.reset();
 
@@ -141,6 +154,7 @@ export class ChartViewport extends UI.Widget.VBox {
     this.totalHeight = 0;
     this.targetLeftTime = 0;
     this.targetRightTime = 0;
+    this.isUpdateScheduled = false;
     this.updateContentElementSize();
   }
 
@@ -166,11 +180,27 @@ export class ChartViewport extends UI.Widget.VBox {
     this.vScrollElement.scrollTop = this.scrollTop;
   }
 
-  setScrollOffset(offset: number, height?: number): void {
+  /**
+   * @param centered - If true, scrolls offset to where it is centered on the chart,
+   * based on current the this.offsetHeight value.
+   */
+  setScrollOffset(offset: number, height?: number, centered?: boolean): void {
     height = height || 0;
-    if (this.vScrollElement.scrollTop > offset) {
-      this.vScrollElement.scrollTop = offset;
-    } else if (this.vScrollElement.scrollTop < offset - this.offsetHeight + height) {
+    if (centered) {
+      // Half of the height for padding.
+      const halfPadding = Math.floor(this.offsetHeight / 2);
+
+      if (this.vScrollElement.scrollTop > offset) {
+        // Need to scroll up, include height.
+        this.vScrollElement.scrollTop = offset - (height + halfPadding);
+      }
+    } else {
+      if (this.vScrollElement.scrollTop > offset) {
+        this.vScrollElement.scrollTop = offset;
+      }
+    }
+
+    if (this.vScrollElement.scrollTop < offset - this.offsetHeight + height) {
       this.vScrollElement.scrollTop = offset - this.offsetHeight + height;
     }
   }
@@ -191,7 +221,7 @@ export class ChartViewport extends UI.Widget.VBox {
   private onMouseWheel(e: Event): void {
     const wheelEvent = (e as WheelEvent);
     const doZoomInstead = wheelEvent.shiftKey !==
-        (Common.Settings.Settings.instance().moduleSetting('flamechartMouseWheelAction').get() === 'zoom');
+        (Common.Settings.Settings.instance().moduleSetting('flamechart-mouse-wheel-action').get() === 'zoom');
     const panVertically = !doZoomInstead && (wheelEvent.deltaY || Math.abs(wheelEvent.deltaX) === 53);
     const panHorizontally = doZoomInstead && Math.abs(wheelEvent.deltaX) > Math.abs(wheelEvent.deltaY);
     if (panVertically) {
@@ -237,13 +267,14 @@ export class ChartViewport extends UI.Widget.VBox {
     }
     this.isDraggingInternal = true;
     this.selectionOffsetShiftX = event.offsetX - event.pageX;
-    this.selectionOffsetShiftY = event.offsetY - event.pageY;
     this.selectionStartX = event.offsetX;
-    const style = this.selectionOverlay.style;
-    style.left = this.selectionStartX + 'px';
-    style.width = '1px';
-    this.selectedTimeSpanLabel.textContent = '';
-    this.selectionOverlay.classList.remove('hidden');
+    if (!this.#usingNewOverlayForTimeRange) {
+      const style = this.selectionOverlay.style;
+      style.left = this.selectionStartX + 'px';
+      style.width = '1px';
+      this.selectedTimeSpanLabel.textContent = '';
+      this.selectionOverlay.classList.remove('hidden');
+    }
     return true;
   }
 
@@ -258,6 +289,11 @@ export class ChartViewport extends UI.Widget.VBox {
     this.rangeSelectionEnd = null;
   }
 
+  /**
+   * @param startTime - the start time of the selection in MilliSeconds
+   * @param endTime - the end time of the selection in MilliSeconds
+   * TODO(crbug.com/346312365): update the type definitions in ChartViewport.ts
+   */
   setRangeSelection(startTime: number, endTime: number): void {
     if (!this.rangeSelectionEnabled) {
       return;
@@ -286,6 +322,10 @@ export class ChartViewport extends UI.Widget.VBox {
   }
 
   private updateRangeSelectionOverlay(): void {
+    if (this.#usingNewOverlayForTimeRange) {
+      return;
+    }
+
     const rangeSelectionStart = this.rangeSelectionStart || 0;
     const rangeSelectionEnd = this.rangeSelectionEnd || 0;
     const margin = 100;
@@ -312,9 +352,12 @@ export class ChartViewport extends UI.Widget.VBox {
 
   private updateCursorPosition(e: Event): void {
     const mouseEvent = (e as MouseEvent);
-    this.showCursor(mouseEvent.shiftKey);
-    this.cursorElement.style.left = mouseEvent.offsetX + 'px';
     this.lastMouseOffsetX = mouseEvent.offsetX;
+    const shouldShowCursor = this.#config.enableCursorElement && mouseEvent.shiftKey && !mouseEvent.metaKey;
+    this.showCursor(shouldShowCursor);
+    if (shouldShowCursor) {
+      this.cursorElement.style.left = mouseEvent.offsetX + 'px';
+    }
   }
 
   pixelToTime(x: number): number {
@@ -350,10 +393,11 @@ export class ChartViewport extends UI.Widget.VBox {
   }
 
   private handleZoomPanKeys(e: Event): void {
-    if (!UI.KeyboardShortcut.KeyboardShortcut.hasNoModifiers(e)) {
+    const keyboardEvent = (e as KeyboardEvent);
+    // Do not zoom if the key combination has any modifiers other than shift key
+    if (UI.KeyboardShortcut.KeyboardShortcut.hasAtLeastOneModifier(e) && !keyboardEvent.shiftKey) {
       return;
     }
-    const keyboardEvent = (e as KeyboardEvent);
     const zoomFactor = keyboardEvent.shiftKey ? 0.8 : 0.3;
     const panOffset = keyboardEvent.shiftKey ? 320 : 160;
     switch (keyboardEvent.code) {
@@ -377,7 +421,10 @@ export class ChartViewport extends UI.Widget.VBox {
 
   private handleZoomGesture(zoom: number): void {
     const bounds = {left: this.targetLeftTime, right: this.targetRightTime};
-    const cursorTime = this.pixelToTime(this.lastMouseOffsetX);
+    // If the user has not moved their mouse over the panel (unlikely but
+    // possible!), the offsetX will be undefined. In that case, let's just use
+    // the minimum time / pixel 0 as their mouse point.
+    const cursorTime = this.pixelToTime(this.lastMouseOffsetX || 0);
     bounds.left += (bounds.left - cursorTime) * zoom;
     bounds.right += (bounds.right - cursorTime) * zoom;
     this.requestWindowTimes(bounds, /* animate */ true);
@@ -414,10 +461,14 @@ export class ChartViewport extends UI.Widget.VBox {
   }
 
   scheduleUpdate(): void {
-    if (this.cancelWindowTimesAnimation) {
+    if (this.cancelWindowTimesAnimation || this.isUpdateScheduled) {
       return;
     }
-    void coordinator.write(() => this.update());
+    this.isUpdateScheduled = true;
+    void coordinator.write(() => {
+      this.isUpdateScheduled = false;
+      this.update();
+    });
   }
 
   private update(): void {

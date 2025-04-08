@@ -9,6 +9,8 @@ import * as ComponentHelpers from '../../components/helpers/helpers.js';
 import * as LitHtml from '../../lit-html/lit-html.js';
 import * as Buttons from '../buttons/buttons.js';
 
+const {html} = LitHtml;
+
 const UIStrings = {
   /**
    * @description The title of the button that leads to the feedback form.
@@ -25,7 +27,6 @@ export interface FeedbackButtonData {
   feedbackUrl: Platform.DevToolsPath.UrlString;
 }
 export class FeedbackButton extends HTMLElement {
-  static readonly litTagName = LitHtml.literal`devtools-feedback-button`;
   readonly #shadow = this.attachShadow({mode: 'open'});
   readonly #boundRender = this.#render.bind(this);
 
@@ -48,18 +49,19 @@ export class FeedbackButton extends HTMLElement {
     }
 
     // clang-format off
-    LitHtml.render(LitHtml.html`
-      <${Buttons.Button.Button.litTagName}
+    LitHtml.render(html`
+      <devtools-button
           @click=${this.#onFeedbackClick}
           .iconUrl=${feedbackIconUrl}
-          .variant=${Buttons.Button.Variant.SECONDARY}
-      >${i18nString(UIStrings.feedback)}</${Buttons.Button.Button.litTagName}>
+          .variant=${Buttons.Button.Variant.OUTLINED}
+          .jslogContext=${'feedback'}
+      >${i18nString(UIStrings.feedback)}</devtools-button>
       `, this.#shadow, {host: this});
     // clang-format on
   }
 }
 
-ComponentHelpers.CustomElements.defineComponent('devtools-feedback-button', FeedbackButton);
+customElements.define('devtools-feedback-button', FeedbackButton);
 
 declare global {
   interface HTMLElementTagNameMap {

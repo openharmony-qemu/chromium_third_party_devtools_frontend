@@ -29,24 +29,22 @@
  */
 
 import * as Common from '../../../../core/common/common.js';
-import type * as Components from '../utils/utils.js';
-import * as Root from '../../../../core/root/root.js';
 import * as Host from '../../../../core/host/host.js';
 import * as i18n from '../../../../core/i18n/i18n.js';
-import * as LinearMemoryInspector from '../../../components/linear_memory_inspector/linear_memory_inspector.js';
 import * as Platform from '../../../../core/platform/platform.js';
 import * as SDK from '../../../../core/sdk/sdk.js';
 import * as TextUtils from '../../../../models/text_utils/text_utils.js';
-import * as JavaScriptMetaData from '../../../../models/javascript_metadata/javascript_metadata.js';
 import * as IconButton from '../../../components/icon_button/icon_button.js';
 import * as TextEditor from '../../../components/text_editor/text_editor.js';
+import * as VisualLogging from '../../../visual_logging/visual_logging.js';
 import * as UI from '../../legacy.js';
+import type * as Components from '../utils/utils.js';
 
 import {CustomPreviewComponent} from './CustomPreviewComponent.js';
 import {JavaScriptREPL} from './JavaScriptREPL.js';
-import {createSpansForNodeTitle, RemoteObjectPreviewFormatter} from './RemoteObjectPreviewFormatter.js';
-import objectValueStyles from './objectValue.css.js';
 import objectPropertiesSectionStyles from './objectPropertiesSection.css.js';
+import objectValueStyles from './objectValue.css.js';
+import {createSpansForNodeTitle, RemoteObjectPreviewFormatter} from './RemoteObjectPreviewFormatter.js';
 
 const UIStrings = {
   /**
@@ -127,9 +125,9 @@ const UIStrings = {
   /**
    * @description A tooltip text that shows when hovering over a button next to value objects,
    * which are based on bytes and can be shown in a hexadecimal viewer.
-   * Clicking on the button will display that object in the memory inspector panel.
+   * Clicking on the button will display that object in the Memory inspector panel.
    */
-  revealInMemoryInpector: 'Reveal in Memory Inspector panel',
+  openInMemoryInpector: 'Open in Memory inspector panel',
 };
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/components/object_ui/ObjectPropertiesSection.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -138,8 +136,6 @@ const EXPANDABLE_MAX_DEPTH = 100;
 
 const parentMap = new WeakMap<SDK.RemoteObject.RemoteObjectProperty, SDK.RemoteObject.RemoteObject|null>();
 const objectPropertiesSectionMap = new WeakMap<Element, ObjectPropertiesSection>();
-const domPinnedProperties =
-    JavaScriptMetaData.JavaScriptMetadata.JavaScriptMetadataImpl.domPinnedProperties.DOMPinnedProperties;
 
 export const getObjectPropertiesSectionFrom = (element: Element): ObjectPropertiesSection|undefined => {
   return objectPropertiesSectionMap.get(element);
@@ -196,7 +192,7 @@ export class ObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInShadow 
       readOnly?: boolean): ObjectPropertiesSection {
     const titleElement = document.createElement('span');
     titleElement.classList.add('source-code');
-    const shadowRoot = UI.Utils.createShadowRootWithCoreStyles(titleElement, {
+    const shadowRoot = UI.UIUtils.createShadowRootWithCoreStyles(titleElement, {
       cssFile: [objectValueStyles],
       delegatesFocus: undefined,
     });
@@ -213,32 +209,6 @@ export class ObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInShadow 
     }
 
     return objectPropertiesSection;
-  }
-
-  static assignWebIDLMetadata(
-      value: SDK.RemoteObject.RemoteObject|null, properties: SDK.RemoteObject.RemoteObjectProperty[]): void {
-    if (!value) {
-      return;
-    }
-
-    const isInstance = value.type === 'object' && value.className !== null;
-    const webIdlType = isInstance ? domPinnedProperties[value.className] : undefined;
-    if (webIdlType) {
-      value.webIdl = {info: webIdlType, state: new Map()};
-    } else {
-      return;
-    }
-
-    const includedWebIdlTypes = webIdlType.includes?.map(className => domPinnedProperties[className]) ?? [];
-    const includedWebIdlProps = includedWebIdlTypes.flatMap(webIdlType => Object.entries(webIdlType?.props ?? {}));
-    const webIdlProps = {...webIdlType.props, ...Object.fromEntries(includedWebIdlProps)};
-
-    for (const property of properties) {
-      const webIdlProperty = webIdlProps[property.name];
-      if (webIdlProperty) {
-        property.webIdl = {info: webIdlProperty};
-      }
-    }
   }
 
   static getPropertyValuesByNames(properties: SDK.RemoteObject.RemoteObjectProperty[]):
@@ -403,12 +373,8 @@ export class ObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInShadow 
         value, wasThrown, showPreview, parentElement, linkifier, isSyntheticProperty, variableName);
   }
 
-  static appendMemoryIcon(element: Element, obj: SDK.RemoteObject.RemoteObject, expression?: string): void {
-    const isOfMemoryType =
-        (obj.type === 'object' && obj.subtype &&
-         LinearMemoryInspector.LinearMemoryInspectorController.ACCEPTED_MEMORY_TYPES.includes(obj.subtype));
-
-    if (!isOfMemoryType && !LinearMemoryInspector.LinearMemoryInspectorController.isDWARFMemoryObject(obj)) {
+  static appendMemoryIcon(element: Element, object: SDK.RemoteObject.RemoteObject, expression?: string): void {
+    if (!object.isLinearMemoryInspectable()) {
       return;
     }
 
@@ -419,18 +385,15 @@ export class ObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInShadow 
       width: '16px',
       height: '13px',
     };
+    memoryIcon.addEventListener('click', event => {
+      event.consume();
+      void Common.Revealer.reveal(new SDK.RemoteObject.LinearMemoryInspectable(object, expression));
+    });
+    memoryIcon.setAttribute('jslog', `${VisualLogging.action('open-memory-inspector').track({click: true})}`);
 
-    memoryIcon.onclick = async(event: MouseEvent): Promise<void> => {
-      event.stopPropagation();
-      const controller =
-          LinearMemoryInspector.LinearMemoryInspectorController.LinearMemoryInspectorController.instance();
-      Host.userMetrics.linearMemoryInspectorRevealedFrom(Host.UserMetrics.LinearMemoryInspectorRevealedFrom.MemoryIcon);
-      void controller.openInspectorView(obj, /* address */ undefined, expression);
-    };
-
-    const revealText = i18nString(UIStrings.revealInMemoryInpector);
+    const revealText = i18nString(UIStrings.openInMemoryInpector);
     UI.Tooltip.Tooltip.install(memoryIcon, revealText);
-    UI.ARIAUtils.setAccessibleName(memoryIcon, revealText);
+    UI.ARIAUtils.setLabel(memoryIcon, revealText);
 
     // Directly set property on memory icon, so that the memory icon is also
     // styled within the context of code mirror.
@@ -612,10 +575,12 @@ export class ObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInShadow 
     if (this.object instanceof SDK.RemoteObject.LocalJSONObject) {
       contextMenu.viewSection().appendItem(
           i18nString(UIStrings.expandRecursively),
-          this.objectTreeElementInternal.expandRecursively.bind(this.objectTreeElementInternal, EXPANDABLE_MAX_DEPTH));
+          this.objectTreeElementInternal.expandRecursively.bind(this.objectTreeElementInternal, EXPANDABLE_MAX_DEPTH),
+          {jslogContext: 'expand-recursively'});
       contextMenu.viewSection().appendItem(
           i18nString(UIStrings.collapseChildren),
-          this.objectTreeElementInternal.collapseChildren.bind(this.objectTreeElementInternal));
+          this.objectTreeElementInternal.collapseChildren.bind(this.objectTreeElementInternal),
+          {jslogContext: 'collapse-children'});
     }
     void contextMenu.show();
   }
@@ -647,13 +612,12 @@ export class ObjectPropertiesSectionsTreeOutline extends UI.TreeOutline.TreeOutl
     this.editable = !(options && options.readOnly);
     this.contentElement.classList.add('source-code');
     this.contentElement.classList.add('object-properties-section');
-    this.hideOverflow();
   }
 }
 
 export const enum ObjectPropertiesMode {
-  All = 0,                         // All properties, including prototype properties
-  OwnAndInternalAndInherited = 1,  // Own, internal, and inherited properties
+  ALL = 0,                             // All properties, including prototype properties
+  OWN_AND_INTERNAL_AND_INHERITED = 1,  // Own, internal, and inherited properties
 }
 
 export class RootElement extends UI.TreeOutline.TreeElement {
@@ -666,7 +630,7 @@ export class RootElement extends UI.TreeOutline.TreeElement {
   override toggleOnClick: boolean;
   constructor(
       object: SDK.RemoteObject.RemoteObject, linkifier?: Components.Linkifier.Linkifier, emptyPlaceholder?: string|null,
-      propertiesMode: ObjectPropertiesMode = ObjectPropertiesMode.OwnAndInternalAndInherited,
+      propertiesMode: ObjectPropertiesMode = ObjectPropertiesMode.OWN_AND_INTERNAL_AND_INHERITED,
       extraProperties: SDK.RemoteObject.RemoteObjectProperty[] = [],
       targetObject: SDK.RemoteObject.RemoteObject = object) {
     const contentElement = document.createElement('slot');
@@ -713,12 +677,15 @@ export class RootElement extends UI.TreeOutline.TreeElement {
         Host.userMetrics.actionTaken(Host.UserMetrics.Action.NetworkPanelCopyValue);
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText((propertyValue as string | undefined));
       };
-      contextMenu.clipboardSection().appendItem(i18nString(UIStrings.copyValue), copyValueHandler);
+      contextMenu.clipboardSection().appendItem(
+          i18nString(UIStrings.copyValue), copyValueHandler, {jslogContext: 'copy-value'});
     }
 
     contextMenu.viewSection().appendItem(
-        i18nString(UIStrings.expandRecursively), this.expandRecursively.bind(this, EXPANDABLE_MAX_DEPTH));
-    contextMenu.viewSection().appendItem(i18nString(UIStrings.collapseChildren), this.collapseChildren.bind(this));
+        i18nString(UIStrings.expandRecursively), this.expandRecursively.bind(this, EXPANDABLE_MAX_DEPTH),
+        {jslogContext: 'expand-recursively'});
+    contextMenu.viewSection().appendItem(
+        i18nString(UIStrings.collapseChildren), this.collapseChildren.bind(this), {jslogContext: 'collapse-children'});
     void contextMenu.show();
   }
 
@@ -766,7 +733,7 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
   static async populate(
       treeElement: UI.TreeOutline.TreeElement, value: SDK.RemoteObject.RemoteObject, skipProto: boolean,
       skipGettersAndSetters: boolean, linkifier?: Components.Linkifier.Linkifier, emptyPlaceholder?: string|null,
-      propertiesMode: ObjectPropertiesMode = ObjectPropertiesMode.OwnAndInternalAndInherited,
+      propertiesMode: ObjectPropertiesMode = ObjectPropertiesMode.OWN_AND_INTERNAL_AND_INHERITED,
       extraProperties?: SDK.RemoteObject.RemoteObjectProperty[],
       targetValue?: SDK.RemoteObject.RemoteObject): Promise<void> {
     if (value.arrayLength() > ARRAY_LOAD_THRESHOLD) {
@@ -777,10 +744,10 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
 
     let properties, internalProperties = null;
     switch (propertiesMode) {
-      case ObjectPropertiesMode.All:
+      case ObjectPropertiesMode.ALL:
         ({properties} = await value.getAllProperties(false /* accessorPropertiesOnly */, true /* generatePreview */));
         break;
-      case ObjectPropertiesMode.OwnAndInternalAndInherited:
+      case ObjectPropertiesMode.OWN_AND_INTERNAL_AND_INHERITED:
         ({properties, internalProperties} =
              await SDK.RemoteObject.RemoteObject.loadFromObjectPerProto(value, true /* generatePreview */));
         break;
@@ -804,33 +771,6 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
       internalProperties: SDK.RemoteObject.RemoteObjectProperty[]|null, skipProto: boolean,
       skipGettersAndSetters: boolean, value: SDK.RemoteObject.RemoteObject|null,
       linkifier?: Components.Linkifier.Linkifier, emptyPlaceholder?: string|null): void {
-    ObjectPropertiesSection.assignWebIDLMetadata(value, properties);
-    const names = ObjectPropertiesSection.getPropertyValuesByNames(properties);
-
-    if (value?.webIdl) {
-      const parentRules = value.webIdl.info.rules;
-      if (parentRules) {
-        for (const {when: name, is: expected} of parentRules) {
-          if (names.get(name)?.value === expected) {
-            value.webIdl.state.set(name, expected);
-          }
-        }
-      }
-
-      for (const property of properties) {
-        if (property.webIdl) {
-          const parentState = value.webIdl.state;
-          const propertyRules = property.webIdl.info.rules;
-          if (!parentRules && !propertyRules) {
-            property.webIdl.applicable = true;
-          } else {
-            property.webIdl.applicable =
-                !propertyRules || propertyRules?.some(rule => parentState.get(rule.when) === rule.is);
-          }
-        }
-      }
-    }
-
     properties.sort(ObjectPropertiesSection.compareProperties);
     internalProperties = internalProperties || [];
 
@@ -1143,23 +1083,8 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
       this.expandedValueElement = this.createExpandedValueElement(this.property.value, this.property.synthetic);
     }
 
-    const experiment = Root.Runtime.experiments.isEnabled(Root.Runtime.ExperimentName.IMPORTANT_DOM_PROPERTIES);
-
-    let adorner: Element|string = '';
+    const adorner: Element|string = '';
     let container: Element;
-
-    if (this.property.webIdl?.applicable && experiment) {
-      const icon = new IconButton.Icon.Icon();
-      icon.data = {
-        iconName: 'star',
-        color: 'var(--icon-default)',
-        width: '16px',
-        height: '16px',
-      };
-      adorner = UI.Fragment.html`
-         <span class='adorner'>${icon}</span>
-       `;
-    }
 
     if (isInternalEntries) {
       container = UI.Fragment.html`
@@ -1175,10 +1100,6 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
     this.listItemElement.removeChildren();
     this.rowContainer = (container as HTMLElement);
     this.listItemElement.appendChild(this.rowContainer);
-
-    if (experiment) {
-      this.listItemElement.dataset.webidl = this.property.webIdl?.applicable ? 'true' : 'false';
-    }
   }
 
   private updatePropertyPath(): void {
@@ -1226,18 +1147,23 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
           Host.userMetrics.actionTaken(Host.UserMetrics.Action.NetworkPanelCopyValue);
           Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText((propertyValue as string | undefined));
         };
-        contextMenu.clipboardSection().appendItem(i18nString(UIStrings.copyValue), copyValueHandler);
+        contextMenu.clipboardSection().appendItem(
+            i18nString(UIStrings.copyValue), copyValueHandler, {jslogContext: 'copy-value'});
       }
     }
     if (!this.property.synthetic && this.nameElement && this.nameElement.title) {
       const copyPathHandler = Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText.bind(
           Host.InspectorFrontendHost.InspectorFrontendHostInstance, this.nameElement.title);
-      contextMenu.clipboardSection().appendItem(i18nString(UIStrings.copyPropertyPath), copyPathHandler);
+      contextMenu.clipboardSection().appendItem(
+          i18nString(UIStrings.copyPropertyPath), copyPathHandler, {jslogContext: 'copy-property-path'});
     }
     if (parentMap.get(this.property) instanceof SDK.RemoteObject.LocalJSONObject) {
       contextMenu.viewSection().appendItem(
-          i18nString(UIStrings.expandRecursively), this.expandRecursively.bind(this, EXPANDABLE_MAX_DEPTH));
-      contextMenu.viewSection().appendItem(i18nString(UIStrings.collapseChildren), this.collapseChildren.bind(this));
+          i18nString(UIStrings.expandRecursively), this.expandRecursively.bind(this, EXPANDABLE_MAX_DEPTH),
+          {jslogContext: 'expand-recursively'});
+      contextMenu.viewSection().appendItem(
+          i18nString(UIStrings.collapseChildren), this.collapseChildren.bind(this),
+          {jslogContext: 'collapse-children'});
     }
     if (this.propertyValue) {
       this.propertyValue.appendApplicableItems(event, contextMenu, {});
@@ -1398,7 +1324,6 @@ export class ArrayGroupingTreeElement extends UI.TreeOutline.TreeElement {
   private readonly fromIndex: number;
   private readonly toIndex: number;
   private readonly object: SDK.RemoteObject.RemoteObject;
-  private readonly readOnly: boolean;
   private readonly propertyCount: number;
   private readonly linkifier: Components.Linkifier.Linkifier|undefined;
   constructor(
@@ -1409,7 +1334,6 @@ export class ArrayGroupingTreeElement extends UI.TreeOutline.TreeElement {
     this.fromIndex = fromIndex;
     this.toIndex = toIndex;
     this.object = object;
-    this.readOnly = true;
     this.propertyCount = propertyCount;
     this.linkifier = linkifier;
   }
@@ -1423,9 +1347,6 @@ export class ArrayGroupingTreeElement extends UI.TreeOutline.TreeElement {
   private static async populateRanges(
       treeNode: UI.TreeOutline.TreeElement, object: SDK.RemoteObject.RemoteObject, fromIndex: number, toIndex: number,
       topLevel: boolean, linkifier?: Components.Linkifier.Linkifier): Promise<void> {
-    // The definition of callFunctionJSON expects an unknown, and setting to `any` causes Closure to fail.
-    // However, leaving this as unknown also causes TypeScript to fail, so for now we leave this as unchecked.
-    // @ts-ignore  TODO(crbug.com/1011811): Fix after Closure is removed.
     const jsonValue = await object.callFunctionJSON(packRanges, [
       {value: fromIndex},
       {value: toIndex},
@@ -1521,7 +1442,7 @@ export class ArrayGroupingTreeElement extends UI.TreeOutline.TreeElement {
         }
       }
 
-      return {ranges: ranges};
+      return {ranges};
     }
 
     async function callback(result: {ranges: Array<Array<number>>}|undefined): Promise<void> {
@@ -1558,10 +1479,7 @@ export class ArrayGroupingTreeElement extends UI.TreeOutline.TreeElement {
   private static async populateAsFragment(
       this: ArrayGroupingTreeElement, treeNode: UI.TreeOutline.TreeElement, object: SDK.RemoteObject.RemoteObject,
       fromIndex: number, toIndex: number, linkifier?: Components.Linkifier.Linkifier): Promise<void> {
-    // The definition of callFunction expects an unknown, and setting to `any` causes Closure to fail.
-    // However, leaving this as unknown also causes TypeScript to fail, so for now we leave this as unchecked.
     const result = await object.callFunction(
-        // @ts-ignore  TODO(crbug.com/1011811): Fix after Closure is removed.
         buildArrayFragment,
         [{value: fromIndex}, {value: toIndex}, {value: ArrayGroupingTreeElement.sparseIterationThreshold}]);
     if (!result.object || result.wasThrown) {
@@ -1587,9 +1505,7 @@ export class ArrayGroupingTreeElement extends UI.TreeOutline.TreeElement {
         this: {
           [x: number]: Object,
         },
-        // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        fromIndex?: number, toIndex?: number, sparseIterationThreshold?: number): any {
+        fromIndex?: number, toIndex?: number, sparseIterationThreshold?: number): unknown {
       const result = Object.create(null);
 
       if (fromIndex === undefined || toIndex === undefined || sparseIterationThreshold === undefined) {
@@ -1654,54 +1570,53 @@ export class ObjectPropertyPrompt extends UI.TextPrompt.TextPrompt {
   }
 }
 
-const sectionMap = new Map<RootElement, string>();
-
-const cachedResultMap = new Map<UI.TreeOutline.TreeElement, string>();
-
 export class ObjectPropertiesSectionsTreeExpandController {
-  private readonly expandedProperties: Set<string>;
+  static readonly #propertyPathCache = new WeakMap<UI.TreeOutline.TreeElement, string>();
+  static readonly #sectionMap = new WeakMap<RootElement, string>();
+
+  readonly #expandedProperties = new Set<string>();
+
   constructor(treeOutline: UI.TreeOutline.TreeOutline) {
-    this.expandedProperties = new Set();
-    treeOutline.addEventListener(UI.TreeOutline.Events.ElementAttached, this.elementAttached, this);
-    treeOutline.addEventListener(UI.TreeOutline.Events.ElementExpanded, this.elementExpanded, this);
-    treeOutline.addEventListener(UI.TreeOutline.Events.ElementCollapsed, this.elementCollapsed, this);
+    treeOutline.addEventListener(UI.TreeOutline.Events.ElementAttached, this.#elementAttached, this);
+    treeOutline.addEventListener(UI.TreeOutline.Events.ElementExpanded, this.#elementExpanded, this);
+    treeOutline.addEventListener(UI.TreeOutline.Events.ElementCollapsed, this.#elementCollapsed, this);
   }
 
   watchSection(id: string, section: RootElement): void {
-    sectionMap.set(section, id);
+    ObjectPropertiesSectionsTreeExpandController.#sectionMap.set(section, id);
 
-    if (this.expandedProperties.has(id)) {
+    if (this.#expandedProperties.has(id)) {
       section.expand();
     }
   }
 
   stopWatchSectionsWithId(id: string): void {
-    for (const property of this.expandedProperties) {
+    for (const property of this.#expandedProperties) {
       if (property.startsWith(id + ':')) {
-        this.expandedProperties.delete(property);
+        this.#expandedProperties.delete(property);
       }
     }
   }
 
-  private elementAttached(event: Common.EventTarget.EventTargetEvent<UI.TreeOutline.TreeElement>): void {
+  #elementAttached(event: Common.EventTarget.EventTargetEvent<UI.TreeOutline.TreeElement>): void {
     const element = event.data;
-    if (element.isExpandable() && this.expandedProperties.has(this.propertyPath(element))) {
+    if (element.isExpandable() && this.#expandedProperties.has(this.#propertyPath(element))) {
       element.expand();
     }
   }
 
-  private elementExpanded(event: Common.EventTarget.EventTargetEvent<UI.TreeOutline.TreeElement>): void {
+  #elementExpanded(event: Common.EventTarget.EventTargetEvent<UI.TreeOutline.TreeElement>): void {
     const element = event.data;
-    this.expandedProperties.add(this.propertyPath(element));
+    this.#expandedProperties.add(this.#propertyPath(element));
   }
 
-  private elementCollapsed(event: Common.EventTarget.EventTargetEvent<UI.TreeOutline.TreeElement>): void {
+  #elementCollapsed(event: Common.EventTarget.EventTargetEvent<UI.TreeOutline.TreeElement>): void {
     const element = event.data;
-    this.expandedProperties.delete(this.propertyPath(element));
+    this.#expandedProperties.delete(this.#propertyPath(element));
   }
 
-  private propertyPath(treeElement: UI.TreeOutline.TreeElement): string {
-    const cachedPropertyPath = cachedResultMap.get(treeElement);
+  #propertyPath(treeElement: UI.TreeOutline.TreeElement): string {
+    const cachedPropertyPath = ObjectPropertiesSectionsTreeExpandController.#propertyPathCache.get(treeElement);
     if (cachedPropertyPath) {
       return cachedPropertyPath;
     }
@@ -1732,9 +1647,9 @@ export class ObjectPropertiesSectionsTreeExpandController {
         current = current.parent;
       }
     }
-    const treeOutlineId = sectionMap.get((sectionRoot as RootElement));
+    const treeOutlineId = ObjectPropertiesSectionsTreeExpandController.#sectionMap.get((sectionRoot as RootElement));
     result = treeOutlineId + (result ? ':' + result : '');
-    cachedResultMap.set(treeElement, result);
+    ObjectPropertiesSectionsTreeExpandController.#propertyPathCache.set(treeElement, result);
     return result;
   }
 }
@@ -1770,7 +1685,7 @@ export class Renderer implements UI.UIUtils.Renderer {
   }
 }
 
-export class ObjectPropertyValue implements UI.ContextMenu.Provider {
+export class ObjectPropertyValue implements UI.ContextMenu.Provider<Object> {
   element: Element;
   constructor(element: Element) {
     this.element = element;
@@ -1796,46 +1711,35 @@ export class ExpandableTextPropertyValue extends ObjectPropertyValue {
     container.textContent = text.slice(0, maxLength);
     UI.Tooltip.Tooltip.install(container as HTMLElement, `${text.slice(0, maxLength)}…`);
 
-    this.expandElement = container.createChild('span');
+    this.expandElement = container.createChild('button');
     this.maxDisplayableTextLength = 10000000;
 
     const byteCount = Platform.StringUtilities.countWtf8Bytes(text);
-    const totalBytesText = Platform.NumberUtilities.bytesToString(byteCount);
+    const totalBytesText = i18n.ByteUtilities.bytesToString(byteCount);
     if (this.text.length < this.maxDisplayableTextLength) {
       this.expandElementText = i18nString(UIStrings.showMoreS, {PH1: totalBytesText});
       this.expandElement.setAttribute('data-text', this.expandElementText);
+      this.expandElement.setAttribute('jslog', `${VisualLogging.action('expand').track({click: true})}`);
       this.expandElement.classList.add('expandable-inline-button');
       this.expandElement.addEventListener('click', this.expandText.bind(this));
-      this.expandElement.addEventListener('keydown', (event: Event) => {
-        const keyboardEvent = (event as KeyboardEvent);
-        if (keyboardEvent.key === 'Enter' || keyboardEvent.key === ' ') {
-          this.expandText();
-        }
-      });
-      UI.ARIAUtils.markAsButton(this.expandElement);
     } else {
       this.expandElement.setAttribute('data-text', i18nString(UIStrings.longTextWasTruncatedS, {PH1: totalBytesText}));
       this.expandElement.classList.add('undisplayable-text');
     }
 
     this.copyButtonText = i18nString(UIStrings.copy);
-    const copyButton = container.createChild('span', 'expandable-inline-button');
+    const copyButton = container.createChild('button', 'expandable-inline-button');
     copyButton.setAttribute('data-text', this.copyButtonText);
+    copyButton.setAttribute('jslog', `${VisualLogging.action('copy').track({click: true})}`);
     copyButton.addEventListener('click', this.copyText.bind(this));
-    copyButton.addEventListener('keydown', (event: Event) => {
-      const keyboardEvent = (event as KeyboardEvent);
-      if (keyboardEvent.key === 'Enter' || keyboardEvent.key === ' ') {
-        this.copyText();
-      }
-    });
-    UI.ARIAUtils.markAsButton(copyButton);
   }
 
   override appendApplicableItems(_event: Event, contextMenu: UI.ContextMenu.ContextMenu, _object: Object): void {
     if (this.text.length < this.maxDisplayableTextLength && this.expandElement) {
-      contextMenu.clipboardSection().appendItem(this.expandElementText || '', this.expandText.bind(this));
+      contextMenu.clipboardSection().appendItem(
+          this.expandElementText || '', this.expandText.bind(this), {jslogContext: 'show-more'});
     }
-    contextMenu.clipboardSection().appendItem(this.copyButtonText, this.copyText.bind(this));
+    contextMenu.clipboardSection().appendItem(this.copyButtonText, this.copyText.bind(this), {jslogContext: 'copy'});
   }
 
   private expandText(): void {

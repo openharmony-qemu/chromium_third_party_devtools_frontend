@@ -33,7 +33,7 @@ const CSS_PROPS_TO_CHECK_FOR_COLOR_USAGE = new Set([
   'outline'
 ]);
 
-const borderCombinedDeclarations = new Set(['border-top', 'border-bottom', 'border-left', 'border-right']);
+const borderCombinedDeclarations = new Set(['border', 'border-top', 'border-bottom', 'border-left', 'border-right']);
 
 const COLOR_INDICATOR_REGEXES = new Set([
   // We don't have to check for named colors ("blue") as we lint to ban those separately.
@@ -47,6 +47,7 @@ const CUSTOM_VARIABLE_OVERRIDE_PREFIX = '--override-';
 const applicationColorsPath =
     path.join(__dirname, '..', '..', '..', 'front_end', 'ui', 'legacy', 'applicationColorTokens.css');
 const themeColorsPath = path.join(__dirname, '..', '..', '..', 'front_end', 'ui', 'legacy', 'themeColors.css');
+const tokensPath = path.join(__dirname, '..', '..', '..', 'front_end', 'ui', 'legacy', 'tokens.css');
 const inspectorCommonPath = path.join(__dirname, '..', '..', '..', 'front_end', 'ui', 'legacy', 'inspectorCommon.css');
 
 function getRootVariableDeclarationsFromCSSFile(filePath) {
@@ -66,9 +67,14 @@ function getRootVariableDeclarationsFromCSSFile(filePath) {
 
 const DEFINED_APPLICATION_COLOR_VARIABLES = getRootVariableDeclarationsFromCSSFile(applicationColorsPath);
 const DEFINED_THEME_COLOR_VARIABLES = getRootVariableDeclarationsFromCSSFile(themeColorsPath);
+const DEFINED_COLOR_TOKEN_VARIABLES = getRootVariableDeclarationsFromCSSFile(tokensPath);
 const DEFINED_INSPECTOR_STYLE_VARIABLES = getRootVariableDeclarationsFromCSSFile(inspectorCommonPath);
-const ALL_DEFINED_VARIABLES = new Set(
-    [...DEFINED_APPLICATION_COLOR_VARIABLES, ...DEFINED_THEME_COLOR_VARIABLES, ...DEFINED_INSPECTOR_STYLE_VARIABLES]);
+const ALL_DEFINED_VARIABLES = new Set([
+  ...DEFINED_APPLICATION_COLOR_VARIABLES, ...DEFINED_THEME_COLOR_VARIABLES, ...DEFINED_COLOR_TOKEN_VARIABLES,
+  ...DEFINED_INSPECTOR_STYLE_VARIABLES
+]);
+
+const BOX_SHADOW_VARIABLES = new Set([1, 2, 3, 4, 5].map(x => `var(--sys-elevation-level${x})`));
 
 module.exports = stylelint.createPlugin(RULE_NAME, function(primary, secondary, context) {
   return function(postcssRoot, postcssResult) {
@@ -140,9 +146,17 @@ module.exports = stylelint.createPlugin(RULE_NAME, function(primary, secondary, 
       }
 
       if (cssValueToCheck.includes('var(')) {
-        const [match, variableName] = /var\((--[\w-]+)/.exec(cssValueToCheck);
+        const execArray = /var\(\s*(--[\w-]+)\s*/.exec(cssValueToCheck);
+        if (!execArray) {
+          throw new Error(
+              `Could not parse CSS variable usage: ${cssValueToCheck}`,
+          );
+        }
+        const [match, variableName] = execArray;
         if (!match) {
-          throw new Error(`Could not parse CSS variable usage: ${cssValueToCheck}`);
+          throw new Error(
+              `Could not parse CSS variable usage: ${cssValueToCheck}`,
+          );
         }
 
         /**
@@ -172,14 +186,21 @@ module.exports = stylelint.createPlugin(RULE_NAME, function(primary, secondary, 
       // If you are providing a selector specifically for dark mode, you can use
       // any colors you want, as it means you are purposefully deviating. This
       // is not encouraged but we do need to allow it.
-      if (rule.selector.startsWith(':host-context(.-theme-with-dark-background)') ||
-          rule.selector.startsWith('.-theme-with-dark-background')) {
+      if (rule.selector.startsWith(':host-context(.theme-with-dark-background)') ||
+          rule.selector.startsWith('.theme-with-dark-background')) {
         return;
       }
 
       rule.walkDecls(declaration => {
         if (!CSS_PROPS_TO_CHECK_FOR_COLOR_USAGE.has(declaration.prop)) {
           return;
+        }
+
+        if (declaration.prop === 'box-shadow') {
+          // Along with the colour values, we also have predefined elevation values for box-shadow which are allowed.
+          if (BOX_SHADOW_VARIABLES.has(declaration.value)) {
+            return;
+          }
         }
 
         /**
@@ -200,8 +221,9 @@ module.exports = stylelint.createPlugin(RULE_NAME, function(primary, secondary, 
         /**
          * If we're checking a border-{top/bottom/left/right}, we need to regex
          * out just the color part of the declaration to check.
+         * We also apply the same check for outline.
          */
-        if (borderCombinedDeclarations.has(declaration.prop)) {
+        if (borderCombinedDeclarations.has(declaration.prop) || declaration.prop === 'outline') {
           // This is a pretty basic regex but it should split border-bottom:
           // var(--foo) solid var(--bar) into the three parts we need.
           // If this rule picks up false positives, we can improve this regex.

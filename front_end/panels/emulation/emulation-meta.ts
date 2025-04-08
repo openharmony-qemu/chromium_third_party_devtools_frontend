@@ -3,12 +3,12 @@
 // found in the LICENSE file.
 
 import * as Common from '../../core/common/common.js';
+import * as i18n from '../../core/i18n/i18n.js';
 import * as Root from '../../core/root/root.js';
 import * as UI from '../../ui/legacy/legacy.js';
 
 import type * as Emulation from './emulation.js';
 
-import * as i18n from '../../core/i18n/i18n.js';
 const UIStrings = {
   /**
    *@description Title of an action in the emulation tool to toggle device mode
@@ -79,21 +79,18 @@ UI.ActionRegistration.registerActionExtension({
   toggleable: true,
   async loadActionDelegate() {
     const Emulation = await loadEmulationModule();
-    return Emulation.DeviceModeWrapper.ActionDelegate.instance();
+    return new Emulation.DeviceModeWrapper.ActionDelegate();
   },
-  // #ifdef OHOS_DEVTOOLS
-  //condition: Root.Runtime.ConditionName.CAN_DOCK,
-  condition: Root.Runtime.ConditionName.USE_ORIGNAL,
-  // #endif OHOS_DEVTOOLS
+  condition: Root.Runtime.conditions.canDock,
   title: i18nLazyString(UIStrings.toggleDeviceToolbar),
   iconClass: UI.ActionRegistration.IconClass.LARGEICON_PHONE,
   bindings: [
     {
-      platform: UI.ActionRegistration.Platforms.WindowsLinux,
+      platform: UI.ActionRegistration.Platforms.WINDOWS_LINUX,
       shortcut: 'Shift+Ctrl+M',
     },
     {
-      platform: UI.ActionRegistration.Platforms.Mac,
+      platform: UI.ActionRegistration.Platforms.MAC,
       shortcut: 'Shift+Meta+M',
     },
   ],
@@ -104,9 +101,9 @@ UI.ActionRegistration.registerActionExtension({
   category: UI.ActionRegistration.ActionCategory.SCREENSHOT,
   async loadActionDelegate() {
     const Emulation = await loadEmulationModule();
-    return Emulation.DeviceModeWrapper.ActionDelegate.instance();
+    return new Emulation.DeviceModeWrapper.ActionDelegate();
   },
-  condition: Root.Runtime.ConditionName.CAN_DOCK,
+  condition: Root.Runtime.conditions.canDock,
   title: i18nLazyString(UIStrings.captureScreenshot),
 });
 
@@ -115,9 +112,9 @@ UI.ActionRegistration.registerActionExtension({
   category: UI.ActionRegistration.ActionCategory.SCREENSHOT,
   async loadActionDelegate() {
     const Emulation = await loadEmulationModule();
-    return Emulation.DeviceModeWrapper.ActionDelegate.instance();
+    return new Emulation.DeviceModeWrapper.ActionDelegate();
   },
-  condition: Root.Runtime.ConditionName.CAN_DOCK,
+  condition: Root.Runtime.conditions.canDock,
   title: i18nLazyString(UIStrings.captureFullSizeScreenshot),
 });
 
@@ -126,15 +123,15 @@ UI.ActionRegistration.registerActionExtension({
   category: UI.ActionRegistration.ActionCategory.SCREENSHOT,
   async loadActionDelegate() {
     const Emulation = await loadEmulationModule();
-    return Emulation.DeviceModeWrapper.ActionDelegate.instance();
+    return new Emulation.DeviceModeWrapper.ActionDelegate();
   },
-  condition: Root.Runtime.ConditionName.CAN_DOCK,
+  condition: Root.Runtime.conditions.canDock,
   title: i18nLazyString(UIStrings.captureNodeScreenshot),
 });
 
 Common.Settings.registerSettingExtension({
   category: Common.Settings.SettingCategory.MOBILE,
-  settingName: 'showMediaQueryInspector',
+  settingName: 'show-media-query-inspector',
   settingType: Common.Settings.SettingType.BOOLEAN,
   defaultValue: false,
   options: [
@@ -152,7 +149,7 @@ Common.Settings.registerSettingExtension({
 
 Common.Settings.registerSettingExtension({
   category: Common.Settings.SettingCategory.MOBILE,
-  settingName: 'emulation.showRulers',
+  settingName: 'emulation.show-rulers',
   settingType: Common.Settings.SettingType.BOOLEAN,
   defaultValue: false,
   options: [
@@ -170,7 +167,7 @@ Common.Settings.registerSettingExtension({
 
 Common.Settings.registerSettingExtension({
   category: Common.Settings.SettingCategory.MOBILE,
-  settingName: 'emulation.showDeviceOutline',
+  settingName: 'emulation.show-device-outline',
   settingType: Common.Settings.SettingType.BOOLEAN,
   defaultValue: false,
   options: [
@@ -188,10 +185,7 @@ Common.Settings.registerSettingExtension({
 
 UI.Toolbar.registerToolbarItem({
   actionId: 'emulation.toggle-device-mode',
-  // #ifdef OHOS_DEVTOOLS
-  //condition: Root.Runtime.ConditionName.CAN_DOCK,
-  condition: Root.Runtime.ConditionName.USE_ORIGNAL,
-  // #endif OHOS_DEVTOOLS
+  condition: Root.Runtime.conditions.canDock,
   location: UI.Toolbar.ToolbarItemLocation.MAIN_TOOLBAR_LEFT,
   order: 1,
   showLabel: undefined,
@@ -204,7 +198,7 @@ Common.AppProvider.registerAppProvider({
     const Emulation = await loadEmulationModule();
     return Emulation.AdvancedApp.AdvancedAppProvider.instance();
   },
-  condition: Root.Runtime.ConditionName.CAN_DOCK,
+  condition: Root.Runtime.conditions.canDock,
   order: 0,
 });
 

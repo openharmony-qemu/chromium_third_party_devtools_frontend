@@ -13,37 +13,26 @@
 
 fieldset {
   border: 0;
-  margin-left: 20px;
   padding: 0;
-}
-
-legend {
-  color: var(--color-text-secondary);
-  font-size: 120%;
-  margin-left: -20px;
-  padding: 0;
-  text-align: left;
 }
 
 .link {
-  color: var(--color-link);
+  color: var(--sys-color-primary);
   text-decoration: underline;
   cursor: pointer;
   outline-offset: 2px;
 }
 
 img {
-  background-size: 32px 32px;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--sys-shape-corner-full);
   display: block;
-  height: 32px;
-  width: 32px;
+  height: var(--sys-size-9);
+  width: var(--sys-size-9);
 }
 
 .warning {
   display: block;
-  margin-top: 12px;
 }
 
 .account-info {

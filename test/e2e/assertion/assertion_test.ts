@@ -6,9 +6,8 @@ import {assert} from 'chai';
 
 import {expectedErrors} from '../../conductor/events.js';
 import {getBrowserAndPages, goToResource, step} from '../../shared/helper.js';
-import {describe, it} from '../../shared/mocha-extensions.js';
 
-describe('Assertions', async function() {
+describe('Assertions', function() {
   it('console.assert', async () => {
     const {frontend} = getBrowserAndPages();
     await step('Check the evaluation results from console', async () => {

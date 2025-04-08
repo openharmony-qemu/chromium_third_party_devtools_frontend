@@ -33,29 +33,24 @@ import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import * as Bindings from '../../models/bindings/bindings.js';
 import * as Persistence from '../../models/persistence/persistence.js';
 import * as Workspace from '../../models/workspace/workspace.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import * as Snippets from '../snippets/snippets.js';
 
-import {NavigatorView, type NavigatorUISourceCodeTreeNode} from './NavigatorView.js';
+import {type NavigatorUISourceCodeTreeNode, NavigatorView} from './NavigatorView.js';
 import sourcesNavigatorStyles from './sourcesNavigator.css.js';
 
 const UIStrings = {
   /**
-   *@description Text in Sources Navigator of the Sources panel
+   *@description Text to explain the Workspace feature in the Sources panel. https://goo.gle/devtools-workspace
    */
-  syncChangesInDevtoolsWithThe: 'Sync changes in DevTools with the local filesystem',
+  explainWorkspace: 'Set up workspace to sync edits directly to the sources you develop',
   /**
-   * @description Text for link in the Filesystem Side View in Sources Panel. Workspaces is a
-   * DevTools feature that allows editing local files inside DevTools.
-   * See: https://developer.chrome.com/docs/devtools/workspaces/
+   *@description Text to explain the Local Overrides feature. https://goo.gle/devtools-overrides
    */
-  learnMoreAboutWorkspaces: 'Learn more about Workspaces',
-  /**
-   *@description Text in Sources Navigator of the Sources panel
-   */
-  overridePageAssetsWithFilesFromA: 'Override page assets with files from a local folder',
+  explainLocalOverrides: 'Override network requests and web content locally to mock remote resources',
   /**
    *@description Text that is usually a hyperlink to more documentation
    */
@@ -69,13 +64,13 @@ const UIStrings = {
    */
   selectFolderForOverrides: 'Select folder for overrides',
   /**
-   *@description Text in Sources Navigator of the Sources panel
+   *@description Text to explain the content scripts pane in the Sources panel
    */
-  contentScriptsServedByExtensions: 'Content scripts served by extensions appear here',
+  explainContentScripts: 'View content scripts served by extensions',
   /**
-   *@description Text in Sources Navigator of the Sources panel
+   *@description Text to explain the Snippets feature in the Sources panel https://goo.gle/devtools-snippets
    */
-  createAndSaveCodeSnippetsFor: 'Create and save code snippets for later reuse',
+  explainSnippets: 'Save the JavaScript code you run often to run it again anytime',
   /**
    *@description Text in Sources Navigator of the Sources panel
    */
@@ -107,12 +102,13 @@ let networkNavigatorViewInstance: NetworkNavigatorView;
 
 export class NetworkNavigatorView extends NavigatorView {
   private constructor() {
-    super(true);
+    super('navigator-network', true);
     SDK.TargetManager.TargetManager.instance().addEventListener(
-        SDK.TargetManager.Events.InspectedURLChanged, this.inspectedURLChanged, this);
+        SDK.TargetManager.Events.INSPECTED_URL_CHANGED, this.inspectedURLChanged, this);
 
     // Record the sources tool load time after the file navigator has loaded.
     Host.userMetrics.panelLoaded('sources', 'DevTools.Launch.Sources');
+    SDK.TargetManager.TargetManager.instance().addScopeChangeListener(this.onScopeChange.bind(this));
   }
 
   override wasShown(): void {
@@ -132,7 +128,19 @@ export class NetworkNavigatorView extends NavigatorView {
   }
 
   override acceptProject(project: Workspace.Workspace.Project): boolean {
-    return project.type() === Workspace.Workspace.projectTypes.Network;
+    return project.type() === Workspace.Workspace.projectTypes.Network &&
+        SDK.TargetManager.TargetManager.instance().isInScope(
+            Bindings.NetworkProject.NetworkProject.getTargetForProject(project));
+  }
+
+  onScopeChange(): void {
+    for (const project of Workspace.Workspace.WorkspaceImpl.instance().projects()) {
+      if (!this.acceptProject(project)) {
+        this.removeProject(project);
+      } else {
+        this.tryAddProject(project);
+      }
+    }
   }
 
   private inspectedURLChanged(event: Common.EventTarget.EventTargetEvent<SDK.Target.Target>): void {
@@ -163,27 +171,17 @@ export class NetworkNavigatorView extends NavigatorView {
   }
 }
 
-let filesNavigatorViewInstance: FilesNavigatorView;
-
 export class FilesNavigatorView extends NavigatorView {
-  private constructor() {
-    super();
+  constructor() {
+    super('navigator-files');
     const placeholder = new UI.EmptyWidget.EmptyWidget('');
     this.setPlaceholder(placeholder);
-    // #ifdef OHOS_DEVTOOLS
-    const adaptForOhos = true;
-    if (adaptForOhos) {
-      placeholder.appendParagraph().appendChild(UI.Fragment.html`
-        <div>${i18nString(UIStrings.syncChangesInDevtoolsWithThe)}</div>`);
-    } else {
-      placeholder.appendParagraph().appendChild(UI.Fragment.html`
-        <div>${i18nString(UIStrings.syncChangesInDevtoolsWithThe)}</div><br />
-        ${
-              UI.XLink.XLink.create(
-                  'https://developer.chrome.com/docs/devtools/workspaces/', i18nString(UIStrings.learnMoreAboutWorkspaces))}
-        `);
-    }
-    // #endif OHOS_DEVTOOLS
+    placeholder.appendParagraph().appendChild(UI.Fragment.html`
+  <div>${i18nString(UIStrings.explainWorkspace)}</div><br />
+  ${
+        UI.XLink.XLink.create(
+            'https://goo.gle/devtools-workspace', i18nString(UIStrings.learnMore), undefined, undefined, 'learn-more')}
+  `);
 
     const toolbar = new UI.Toolbar.Toolbar('navigator-toolbar');
     void toolbar.appendItemsAtLocation('files-navigator-toolbar').then(() => {
@@ -193,11 +191,9 @@ export class FilesNavigatorView extends NavigatorView {
     });
   }
 
-  static instance(): FilesNavigatorView {
-    if (!filesNavigatorViewInstance) {
-      filesNavigatorViewInstance = new FilesNavigatorView();
-    }
-    return filesNavigatorViewInstance;
+  override sourceSelected(uiSourceCode: Workspace.UISourceCode.UISourceCode, focusSource: boolean): void {
+    Host.userMetrics.actionTaken(Host.UserMetrics.Action.WorkspaceSourceSelected);
+    super.sourceSelected(uiSourceCode, focusSource);
   }
 
   override acceptProject(project: Workspace.Workspace.Project): boolean {
@@ -218,30 +214,22 @@ let overridesNavigatorViewInstance: OverridesNavigatorView;
 export class OverridesNavigatorView extends NavigatorView {
   private readonly toolbar: UI.Toolbar.Toolbar;
   private constructor() {
-    super();
+    super('navigator-overrides');
     const placeholder = new UI.EmptyWidget.EmptyWidget('');
     this.setPlaceholder(placeholder);
-    // #ifdef OHOS_DEVTOOLS
-    const adaptForOhos = true;
-    if (adaptForOhos) {
-      placeholder.appendParagraph().appendChild(UI.Fragment.html`
-        <div>${i18nString(UIStrings.overridePageAssetsWithFilesFromA)}</div>`);
-    } else {
-      placeholder.appendParagraph().appendChild(UI.Fragment.html`
-        <div>${i18nString(UIStrings.overridePageAssetsWithFilesFromA)}</div><br />
-        ${
-              UI.XLink.XLink.create(
-                  'https://developers.google.com/web/updates/2018/01/devtools#overrides', i18nString(UIStrings.learnMore))}
-        `);
-    }
-    // #endif OHOS_DEVTOOLS
+    placeholder.appendParagraph().appendChild(UI.Fragment.html`
+  <div>${i18nString(UIStrings.explainLocalOverrides)}</div><br />
+  ${
+        UI.XLink.XLink.create(
+            'https://goo.gle/devtools-overrides', i18nString(UIStrings.learnMore), undefined, undefined, 'learn-more')}
+  `);
 
     this.toolbar = new UI.Toolbar.Toolbar('navigator-toolbar');
 
     this.contentElement.insertBefore(this.toolbar.element, this.contentElement.firstChild);
 
     Persistence.NetworkPersistenceManager.NetworkPersistenceManager.instance().addEventListener(
-        Persistence.NetworkPersistenceManager.Events.ProjectChanged, this.updateProjectAndUI, this);
+        Persistence.NetworkPersistenceManager.Events.PROJECT_CHANGED, this.updateProjectAndUI, this);
     this.workspace().addEventListener(Workspace.Workspace.Events.ProjectAdded, this.onProjectAddOrRemoved, this);
     this.workspace().addEventListener(Workspace.Workspace.Events.ProjectRemoved, this.onProjectAddOrRemoved, this);
     this.updateProjectAndUI();
@@ -281,12 +269,13 @@ export class OverridesNavigatorView extends NavigatorView {
     const project = Persistence.NetworkPersistenceManager.NetworkPersistenceManager.instance().project();
     if (project) {
       const enableCheckbox = new UI.Toolbar.ToolbarSettingCheckbox(
-          Common.Settings.Settings.instance().moduleSetting('persistenceNetworkOverridesEnabled'));
+          Common.Settings.Settings.instance().moduleSetting('persistence-network-overrides-enabled'));
       this.toolbar.appendToolbarItem(enableCheckbox);
 
       this.toolbar.appendToolbarItem(new UI.Toolbar.ToolbarSeparator(true));
       const clearButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.clearConfiguration), 'clear');
-      clearButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, () => {
+      clearButton.addEventListener(UI.Toolbar.ToolbarButton.Events.CLICK, () => {
+        Common.Settings.Settings.instance().moduleSetting('persistence-network-overrides-enabled').set(false);
         project.remove();
       });
       this.toolbar.appendToolbarItem(clearButton);
@@ -294,7 +283,7 @@ export class OverridesNavigatorView extends NavigatorView {
     }
     const title = i18nString(UIStrings.selectFolderForOverrides);
     const setupButton = new UI.Toolbar.ToolbarButton(title, 'plus', title);
-    setupButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, _event => {
+    setupButton.addEventListener(UI.Toolbar.ToolbarButton.Events.CLICK, _event => {
       void this.setupNewWorkspace();
     }, this);
     this.toolbar.appendToolbarItem(setupButton);
@@ -306,7 +295,12 @@ export class OverridesNavigatorView extends NavigatorView {
     if (!fileSystem) {
       return;
     }
-    Common.Settings.Settings.instance().moduleSetting('persistenceNetworkOverridesEnabled').set(true);
+    Common.Settings.Settings.instance().moduleSetting('persistence-network-overrides-enabled').set(true);
+  }
+
+  override sourceSelected(uiSourceCode: Workspace.UISourceCode.UISourceCode, focusSource: boolean): void {
+    Host.userMetrics.actionTaken(Host.UserMetrics.Action.OverridesSourceSelected);
+    super.sourceSelected(uiSourceCode, focusSource);
   }
 
   override acceptProject(project: Workspace.Workspace.Project): boolean {
@@ -314,36 +308,18 @@ export class OverridesNavigatorView extends NavigatorView {
   }
 }
 
-let contentScriptsNavigatorViewInstance: ContentScriptsNavigatorView;
-
 export class ContentScriptsNavigatorView extends NavigatorView {
-  private constructor() {
-    super();
+  constructor() {
+    super('navigator-content-scripts');
     const placeholder = new UI.EmptyWidget.EmptyWidget('');
     this.setPlaceholder(placeholder);
-    // #ifdef OHOS_DEVTOOLS
-    const adaptForOhos = true;
-    if (adaptForOhos) {
-      placeholder.appendParagraph().appendChild(UI.Fragment.html`
-        <div>${i18nString(UIStrings.contentScriptsServedByExtensions)}</div>`);
-    } else {
-      placeholder.appendParagraph().appendChild(UI.Fragment.html`
-        <div>${i18nString(UIStrings.contentScriptsServedByExtensions)}</div><br />
-        ${UI.XLink.XLink.create('https://developer.chrome.com/extensions/content_scripts', i18nString(UIStrings.learnMore))}
-        `);
-    }
-    // #endif OHOS_DEVTOOLS
-  }
-
-  static instance(opts: {
-    forceNew: boolean|null,
-  } = {forceNew: null}): ContentScriptsNavigatorView {
-    const {forceNew} = opts;
-    if (!contentScriptsNavigatorViewInstance || forceNew) {
-      contentScriptsNavigatorViewInstance = new ContentScriptsNavigatorView();
-    }
-
-    return contentScriptsNavigatorViewInstance;
+    placeholder.appendParagraph().appendChild(UI.Fragment.html`
+  <div>${i18nString(UIStrings.explainContentScripts)}</div><br />
+  ${
+        UI.XLink.XLink.create(
+            'https://developer.chrome.com/extensions/content_scripts', i18nString(UIStrings.learnMore), undefined,
+            undefined, 'learn-more')}
+  `);
   }
 
   override acceptProject(project: Workspace.Workspace.Project): boolean {
@@ -351,44 +327,27 @@ export class ContentScriptsNavigatorView extends NavigatorView {
   }
 }
 
-let snippetsNavigatorViewInstance: SnippetsNavigatorView;
-
 export class SnippetsNavigatorView extends NavigatorView {
   constructor() {
-    super();
+    super('navigator-snippets');
     const placeholder = new UI.EmptyWidget.EmptyWidget('');
     this.setPlaceholder(placeholder);
-    // #ifdef OHOS_DEVTOOLS
-    const adaptForOhos = true;
-    if (adaptForOhos) {
-      placeholder.appendParagraph().appendChild(UI.Fragment.html`
-        <div>${i18nString(UIStrings.createAndSaveCodeSnippetsFor)}</div>`);
-    } else {
-      placeholder.appendParagraph().appendChild(UI.Fragment.html`
-        <div>${i18nString(UIStrings.createAndSaveCodeSnippetsFor)}</div><br />
-        ${
-              UI.XLink.XLink.create(
-                  'https://developer.chrome.com/docs/devtools/javascript/snippets/', i18nString(UIStrings.learnMore))}
-        `);
-    }
-    // #endif OHOS_DEVTOOLS
+    placeholder.appendParagraph().appendChild(UI.Fragment.html`
+  <div>${i18nString(UIStrings.explainSnippets)}</div><br />
+  ${
+        UI.XLink.XLink.create(
+            'https://goo.gle/devtools-snippets', i18nString(UIStrings.learnMore), undefined, undefined, 'learn-more')}
+  `);
 
     const toolbar = new UI.Toolbar.Toolbar('navigator-toolbar');
-    const newButton =
-        new UI.Toolbar.ToolbarButton(i18nString(UIStrings.newSnippet), 'plus', i18nString(UIStrings.newSnippet));
-    newButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, _event => {
+    const newButton = new UI.Toolbar.ToolbarButton(
+        i18nString(UIStrings.newSnippet), 'plus', i18nString(UIStrings.newSnippet), 'sources.new-snippet');
+    newButton.addEventListener(UI.Toolbar.ToolbarButton.Events.CLICK, _event => {
       void this.create(
           Snippets.ScriptSnippetFileSystem.findSnippetsProject(), '' as Platform.DevToolsPath.EncodedPathString);
     });
     toolbar.appendToolbarItem(newButton);
     this.contentElement.insertBefore(toolbar.element, this.contentElement.firstChild);
-  }
-
-  static instance(): SnippetsNavigatorView {
-    if (!snippetsNavigatorViewInstance) {
-      snippetsNavigatorViewInstance = new SnippetsNavigatorView();
-    }
-    return snippetsNavigatorViewInstance;
   }
 
   override acceptProject(project: Workspace.Workspace.Project): boolean {
@@ -400,7 +359,8 @@ export class SnippetsNavigatorView extends NavigatorView {
     contextMenu.headerSection().appendItem(
         i18nString(UIStrings.createNewSnippet),
         () => this.create(
-            Snippets.ScriptSnippetFileSystem.findSnippetsProject(), '' as Platform.DevToolsPath.EncodedPathString));
+            Snippets.ScriptSnippetFileSystem.findSnippetsProject(), '' as Platform.DevToolsPath.EncodedPathString),
+        {jslogContext: 'create-new-snippet'});
     void contextMenu.show();
   }
 
@@ -408,19 +368,22 @@ export class SnippetsNavigatorView extends NavigatorView {
     const uiSourceCode = node.uiSourceCode();
     const contextMenu = new UI.ContextMenu.ContextMenu(event);
     contextMenu.headerSection().appendItem(
-        i18nString(UIStrings.run), () => Snippets.ScriptSnippetFileSystem.evaluateScriptSnippet(uiSourceCode));
-    contextMenu.editSection().appendItem(i18nString(UIStrings.rename), () => this.rename(node, false));
+        i18nString(UIStrings.run), () => Snippets.ScriptSnippetFileSystem.evaluateScriptSnippet(uiSourceCode),
+        {jslogContext: 'run'});
     contextMenu.editSection().appendItem(
-        i18nString(UIStrings.remove), () => uiSourceCode.project().deleteFile(uiSourceCode));
-    contextMenu.saveSection().appendItem(i18nString(UIStrings.saveAs), this.handleSaveAs.bind(this, uiSourceCode));
+        i18nString(UIStrings.rename), () => this.rename(node, false), {jslogContext: 'rename'});
+    contextMenu.editSection().appendItem(
+        i18nString(UIStrings.remove), () => uiSourceCode.project().deleteFile(uiSourceCode), {jslogContext: 'remove'});
+    contextMenu.saveSection().appendItem(
+        i18nString(UIStrings.saveAs), this.handleSaveAs.bind(this, uiSourceCode), {jslogContext: 'save-as'});
     void contextMenu.show();
   }
 
   private async handleSaveAs(uiSourceCode: Workspace.UISourceCode.UISourceCode): Promise<void> {
     uiSourceCode.commitWorkingCopy();
     const {content} = await uiSourceCode.requestContent();
-    void Workspace.FileManager.FileManager.instance().save(
-        this.addJSExtension(uiSourceCode.url()), content || '', true);
+    await Workspace.FileManager.FileManager.instance().save(
+        this.addJSExtension(uiSourceCode.url()), content || '', true, false /* isBase64 */);
     Workspace.FileManager.FileManager.instance().close(uiSourceCode.url());
   }
 
@@ -429,19 +392,7 @@ export class SnippetsNavigatorView extends NavigatorView {
   }
 }
 
-let actionDelegateInstance: ActionDelegate;
-
 export class ActionDelegate implements UI.ActionRegistration.ActionDelegate {
-  static instance(opts: {
-    forceNew: boolean|null,
-  } = {forceNew: null}): ActionDelegate {
-    const {forceNew} = opts;
-    if (!actionDelegateInstance || forceNew) {
-      actionDelegateInstance = new ActionDelegate();
-    }
-
-    return actionDelegateInstance;
-  }
   handleAction(context: UI.Context.Context, actionId: string): boolean {
     switch (actionId) {
       case 'sources.create-snippet':

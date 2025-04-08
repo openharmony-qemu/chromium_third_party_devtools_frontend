@@ -2,23 +2,33 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {expect} from 'chai';
-import {type ElementHandle} from 'puppeteer';
+import {assert, expect} from 'chai';
+import type {ElementHandle} from 'puppeteer-core';
 
 import {
-  click,
-  waitFor,
-  reloadDevTools,
+  $textContent,
+  clickElement,
+  disableExperiment,
+  getTestServerPort,
+  setCheckBox,
+  step,
   typeText,
+  waitFor,
   waitForAria,
   waitForMany,
   waitForNone,
-  getTestServerPort,
-  clickElement,
 } from '../../shared/helper.js';
-
-import {describe, it} from '../../shared/mocha-extensions.js';
-import {navigateToNetworkTab, setPersistLog} from '../helpers/network-helpers.js';
+import {
+  reloadDevTools,
+} from '../helpers/cross-tool-helper.js';
+import {
+  clearTextFilter,
+  getAllRequestNames,
+  navigateToNetworkTab,
+  setCacheDisabled,
+  setPersistLog,
+  waitForSomeRequestsToAppear,
+} from '../helpers/network-helpers.js';
 
 const SIMPLE_PAGE_REQUEST_NUMBER = 10;
 const SIMPLE_PAGE_URL = `requests.html?num=${SIMPLE_PAGE_REQUEST_NUMBER}`;
@@ -36,15 +46,31 @@ async function checkboxIsChecked(element: ElementHandle<HTMLInputElement>): Prom
   return await element.evaluate(node => node.checked);
 }
 
-async function clearFilter() {
-  await click('.filter-input-container');
-  const clearFilter = await waitFor('.filter-input-clear-button');
-  if (await clearFilter.isIntersectingViewport()) {
-    await clickElement(clearFilter);
-  }
+async function openMoreFiltersDropdown() {
+  const filterDropdown = await waitFor('[aria-label="Show only/hide requests dropdown"]');
+  const filterButton = await waitFor('.toolbar-button', filterDropdown);
+  await filterButton.click();
+  return filterButton;
 }
 
-describe('The Network Tab', async function() {
+async function getFilter(label: string, root?: ElementHandle) {
+  const filter = await $textContent(label, root);
+
+  if (!filter) {
+    assert.fail(`Could not find ${label} filter.`);
+  }
+  return filter;
+}
+
+async function checkOpacityCheckmark(filter: ElementHandle, opacity: string) {
+  const checkmarkOpacity = await filter.$eval('.checkmark', element => {
+    return window.getComputedStyle(element).getPropertyValue('opacity');
+  });
+
+  return checkmarkOpacity === opacity;
+}
+
+describe('The Network Tab', function() {
   // One of these tests reloads panels repeatedly, which can take a longer time.
   this.timeout(20_000);
 
@@ -77,12 +103,12 @@ describe('The Network Tab', async function() {
     let nodes = await waitForMany('.data-grid-data-grid-node > .name-column', 1);
     expect(nodes.length).to.equal(11);
 
-    await clearFilter();
+    await clearTextFilter();
     await typeText('/.*\\..*/');
     nodes = await waitForMany('.data-grid-data-grid-node > .name-column', 1);
     expect(nodes.length).to.equal(11);
 
-    await clearFilter();
+    await clearTextFilter();
     await typeText('/.*\\.svg/');
     nodes = await waitForMany('.data-grid-data-grid-node > .name-column', 1);
     expect(nodes.length).to.equal(10);
@@ -92,7 +118,7 @@ describe('The Network Tab', async function() {
     await typeText('/NOTHINGTOMATCH/');
     await waitForNone('.data-grid-data-grid-node > .name-column');
 
-    await clearFilter();
+    await clearTextFilter();
     await typeText('//');
     await waitForNone('.data-grid-data-grid-node > .name-column');
   });
@@ -106,7 +132,7 @@ describe('The Network Tab', async function() {
     let nodes = await waitForMany('.data-grid-data-grid-node > .name-column', 1);
     expect(nodes.length).to.equal(7);
 
-    await clearFilter();
+    await clearTextFilter();
     await typeText('is:from-cache');
     nodes = await waitForMany('.data-grid-data-grid-node > .name-column', 1);
     expect(nodes.length).to.equal(3);
@@ -123,7 +149,7 @@ describe('The Network Tab', async function() {
     await typeText('://');
     await waitForNone('.data-grid-data-grid-node > .name-column');
 
-    await clearFilter();
+    await clearTextFilter();
     await typeText('scheme:https');
     const nodes = await waitForMany('.data-grid-data-grid-node > .name-column', 1);
     expect(nodes.length).to.equal(11);
@@ -133,14 +159,14 @@ describe('The Network Tab', async function() {
     await typeText('localhost');
     await waitForNone('.data-grid-data-grid-node > .name-column');
 
-    await clearFilter();
+    await clearTextFilter();
     await typeText('domain:localhost');
     const nodes = await waitForMany('.data-grid-data-grid-node > .name-column', 1);
     expect(nodes.length).to.equal(11);
   });
 
   it('can filter by partial URL in the log view', async () => {
-    await clearFilter();
+    await clearTextFilter();
     await typeText(`https://localhost:${getTestServerPort()}`);
     const nodes = await waitForMany('.data-grid-data-grid-node > .name-column', 1);
     expect(nodes.length).to.equal(11);
@@ -254,5 +280,68 @@ describe('The Network Tab', async function() {
       const invertCheckbox = await (await waitForAria('Invert')).toElement('input');
       expect(await checkboxIsChecked(invertCheckbox)).to.equal(false);
     }
+  });
+});
+
+describe('The Network Tab', function() {
+  this.timeout(5000);
+
+  beforeEach(async () => {
+    await disableExperiment('network-panel-filter-bar-redesign');
+
+    await navigateToNetworkTab('empty.html');
+    await setCacheDisabled(true);
+    await setPersistLog(false);
+  });
+
+  it('can show only third-party requests from checkbox', async () => {
+    await setCheckBox('[title="3rd-party requests"]', true);
+    await navigateToNetworkTab('third-party-resources.html');
+    await waitForSomeRequestsToAppear(1);
+
+    assert.deepStrictEqual(await getAllRequestNames(), ['external_image.svg']);
+  });
+});
+
+describe('The Network Tab', function() {
+  this.timeout(5000);
+
+  beforeEach(async () => {
+    await reloadDevTools({enableExperiments: ['network-panel-filter-bar-redesign']});
+
+    await navigateToNetworkTab('empty.html');
+    await setCacheDisabled(true);
+    await setPersistLog(false);
+  });
+
+  it('can show only third-party requests from dropdown', async () => {
+    await navigateToNetworkTab('third-party-resources.html');
+    await waitForSomeRequestsToAppear(3);
+
+    await openMoreFiltersDropdown();
+
+    const thirdPartyFilter = await getFilter('3rd-party requests');
+
+    let names = await getAllRequestNames();
+
+    await step('verify the dropdown state and the requests when 3rd-part filter is selected', async () => {
+      await thirdPartyFilter.click();
+      assert.isTrue(await checkOpacityCheckmark(thirdPartyFilter, '1'));
+
+      names = await getAllRequestNames();
+      assert.deepEqual(1, names.length);
+      assert.deepStrictEqual(names, ['external_image.svg'], 'The right request names should appear in the list');
+    });
+
+    await step('verify the dropdown state and the requests when 3rd-party filter is deselected', async () => {
+      await thirdPartyFilter.click();
+      assert.isTrue(await checkOpacityCheckmark(thirdPartyFilter, '0'));
+
+      names = await getAllRequestNames();
+      assert.deepEqual(3, names.length);
+      assert.deepStrictEqual(
+          names, ['third-party-resources.html', 'image.svg', 'external_image.svg'],
+          'The right request names should appear in the list');
+    });
   });
 });

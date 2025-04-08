@@ -50,10 +50,8 @@ export class SharedStorageForOrigin extends Common.ObjectWrapper.ObjectWrapper<S
 }
 
 export namespace SharedStorageForOrigin {
-  // TODO(crbug.com/1167717): Make this a const enum.
-  // eslint-disable-next-line rulesdir/const_enum
-  export enum Events {
-    SharedStorageChanged = 'SharedStorageChanged',
+  export const enum Events {
+    SHARED_STORAGE_CHANGED = 'SharedStorageChanged',
   }
 
   export interface SharedStorageChangedEvent {
@@ -64,7 +62,7 @@ export namespace SharedStorageForOrigin {
   }
 
   export type EventTypes = {
-    [Events.SharedStorageChanged]: SharedStorageChangedEvent,
+    [Events.SHARED_STORAGE_CHANGED]: SharedStorageChangedEvent,
   };
 }
 
@@ -150,7 +148,7 @@ export class SharedStorageModel extends SDK.SDKModel.SDKModel<EventTypes> implem
 
     const storage = new SharedStorageForOrigin(this, securityOrigin);
     this.#storages.set(securityOrigin, storage);
-    this.dispatchEventToListeners(Events.SharedStorageAdded, storage);
+    this.dispatchEventToListeners(Events.SHARED_STORAGE_ADDED, storage);
   }
 
   #securityOriginRemoved(event: Common.EventTarget.EventTargetEvent<string>): void {
@@ -163,7 +161,7 @@ export class SharedStorageModel extends SDK.SDKModel.SDKModel<EventTypes> implem
       return;
     }
     this.#storages.delete(securityOrigin);
-    this.dispatchEventToListeners(Events.SharedStorageRemoved, storage);
+    this.dispatchEventToListeners(Events.SHARED_STORAGE_REMOVED, storage);
   }
 
   storages(): IterableIterator<SharedStorageForOrigin> {
@@ -200,13 +198,16 @@ export class SharedStorageModel extends SDK.SDKModel.SDKModel<EventTypes> implem
             {accessTime: event.accessTime, type: event.type, mainFrameId: event.mainFrameId, params: event.params};
 
         // Forward events that may have changed `sharedStorage` to listeners for `sharedStorage`.
-        sharedStorage.dispatchEventToListeners(SharedStorageForOrigin.Events.SharedStorageChanged, eventData);
+        sharedStorage.dispatchEventToListeners(SharedStorageForOrigin.Events.SHARED_STORAGE_CHANGED, eventData);
       } else {
         void this.#maybeAddOrigin(event.ownerOrigin);
       }
     }
 
-    this.dispatchEventToListeners(Events.SharedStorageAccess, event);
+    this.dispatchEventToListeners(Events.SHARED_STORAGE_ACCESS, event);
+  }
+
+  attributionReportingTriggerRegistered(_event: Protocol.Storage.AttributionReportingTriggerRegisteredEvent): void {
   }
 
   indexedDBListUpdated(_event: Protocol.Storage.IndexedDBListUpdatedEvent): void {
@@ -224,24 +225,33 @@ export class SharedStorageModel extends SDK.SDKModel.SDKModel<EventTypes> implem
   interestGroupAccessed(_event: Protocol.Storage.InterestGroupAccessedEvent): void {
   }
 
+  interestGroupAuctionEventOccurred(_event: Protocol.Storage.InterestGroupAuctionEventOccurredEvent): void {
+  }
+
+  interestGroupAuctionNetworkRequestCreated(_event: Protocol.Storage.InterestGroupAuctionNetworkRequestCreatedEvent):
+      void {
+  }
+
   storageBucketCreatedOrUpdated(_event: Protocol.Storage.StorageBucketCreatedOrUpdatedEvent): void {
   }
 
   storageBucketDeleted(_event: Protocol.Storage.StorageBucketDeletedEvent): void {
   }
+
+  attributionReportingSourceRegistered(_event: Protocol.Storage.AttributionReportingSourceRegisteredEvent): void {
+  }
 }
 
-SDK.SDKModel.SDKModel.register(SharedStorageModel, {capabilities: SDK.Target.Capability.Storage, autostart: false});
+SDK.SDKModel.SDKModel.register(SharedStorageModel, {capabilities: SDK.Target.Capability.STORAGE, autostart: false});
 
-// eslint-disable-next-line rulesdir/const_enum
-export enum Events {
-  SharedStorageAccess = 'SharedStorageAccess',
-  SharedStorageAdded = 'SharedStorageAdded',
-  SharedStorageRemoved = 'SharedStorageRemoved',
+export const enum Events {
+  SHARED_STORAGE_ACCESS = 'SharedStorageAccess',
+  SHARED_STORAGE_ADDED = 'SharedStorageAdded',
+  SHARED_STORAGE_REMOVED = 'SharedStorageRemoved',
 }
 
 export type EventTypes = {
-  [Events.SharedStorageAccess]: Protocol.Storage.SharedStorageAccessedEvent,
-  [Events.SharedStorageAdded]: SharedStorageForOrigin,
-  [Events.SharedStorageRemoved]: SharedStorageForOrigin,
+  [Events.SHARED_STORAGE_ACCESS]: Protocol.Storage.SharedStorageAccessedEvent,
+  [Events.SHARED_STORAGE_ADDED]: SharedStorageForOrigin,
+  [Events.SHARED_STORAGE_REMOVED]: SharedStorageForOrigin,
 };

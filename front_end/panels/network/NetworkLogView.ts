@@ -41,42 +41,36 @@ import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
 import * as Bindings from '../../models/bindings/bindings.js';
 import * as HAR from '../../models/har/har.js';
-import * as IssuesManager from '../../models/issues_manager/issues_manager.js';
 import * as Logs from '../../models/logs/logs.js';
 import * as Persistence from '../../models/persistence/persistence.js';
 import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as NetworkForward from '../../panels/network/forward/forward.js';
 import * as Sources from '../../panels/sources/sources.js';
+import * as Adorners from '../../ui/components/adorners/adorners.js';
 import * as Coordinator from '../../ui/components/render_coordinator/render_coordinator.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import * as PerfUI from '../../ui/legacy/components/perf_ui/perf_ui.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import * as ThemeSupport from '../../ui/legacy/theme_support/theme_support.js';
-
-import networkLogViewStyles from './networkLogView.css.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 
 import {
   Events,
+  type EventTypes,
   NetworkGroupNode,
-  NetworkRequestNode,
   type NetworkLogViewInterface,
   type NetworkNode,
-  type EventTypes,
+  NetworkRequestNode,
 } from './NetworkDataGridNode.js';
 import {NetworkFrameGrouper} from './NetworkFrameGrouper.js';
+import networkLogViewStyles from './networkLogView.css.js';
 import {NetworkLogViewColumns} from './NetworkLogViewColumns.js';
-
 import {
   NetworkTimeBoundary,
+  type NetworkTimeCalculator,
   NetworkTransferDurationCalculator,
   NetworkTransferTimeCalculator,
-  type NetworkTimeCalculator,
 } from './NetworkTimeCalculator.js';
-
-// #ifdef OHOS_DEVTOOLS
-const adaptForOhos = true;
-// #endif OHOS_DEVTOOLS
 
 const UIStrings = {
   /**
@@ -94,29 +88,38 @@ const UIStrings = {
   /**
    *@description Data urlfilter ui element title in Network Log View of the Network panel
    */
-  hidesDataAndBlobUrls: 'Hides data: and blob: URLs',
+  hidesDataAndBlobUrls: 'Hide \'data:\' and \'blob:\' URLs',
+  /**
+   * @description Label for a filter in the Network panel
+   */
+  chromeExtensions: 'Hide extension URLs',
+  /**
+   * @description Tooltip for a filter in the Network panel
+   */
+  hideChromeExtension: 'Hide \'chrome-extension://\' URLs',
   /**
    *@description Aria accessible name in Network Log View of the Network panel
    */
-  resourceTypesToInclude: 'Resource types to include',
+  requestTypesToInclude: 'Request types to include',
   /**
-   *@description Label for a filter in the Network panel
+   *@description Label for a checkbox in the Network panel. When checked, only requests with
+   *             blocked response cookies are shown.
    */
-  hasBlockedCookies: 'Has blocked cookies',
+  hasBlockedCookies: 'Blocked response cookies',
   /**
    *@description Tooltip for a checkbox in the Network panel. The response to a network request may include a
    *             cookie (https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies). Such response cookies can
    *             be malformed or otherwise invalid and the browser may choose to ignore or not accept invalid cookies.
    */
-  onlyShowRequestsWithBlocked: 'Only show requests with blocked response cookies',
+  onlyShowRequestsWithBlockedCookies: 'Show only requests with blocked response cookies',
   /**
    *@description Label for a filter in the Network panel
    */
-  blockedRequests: 'Blocked Requests',
+  blockedRequests: 'Blocked requests',
   /**
    *@description Tooltip for a filter in the Network panel
    */
-  onlyShowBlockedRequests: 'Only show blocked requests',
+  onlyShowBlockedRequests: 'Show only blocked requests',
   /**
    *@description Label for a filter in the Network panel
    */
@@ -124,7 +127,7 @@ const UIStrings = {
   /**
    *@description Tooltip for a filter in the Network panel
    */
-  onlyShowThirdPartyRequests: 'Shows only requests with origin different from page origin',
+  onlyShowThirdPartyRequests: 'Show only requests with origin different from page origin',
   /**
    *@description Text that appears when user drag and drop something (for example, a file) in Network Log View of the Network panel
    */
@@ -235,6 +238,10 @@ const UIStrings = {
    */
   copy: 'Copy',
   /**
+   *@description A context menu command in the Network panel, for copying the URL of the selected request to the clipboard.
+   */
+  copyURL: 'Copy URL',
+  /**
    *@description Text in Network Log View of the Network panel
    */
   copyRequestHeaders: 'Copy request headers',
@@ -266,7 +273,7 @@ const UIStrings = {
    * request in Node.js, a desktop application/framework. 'Node.js fetch' is a noun phrase for the
    * type of request that will be copied.
    */
-  copyAsNodejsFetch: 'Copy as `Node.js` `fetch`',
+  copyAsNodejsFetch: 'Copy as `fetch` (`Node.js`)',
   /**
    *@description Text in Network Log View of the Network panel. An action that copies a command to
    *the clipboard. It will copy the command in the format compatible with cURL (a program, not
@@ -279,33 +286,75 @@ const UIStrings = {
    */
   copyAsCurlBash: 'Copy as `cURL` (`bash`)',
   /**
+   *@description A context menu command in the Network panel, for copying the URLs of all requestes to the clipboard.
+   */
+  copyAllURLs: 'Copy all URLs',
+  /**
+   *@description A context menu command in the Network panel, for copying the URLs of all requestes
+   (after applying the Network filter) to the clipboard.
+   */
+  copyAllListedURLs: 'Copy all listed URLs',
+  /**
    *@description Text in Network Log View of the Network panel. An action that copies a command to
-   *the clipboard. It will copy the command in the format compatible with a PowerShell script.
+   *the clipboard. It will copy the command in the format compatible with a PowerShell script to
+   *represent all network requests.
    */
   copyAllAsPowershell: 'Copy all as `PowerShell`',
   /**
    *@description Text in Network Log View of the Network panel. An action that copies a command to
+   *the clipboard. It will copy the command in the format compatible with a PowerShell script to
+   *represent all network requests (after applying the Network filter).
+   */
+  copyAllListedAsPowershell: 'Copy all listed as `PowerShell`',
+  /**
+   *@description Text in Network Log View of the Network panel. An action that copies a command to
    *the clipboard. It will copy the command in the format compatible with a 'fetch' command (fetch
-   *should not be translated).
+   *should not be translated) to represent all network requests.
    */
   copyAllAsFetch: 'Copy all as `fetch`',
   /**
    *@description Text in Network Log View of the Network panel. An action that copies a command to
-   *the clipboard. It will copy the command in the format compatible with a Node.js 'fetch' command
-   *(fetch and Node.js should not be translated).
+   *the clipboard. It will copy the command in the format compatible with a 'fetch' command (fetch
+   *should not be translated) to represent all network requests (after applying the Network filter).
    */
-  copyAllAsNodejsFetch: 'Copy all as `Node.js` `fetch`',
+  copyAllListedAsFetch: 'Copy all listed as `fetch`',
+  /**
+   *@description Text in Network Log View of the Network panel. An action that copies a command to
+   *the clipboard. It will copy the command in the format compatible with a Node.js 'fetch' command
+   *(fetch and Node.js should not be translated) to represent all network requests.
+   */
+  copyAllAsNodejsFetch: 'Copy all as `fetch` (`Node.js`)',
+  /**
+   *@description Text in Network Log View of the Network panel. An action that copies a command to
+   *the clipboard. It will copy the command in the format compatible with a Node.js 'fetch' command
+   *(fetch and Node.js should not be translated) to represent all network requests (after applying
+   *the Network filter).
+   */
+  copyAllListedAsNodejsFetch: 'Copy all listed as `fetch` (`Node.js`)',
   /**
    *@description Text in Network Log View of the Network panel. An action that copies a command to
    *the clipboard. It will copy the command in the format compatible with cURL (a program, not
-   *translatable).
+   *translatable) to represent all network requests.
    */
   copyAllAsCurlCmd: 'Copy all as `cURL` (`cmd`)',
   /**
    *@description Text in Network Log View of the Network panel. An action that copies a command to
-   *the clipboard. It will copy the command in the format compatible with a Bash script.
+   *the clipboard. It will copy the command in the format compatible with cURL (a program, not
+   *translatable) to represent all network requests (after applying the Network filter).
+   */
+  copyAllListedAsCurlCmd: 'Copy all listed as `cURL` (`cmd`)',
+  /**
+   *@description Text in Network Log View of the Network panel. An action that copies a command to
+   *the clipboard. It will copy the command in the format compatible with a Bash script to represent
+   *all network requests.
    */
   copyAllAsCurlBash: 'Copy all as `cURL` (`bash`)',
+  /**
+   *@description Text in Network Log View of the Network panel. An action that copies a command to
+   *the clipboard. It will copy the command in the format compatible with a Bash script to represent
+   *all network requests (after applying the Network filter).
+   */
+  copyAllListedAsCurlBash: 'Copy all listed as `cURL` (`bash`)',
   /**
    *@description Text in Network Log View of the Network panel. An action that copies a command to
    *the clipboard. It will copy the command in the format compatible with cURL (a program, not
@@ -315,19 +364,43 @@ const UIStrings = {
   /**
    *@description Text in Network Log View of the Network panel. An action that copies a command to
    *the clipboard. It will copy the command in the format compatible with cURL (a program, not
-   *translatable).
+   *translatable) to represent all network requests.
    */
   copyAllAsCurl: 'Copy all as `cURL`',
   /**
-   * @description Text in Network Log View of the Network panel. An action that copies data to the
-   * clipboard. It will copy the data in the HAR (not translatable) format. 'all' refers to every
-   * network request that is currently shown.
+   *@description Text in Network Log View of the Network panel. An action that copies a command to
+   *the clipboard. It will copy the command in the format compatible with cURL (a program, not
+   *translatable) to represent all network requests (after applying the Network filter).
    */
-  copyAllAsHar: 'Copy all as `HAR`',
+  copyAllListedAsCurl: 'Copy all listed as `cURL`',
   /**
-   *@description A context menu item in the Network Log View of the Network panel
+   * @description Text in Network Log View of the Network panel. An action that copies data to the
+   * clipboard. It will copy the data in the HAR (not translatable) format and scrub all potentially
+   * sensitive data from the network requests. 'all' refers to every network request that is currently
+   * shown.
    */
-  saveAllAsHarWithContent: 'Save all as `HAR` with content',
+  copyAllAsHarSanitized: 'Copy all as `HAR` (sanitized)',
+  /**
+   * @description Text in Network Log View of the Network panel. An action that copies data to the
+   * clipboard. It will copy the data in the HAR (not translatable) format and include potentially
+   * sensitive data from the network requests. 'all' refers to every network request that is currently
+   * shown.
+   */
+  copyAllAsHarWithSensitiveData: 'Copy all as `HAR` (with sensitive data)',
+  /**
+   * @description Text in Network Log View of the Network panel. An action that copies data to the
+   * clipboard. It will copy the data in the HAR (not translatable) format and scrub all potentially
+   * sensitive data from the network requests. 'all' refers to every network request that is currently
+   * shown (after applying the Network filter).
+   */
+  copyAllListedAsHarSanitized: 'Copy all listed as `HAR` (sanitized)',
+  /**
+   * @description Text in Network Log View of the Network panel. An action that copies data to the
+   * clipboard. It will copy the data in the HAR (not translatable) format and include potentially
+   * sensitive data from the network requests. 'all' refers to every network request that is currently
+   * shown (after applying the Network filter).
+   */
+  copyAllListedAsHarWithSensitiveData: 'Copy all listed as `HAR` (with sensitive data)',
   /**
    *@description A context menu item in the Network Log View of the Network panel
    */
@@ -366,13 +439,21 @@ const UIStrings = {
    * for creating a header override
    */
   overrideHeaders: 'Override headers',
+  /**
+   * @description Tooltip for the Show only/Hide requests dropdown of the filterbar
+   */
+  showOnlyHideRequests: 'Show only/hide requests',
+  /**
+   * @description Text for the Show only/Hide requests dropdown button of the filterbar
+   */
+  moreFilters: 'More filters',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/network/NetworkLogView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
 const enum FetchStyle {
-  Browser = 0,
-  NodeJs = 1,
+  BROWSER = 0,
+  NODE_JS = 1,
 }
 
 const coordinator = Coordinator.RenderCoordinator.RenderCoordinator.instance();
@@ -381,10 +462,12 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
     implements SDK.TargetManager.SDKModelObserver<SDK.NetworkManager.NetworkManager>, NetworkLogViewInterface {
   private readonly networkInvertFilterSetting: Common.Settings.Setting<boolean>;
   private readonly networkHideDataURLSetting: Common.Settings.Setting<boolean>;
-  private readonly networkShowIssuesOnlySetting: Common.Settings.Setting<boolean>;
+  private readonly networkHideChromeExtensions: Common.Settings.Setting<boolean>;
+  private readonly networkShowBlockedCookiesOnlySetting: Common.Settings.Setting<boolean>;
   private readonly networkOnlyBlockedRequestsSetting: Common.Settings.Setting<boolean>;
   private readonly networkOnlyThirdPartySetting: Common.Settings.Setting<boolean>;
   private readonly networkResourceTypeFiltersSetting: Common.Settings.Setting<{[key: string]: boolean}>;
+  private readonly networkShowOptionsToGenerateHarWithSensitiveData: Common.Settings.Setting<boolean>;
   private rawRowHeight: number;
   private readonly progressBarContainer: Element;
   private readonly networkLogLargeRowsSetting: Common.Settings.Setting<boolean>;
@@ -409,11 +492,13 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
   private activeGroupLookup: GroupLookupInterface|null;
   private readonly textFilterUI: UI.FilterBar.TextFilterUI;
   private readonly invertFilterUI: UI.FilterBar.CheckboxFilterUI;
-  private readonly dataURLFilterUI: UI.FilterBar.CheckboxFilterUI;
-  private resourceCategoryFilterUI: UI.FilterBar.NamedBitSetFilterUI;
-  private readonly onlyIssuesFilterUI: UI.FilterBar.CheckboxFilterUI;
-  private readonly onlyBlockedRequestsUI: UI.FilterBar.CheckboxFilterUI;
-  private readonly onlyThirdPartyFilterUI: UI.FilterBar.CheckboxFilterUI;
+  private readonly dataURLFilterUI: UI.FilterBar.CheckboxFilterUI|undefined;
+  private readonly moreFiltersDropDownUI: MoreFiltersDropDownUI|undefined;
+  private readonly onlyBlockedResponseCookiesFilterUI: UI.FilterBar.CheckboxFilterUI|undefined;
+  private readonly onlyBlockedRequestsUI: UI.FilterBar.CheckboxFilterUI|undefined;
+  private readonly onlyThirdPartyFilterUI: UI.FilterBar.CheckboxFilterUI|undefined;
+  private readonly hideChromeExtensionsUI: UI.FilterBar.CheckboxFilterUI|undefined;
+  private readonly resourceCategoryFilterUI: UI.FilterBar.NamedBitSetFilterUI;
   private readonly filterParser: TextUtils.TextUtils.FilterParser;
   private readonly suggestionBuilder: UI.FilterSuggestionBuilder.FilterSuggestionBuilder;
   private dataGrid: DataGrid.SortableDataGrid.SortableDataGrid<NetworkNode>;
@@ -430,16 +515,20 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
     this.element.id = 'network-container';
     this.element.classList.add('no-node-selected');
 
-    this.networkInvertFilterSetting = Common.Settings.Settings.instance().createSetting('networkInvertFilter', false);
-    this.networkHideDataURLSetting = Common.Settings.Settings.instance().createSetting('networkHideDataURL', false);
-    this.networkShowIssuesOnlySetting =
-        Common.Settings.Settings.instance().createSetting('networkShowIssuesOnly', false);
+    this.networkInvertFilterSetting = Common.Settings.Settings.instance().createSetting('network-invert-filter', false);
+    this.networkHideDataURLSetting = Common.Settings.Settings.instance().createSetting('network-hide-data-url', false);
+    this.networkHideChromeExtensions =
+        Common.Settings.Settings.instance().createSetting('network-hide-chrome-extensions', false);
+    this.networkShowBlockedCookiesOnlySetting =
+        Common.Settings.Settings.instance().createSetting('network-show-blocked-cookies-only-setting', false);
     this.networkOnlyBlockedRequestsSetting =
-        Common.Settings.Settings.instance().createSetting('networkOnlyBlockedRequests', false);
+        Common.Settings.Settings.instance().createSetting('network-only-blocked-requests', false);
     this.networkOnlyThirdPartySetting =
-        Common.Settings.Settings.instance().createSetting('networkOnlyThirdPartySetting', false);
+        Common.Settings.Settings.instance().createSetting('network-only-third-party-setting', false);
     this.networkResourceTypeFiltersSetting =
-        Common.Settings.Settings.instance().createSetting('networkResourceTypeFilters', {});
+        Common.Settings.Settings.instance().createSetting('network-resource-type-filters', {});
+    this.networkShowOptionsToGenerateHarWithSensitiveData = Common.Settings.Settings.instance().createSetting(
+        'network.show-options-to-generate-har-with-sensitive-data', false);
 
     this.rawRowHeight = 0;
     this.progressBarContainer = progressBarContainer;
@@ -485,57 +574,86 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
     this.activeGroupLookup = null;
 
     this.textFilterUI = new UI.FilterBar.TextFilterUI();
-    this.textFilterUI.addEventListener(UI.FilterBar.FilterUIEvents.FilterChanged, this.filterChanged, this);
+    this.textFilterUI.addEventListener(UI.FilterBar.FilterUIEvents.FILTER_CHANGED, this.filterChanged, this);
     filterBar.addFilter(this.textFilterUI);
 
     this.invertFilterUI = new UI.FilterBar.CheckboxFilterUI(
-        'invert-filter', i18nString(UIStrings.invertFilter), true, this.networkInvertFilterSetting);
+        'invert-filter', i18nString(UIStrings.invertFilter), true, this.networkInvertFilterSetting, 'invert-filter');
     this.invertFilterUI.addEventListener(
-        UI.FilterBar.FilterUIEvents.FilterChanged, this.filterChanged.bind(this), this);
+        UI.FilterBar.FilterUIEvents.FILTER_CHANGED, this.filterChanged.bind(this), this);
     UI.Tooltip.Tooltip.install(this.invertFilterUI.element(), i18nString(UIStrings.invertsFilter));
     filterBar.addFilter(this.invertFilterUI);
-
-    this.dataURLFilterUI = new UI.FilterBar.CheckboxFilterUI(
-        'hide-data-url', i18nString(UIStrings.hideDataUrls), true, this.networkHideDataURLSetting);
-    this.dataURLFilterUI.addEventListener(
-        UI.FilterBar.FilterUIEvents.FilterChanged, this.filterChanged.bind(this), this);
-    UI.Tooltip.Tooltip.install(this.dataURLFilterUI.element(), i18nString(UIStrings.hidesDataAndBlobUrls));
-    filterBar.addFilter(this.dataURLFilterUI);
+    filterBar.addDivider();
 
     const filterItems =
-        Object.values(Common.ResourceType.resourceCategories)
-            .map(
-                category =>
-                    ({name: category.title(), label: (): string => category.shortTitle(), title: category.title()}));
-    this.resourceCategoryFilterUI =
-        new UI.FilterBar.NamedBitSetFilterUI(filterItems, this.networkResourceTypeFiltersSetting);
-    UI.ARIAUtils.setAccessibleName(
-        this.resourceCategoryFilterUI.element(), i18nString(UIStrings.resourceTypesToInclude));
-    this.resourceCategoryFilterUI.addEventListener(
-        UI.FilterBar.FilterUIEvents.FilterChanged, this.filterChanged.bind(this), this);
-    filterBar.addFilter(this.resourceCategoryFilterUI);
+        Object.entries(Common.ResourceType.resourceCategories).map(([key, category]) => ({
+                                                                     name: category.name,
+                                                                     label: () => category.shortTitle(),
+                                                                     title: category.title(),
+                                                                     jslogContext:
+                                                                         Platform.StringUtilities.toKebabCase(key),
+                                                                   }));
 
-    this.onlyIssuesFilterUI = new UI.FilterBar.CheckboxFilterUI(
-        'only-show-issues', i18nString(UIStrings.hasBlockedCookies), true, this.networkShowIssuesOnlySetting);
-    this.onlyIssuesFilterUI.addEventListener(
-        UI.FilterBar.FilterUIEvents.FilterChanged, this.filterChanged.bind(this), this);
-    UI.Tooltip.Tooltip.install(this.onlyIssuesFilterUI.element(), i18nString(UIStrings.onlyShowRequestsWithBlocked));
-    filterBar.addFilter(this.onlyIssuesFilterUI);
+    if (Root.Runtime.experiments.isEnabled(Root.Runtime.ExperimentName.NETWORK_PANEL_FILTER_BAR_REDESIGN)) {
+      this.moreFiltersDropDownUI = new MoreFiltersDropDownUI();
+      this.moreFiltersDropDownUI.addEventListener(UI.FilterBar.FilterUIEvents.FILTER_CHANGED, this.filterChanged, this);
+      filterBar.addFilter(this.moreFiltersDropDownUI);
 
-    this.onlyBlockedRequestsUI = new UI.FilterBar.CheckboxFilterUI(
-        'only-show-blocked-requests', i18nString(UIStrings.blockedRequests), true,
-        this.networkOnlyBlockedRequestsSetting);
-    this.onlyBlockedRequestsUI.addEventListener(
-        UI.FilterBar.FilterUIEvents.FilterChanged, this.filterChanged.bind(this), this);
-    UI.Tooltip.Tooltip.install(this.onlyBlockedRequestsUI.element(), i18nString(UIStrings.onlyShowBlockedRequests));
-    filterBar.addFilter(this.onlyBlockedRequestsUI);
+      this.resourceCategoryFilterUI =
+          new UI.FilterBar.NamedBitSetFilterUI(filterItems, this.networkResourceTypeFiltersSetting);
+      UI.ARIAUtils.setLabel(this.resourceCategoryFilterUI.element(), i18nString(UIStrings.requestTypesToInclude));
+      this.resourceCategoryFilterUI.addEventListener(
+          UI.FilterBar.FilterUIEvents.FILTER_CHANGED, this.filterChanged.bind(this), this);
+      filterBar.addFilter(this.resourceCategoryFilterUI);
+    } else {
+      this.dataURLFilterUI = new UI.FilterBar.CheckboxFilterUI(
+          'hide-data-url', i18nString(UIStrings.hideDataUrls), true, this.networkHideDataURLSetting, 'hide-data-urls');
+      this.dataURLFilterUI.addEventListener(
+          UI.FilterBar.FilterUIEvents.FILTER_CHANGED, this.filterChanged.bind(this), this);
+      UI.Tooltip.Tooltip.install(this.dataURLFilterUI.element(), i18nString(UIStrings.hidesDataAndBlobUrls));
+      filterBar.addFilter(this.dataURLFilterUI);
 
-    this.onlyThirdPartyFilterUI = new UI.FilterBar.CheckboxFilterUI(
-        'only-show-third-party', i18nString(UIStrings.thirdParty), true, this.networkOnlyThirdPartySetting);
-    this.onlyThirdPartyFilterUI.addEventListener(
-        UI.FilterBar.FilterUIEvents.FilterChanged, this.filterChanged.bind(this), this);
-    UI.Tooltip.Tooltip.install(this.onlyThirdPartyFilterUI.element(), i18nString(UIStrings.onlyShowThirdPartyRequests));
-    filterBar.addFilter(this.onlyThirdPartyFilterUI);
+      this.hideChromeExtensionsUI = new UI.FilterBar.CheckboxFilterUI(
+          'chrome-extension', i18nString(UIStrings.chromeExtensions), true, this.networkHideChromeExtensions,
+          'hide-extension-urls');
+      this.hideChromeExtensionsUI.addEventListener(
+          UI.FilterBar.FilterUIEvents.FILTER_CHANGED, this.filterChanged.bind(this), this);
+      UI.Tooltip.Tooltip.install(this.hideChromeExtensionsUI.element(), i18nString(UIStrings.hideChromeExtension));
+      filterBar.addFilter(this.hideChromeExtensionsUI);
+
+      this.resourceCategoryFilterUI =
+          new UI.FilterBar.NamedBitSetFilterUI(filterItems, this.networkResourceTypeFiltersSetting);
+      UI.ARIAUtils.setLabel(this.resourceCategoryFilterUI.element(), i18nString(UIStrings.requestTypesToInclude));
+      this.resourceCategoryFilterUI.addEventListener(
+          UI.FilterBar.FilterUIEvents.FILTER_CHANGED, this.filterChanged.bind(this), this);
+      filterBar.addFilter(this.resourceCategoryFilterUI);
+
+      this.onlyBlockedResponseCookiesFilterUI = new UI.FilterBar.CheckboxFilterUI(
+          'only-show-blocked-cookies', i18nString(UIStrings.hasBlockedCookies), true,
+          this.networkShowBlockedCookiesOnlySetting, 'only-show-blocked-cookies');
+      this.onlyBlockedResponseCookiesFilterUI.addEventListener(
+          UI.FilterBar.FilterUIEvents.FILTER_CHANGED, this.filterChanged.bind(this), this);
+      UI.Tooltip.Tooltip.install(
+          this.onlyBlockedResponseCookiesFilterUI.element(), i18nString(UIStrings.onlyShowRequestsWithBlockedCookies));
+      filterBar.addFilter(this.onlyBlockedResponseCookiesFilterUI);
+
+      this.onlyBlockedRequestsUI = new UI.FilterBar.CheckboxFilterUI(
+          'only-show-blocked-requests', i18nString(UIStrings.blockedRequests), true,
+          this.networkOnlyBlockedRequestsSetting, 'only-show-blocked-requests');
+      this.onlyBlockedRequestsUI.addEventListener(
+          UI.FilterBar.FilterUIEvents.FILTER_CHANGED, this.filterChanged.bind(this), this);
+      UI.Tooltip.Tooltip.install(this.onlyBlockedRequestsUI.element(), i18nString(UIStrings.onlyShowBlockedRequests));
+      filterBar.addFilter(this.onlyBlockedRequestsUI);
+
+      this.onlyThirdPartyFilterUI = new UI.FilterBar.CheckboxFilterUI(
+          'only-show-third-party', i18nString(UIStrings.thirdParty), true, this.networkOnlyThirdPartySetting,
+          'only-show-third-party');
+      this.onlyThirdPartyFilterUI.addEventListener(
+          UI.FilterBar.FilterUIEvents.FILTER_CHANGED, this.filterChanged.bind(this), this);
+      UI.Tooltip.Tooltip.install(
+          this.onlyThirdPartyFilterUI.element(), i18nString(UIStrings.onlyShowThirdPartyRequests));
+      filterBar.addFilter(this.onlyThirdPartyFilterUI);
+    }
 
     this.filterParser = new TextUtils.TextUtils.FilterParser(searchKeys);
     this.suggestionBuilder =
@@ -546,7 +664,7 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
     this.setupDataGrid();
     this.columnsInternal.sortByCurrentColumn();
     filterBar.filterButton().addEventListener(
-        UI.Toolbar.ToolbarButton.Events.Click, this.dataGrid.scheduleUpdate.bind(this.dataGrid, true /* isFromUser */));
+        UI.Toolbar.ToolbarButton.Events.CLICK, this.dataGrid.scheduleUpdate.bind(this.dataGrid, true /* isFromUser */));
 
     this.summaryToolbarInternal = new UI.Toolbar.Toolbar('network-summary-bar', this.element);
     this.summaryToolbarInternal.element.setAttribute('role', 'status');
@@ -555,7 +673,7 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
         this.element, [UI.DropTarget.Type.File], i18nString(UIStrings.dropHarFilesHere), this.handleDrop.bind(this));
 
     Common.Settings.Settings.instance()
-        .moduleSetting('networkColorCodeResourceTypes')
+        .moduleSetting('network-color-code-resource-types')
         .addChangeListener(this.invalidateAllItems.bind(this, false), this);
 
     SDK.TargetManager.TargetManager.instance().observeModels(SDK.NetworkManager.NetworkManager, this, {scoped: true});
@@ -563,6 +681,8 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
         Logs.NetworkLog.Events.RequestAdded, this.onRequestUpdated, this);
     Logs.NetworkLog.NetworkLog.instance().addEventListener(
         Logs.NetworkLog.Events.RequestUpdated, this.onRequestUpdated, this);
+    Logs.NetworkLog.NetworkLog.instance().addEventListener(
+        Logs.NetworkLog.Events.RequestRemoved, this.onRequestRemoved, this);
     Logs.NetworkLog.NetworkLog.instance().addEventListener(Logs.NetworkLog.Events.Reset, this.reset, this);
 
     this.updateGroupByFrame();
@@ -572,10 +692,14 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
 
     this.filterBar = filterBar;
 
-    this.textFilterSetting = Common.Settings.Settings.instance().createSetting('networkTextFilter', '');
+    this.textFilterSetting = Common.Settings.Settings.instance().createSetting('network-text-filter', '');
     if (this.textFilterSetting.get()) {
       this.textFilterUI.setValue(this.textFilterSetting.get());
     }
+  }
+
+  getMoreFiltersDropdown(): MoreFiltersDropDownUI|undefined {
+    return this.moreFiltersDropDownUI;
   }
 
   private updateGroupByFrame(): void {
@@ -586,8 +710,8 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
   private static sortSearchValues(key: string, values: string[]): void {
     if (key === NetworkForward.UIFilter.FilterType.Priority) {
       values.sort((a, b) => {
-        const aPriority = (PerfUI.NetworkPriorities.uiLabelToNetworkPriority(a) as Protocol.Network.ResourcePriority);
-        const bPriority = (PerfUI.NetworkPriorities.uiLabelToNetworkPriority(b) as Protocol.Network.ResourcePriority);
+        const aPriority = PerfUI.NetworkPriorities.uiLabelToNetworkPriority(a);
+        const bPriority = PerfUI.NetworkPriorities.uiLabelToNetworkPriority(b);
         return PerfUI.NetworkPriorities.networkPriorityWeight(aPriority) -
             PerfUI.NetworkPriorities.networkPriorityWeight(bPriority);
       });
@@ -668,16 +792,16 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
 
   private static requestMixedContentFilter(
       value: NetworkForward.UIFilter.MixedContentFilterValues, request: SDK.NetworkRequest.NetworkRequest): boolean {
-    if (value === NetworkForward.UIFilter.MixedContentFilterValues.Displayed) {
+    if (value === NetworkForward.UIFilter.MixedContentFilterValues.DISPLAYED) {
       return request.mixedContentType === Protocol.Security.MixedContentType.OptionallyBlockable;
     }
-    if (value === NetworkForward.UIFilter.MixedContentFilterValues.Blocked) {
+    if (value === NetworkForward.UIFilter.MixedContentFilterValues.BLOCKED) {
       return request.mixedContentType === Protocol.Security.MixedContentType.Blockable && request.wasBlocked();
     }
-    if (value === NetworkForward.UIFilter.MixedContentFilterValues.BlockOverridden) {
+    if (value === NetworkForward.UIFilter.MixedContentFilterValues.BLOCK_OVERRIDDEN) {
       return request.mixedContentType === Protocol.Security.MixedContentType.Blockable && !request.wasBlocked();
     }
-    if (value === NetworkForward.UIFilter.MixedContentFilterValues.All) {
+    if (value === NetworkForward.UIFilter.MixedContentFilterValues.ALL) {
       return request.mixedContentType !== Protocol.Security.MixedContentType.None;
     }
 
@@ -724,6 +848,30 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
     return (String(request.statusCode)) === value;
   }
 
+  private static hasOverridesFilter(value: string, request: SDK.NetworkRequest.NetworkRequest): boolean {
+    if (!value) {
+      return false;
+    }
+
+    if (value === overrideFilter.no) {
+      return request.overrideTypes.length === 0;
+    }
+
+    if (value === overrideFilter.yes) {
+      return request.overrideTypes.length > 0;
+    }
+
+    if (value === overrideFilter.content) {
+      return request.overrideTypes.includes('content');
+    }
+
+    if (value === overrideFilter.headers) {
+      return request.overrideTypes.includes('headers');
+    }
+
+    return request.overrideTypes.join(',').includes(value);
+  }
+
   static getHTTPRequestsFilter(request: SDK.NetworkRequest.NetworkRequest): boolean {
     return request.parsedURL.isValid && (request.scheme in HTTPSchemas);
   }
@@ -757,12 +905,14 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
   }
 
   private static async copyResponse(request: SDK.NetworkRequest.NetworkRequest): Promise<void> {
-    const contentData = await request.contentData();
-    let content: (string|null)|string = contentData.content || '';
-    if (!request.contentType().isTextType()) {
-      content = TextUtils.ContentProvider.contentAsDataURL(content, request.mimeType, contentData.encoded);
-    } else if (contentData.encoded && content) {
-      content = window.atob(content);
+    const contentData = await request.requestContentData();
+    let content: string;
+    if (TextUtils.ContentData.ContentData.isError(contentData)) {
+      content = '';
+    } else if (!contentData.isTextContent) {
+      content = contentData.asDataUrl() ?? '';
+    } else {
+      content = contentData.text;
     }
     Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(content);
   }
@@ -814,7 +964,7 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
   }
 
   private computeRowHeight(): number {
-    return Math.round(this.rawRowHeight * window.devicePixelRatio) / window.devicePixelRatio;
+    return this.rawRowHeight;
   }
 
   nodeForRequest(request: SDK.NetworkRequest.NetworkRequest): NetworkRequestNode|null {
@@ -850,9 +1000,8 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
       resourceTreeModel.addEventListener(
           SDK.ResourceTreeModel.Events.DOMContentLoaded, this.domContentLoadedEventFired, this);
     }
-    const targetManager = SDK.TargetManager.TargetManager.instance();
     for (const request of Logs.NetworkLog.NetworkLog.instance().requests()) {
-      if (targetManager.isInScope(SDK.NetworkManager.NetworkManager.forRequest(request))) {
+      if (this.isInScope(request)) {
         this.refreshRequest(request);
       }
     }
@@ -869,7 +1018,7 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
       resourceTreeModel.removeEventListener(
           SDK.ResourceTreeModel.Events.DOMContentLoaded, this.domContentLoadedEventFired, this);
     }
-    const preserveLog = Common.Settings.Settings.instance().moduleSetting('network_log.preserve-log').get();
+    const preserveLog = Common.Settings.Settings.instance().moduleSetting('network-log.preserve-log').get();
     if (!preserveLog) {
       this.reset();
     }
@@ -896,17 +1045,21 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
 
   private resetSuggestionBuilder(): void {
     this.suggestionBuilder.clear();
-    this.suggestionBuilder.addItem(NetworkForward.UIFilter.FilterType.Is, NetworkForward.UIFilter.IsFilterType.Running);
+    this.suggestionBuilder.addItem(NetworkForward.UIFilter.FilterType.Is, NetworkForward.UIFilter.IsFilterType.RUNNING);
     this.suggestionBuilder.addItem(
-        NetworkForward.UIFilter.FilterType.Is, NetworkForward.UIFilter.IsFilterType.FromCache);
+        NetworkForward.UIFilter.FilterType.Is, NetworkForward.UIFilter.IsFilterType.FROM_CACHE);
     this.suggestionBuilder.addItem(
-        NetworkForward.UIFilter.FilterType.Is, NetworkForward.UIFilter.IsFilterType.ServiceWorkerIntercepted);
+        NetworkForward.UIFilter.FilterType.Is, NetworkForward.UIFilter.IsFilterType.SERVICE_WORKER_INTERCEPTED);
     this.suggestionBuilder.addItem(
-        NetworkForward.UIFilter.FilterType.Is, NetworkForward.UIFilter.IsFilterType.ServiceWorkerInitiated);
+        NetworkForward.UIFilter.FilterType.Is, NetworkForward.UIFilter.IsFilterType.SERVICE_WORKER_INITIATED);
     this.suggestionBuilder.addItem(NetworkForward.UIFilter.FilterType.LargerThan, '100');
     this.suggestionBuilder.addItem(NetworkForward.UIFilter.FilterType.LargerThan, '10k');
     this.suggestionBuilder.addItem(NetworkForward.UIFilter.FilterType.LargerThan, '1M');
     this.textFilterUI.setSuggestionProvider(this.suggestionBuilder.completions.bind(this.suggestionBuilder));
+    this.suggestionBuilder.addItem(NetworkForward.UIFilter.FilterType.HasOverrides, overrideFilter.yes);
+    this.suggestionBuilder.addItem(NetworkForward.UIFilter.FilterType.HasOverrides, overrideFilter.no);
+    this.suggestionBuilder.addItem(NetworkForward.UIFilter.FilterType.HasOverrides, overrideFilter.content);
+    this.suggestionBuilder.addItem(NetworkForward.UIFilter.FilterType.HasOverrides, overrideFilter.headers);
   }
 
   private filterChanged(): void {
@@ -914,6 +1067,8 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
     this.parseFilterQuery(this.textFilterUI.value(), this.invertFilterUI.checked());
     this.filterRequests();
     this.textFilterSetting.set(this.textFilterUI.value());
+    this.moreFiltersDropDownUI?.updateActiveFiltersCount();
+    this.moreFiltersDropDownUI?.updateTooltip();
   }
 
   async resetFilter(): Promise<void> {
@@ -928,7 +1083,7 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
     if (this.recording) {
       let reloadShortcutNode: Element|null = null;
       const reloadShortcut =
-          UI.ShortcutRegistry.ShortcutRegistry.instance().shortcutsForAction('inspector_main.reload')[0];
+          UI.ShortcutRegistry.ShortcutRegistry.instance().shortcutsForAction('inspector-main.reload')[0];
       if (reloadShortcut) {
         reloadShortcutNode = this.recordingHint.createChild('b');
         reloadShortcutNode.textContent = reloadShortcut.title();
@@ -948,17 +1103,10 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
       hintText.appendChild(
           i18n.i18n.getFormatLocalizedString(str_, UIStrings.recordToDisplayNetworkActivity, {PH1: recordNode}));
     }
-    // #ifdef OHOS_DEVTOOLS
-    const adaptForOhos = true;
-    if (adaptForOhos) {
-      // ohos doesn't support external links
-    } else {
-      hintText.createChild('br');
-      hintText.appendChild(UI.XLink.XLink.create(
-          'https://developer.chrome.com/docs/devtools/network/?utm_source=devtools&utm_campaign=2019Q1',
-          i18nString(UIStrings.learnMore)));
-    }
-    // #endif OHOS_DEVTOOLS
+    hintText.createChild('br');
+    hintText.appendChild(UI.XLink.XLink.create(
+        'https://developer.chrome.com/docs/devtools/network/?utm_source=devtools&utm_campaign=2019Q1',
+        i18nString(UIStrings.learnMore), undefined, undefined, 'learn-more'));
 
     this.setHidden(true);
   }
@@ -996,16 +1144,16 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
         this.handleContextMenuForRequest(contextMenu, request);
       }
     });
-    this.dataGrid.setStickToBottom(true);
-    this.dataGrid.setName('networkLog');
-    this.dataGrid.setResizeMethod(DataGrid.DataGrid.ResizeMethod.Last);
+    this.dataGrid.setEnableAutoScrollToBottom(true);
+    this.dataGrid.setName('network-log');
+    this.dataGrid.setResizeMethod(DataGrid.DataGrid.ResizeMethod.LAST);
     this.dataGrid.element.classList.add('network-log-grid');
     this.dataGrid.element.addEventListener('mousedown', this.dataGridMouseDown.bind(this), true);
     this.dataGrid.element.addEventListener('mousemove', this.dataGridMouseMove.bind(this), true);
     this.dataGrid.element.addEventListener('mouseleave', () => this.setHoveredNode(null), true);
     this.dataGrid.element.addEventListener('keydown', event => {
       if (event.key === 'ArrowRight' && this.dataGrid.selectedNode) {
-        const initiatorLink = this.dataGrid.selectedNode.element().querySelector('span.devtools-link');
+        const initiatorLink = this.dataGrid.selectedNode.element().querySelector('button.devtools-link');
         if (initiatorLink) {
           (initiatorLink as HTMLElement).focus();
         }
@@ -1025,6 +1173,7 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
 
         if (SDK.NetworkManager.NetworkManager.canReplayRequest(request)) {
           SDK.NetworkManager.NetworkManager.replayRequest(request);
+          void VisualLogging.logKeyDown(this.dataGrid.selectedNode.element(), event, 'replay-xhr');
         }
       }
     });
@@ -1093,8 +1242,12 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
       // inspected url.
       if (networkManager && request.url() === networkManager.target().inspectedURL() &&
           request.resourceType() === Common.ResourceType.resourceTypes.Document &&
-          networkManager.target().parentTarget()?.type() !== SDK.Target.Type.Frame) {
-        baseTime = request.startTime;
+          networkManager.target().parentTarget()?.type() !== SDK.Target.Type.FRAME) {
+        // If the primary main frame's document was fetched from the prefetch cache,
+        // we should use the issueTime (i.e. when the navigation request was about to start)
+        // instead of startTime, which is when the prefetch network request started
+        // (which is typically well before the navigation starts).
+        baseTime = request.fromPrefetchCache() ? request.issueTime() : request.startTime;
       }
       if (request.endTime > maxTime) {
         maxTime = request.endTime;
@@ -1119,26 +1272,26 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
       this.summaryToolbarInternal.appendSeparator();
       appendChunk(
           i18nString(UIStrings.sSTransferred, {
-            PH1: Platform.NumberUtilities.bytesToString(selectedTransferSize),
-            PH2: Platform.NumberUtilities.bytesToString(transferSize),
+            PH1: i18n.ByteUtilities.bytesToString(selectedTransferSize),
+            PH2: i18n.ByteUtilities.bytesToString(transferSize),
           }),
           i18nString(UIStrings.sBSBTransferredOverNetwork, {PH1: selectedTransferSize, PH2: transferSize}));
       this.summaryToolbarInternal.appendSeparator();
       appendChunk(
           i18nString(UIStrings.sSResources, {
-            PH1: Platform.NumberUtilities.bytesToString(selectedResourceSize),
-            PH2: Platform.NumberUtilities.bytesToString(resourceSize),
+            PH1: i18n.ByteUtilities.bytesToString(selectedResourceSize),
+            PH2: i18n.ByteUtilities.bytesToString(resourceSize),
           }),
           i18nString(UIStrings.sBSBResourcesLoadedByThePage, {PH1: selectedResourceSize, PH2: resourceSize}));
     } else {
       appendChunk(i18nString(UIStrings.sRequests, {PH1: nodeCount}));
       this.summaryToolbarInternal.appendSeparator();
       appendChunk(
-          i18nString(UIStrings.sTransferred, {PH1: Platform.NumberUtilities.bytesToString(transferSize)}),
+          i18nString(UIStrings.sTransferred, {PH1: i18n.ByteUtilities.bytesToString(transferSize)}),
           i18nString(UIStrings.sBTransferredOverNetwork, {PH1: transferSize}));
       this.summaryToolbarInternal.appendSeparator();
       appendChunk(
-          i18nString(UIStrings.sResources, {PH1: Platform.NumberUtilities.bytesToString(resourceSize)}),
+          i18nString(UIStrings.sResources, {PH1: i18n.ByteUtilities.bytesToString(resourceSize)}),
           i18nString(UIStrings.sBResourcesLoadedByThePage, {PH1: resourceSize}));
     }
 
@@ -1150,13 +1303,13 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
         const domContentLoadedText = i18nString(
             UIStrings.domcontentloadedS,
             {PH1: i18n.TimeUtilities.secondsToString(this.mainRequestDOMContentLoadedTime - baseTime)});
-        appendChunk(domContentLoadedText).style.color = NetworkLogView.getDCLEventColor();
+        appendChunk(domContentLoadedText).style.color = `var(${NetworkLogView.getDCLEventColor()})`;
       }
       if (this.mainRequestLoadTime !== -1) {
         this.summaryToolbarInternal.appendSeparator();
         const loadText =
             i18nString(UIStrings.loadS, {PH1: i18n.TimeUtilities.secondsToString(this.mainRequestLoadTime - baseTime)});
-        appendChunk(loadText).style.color = NetworkLogView.getLoadEventColor();
+        appendChunk(loadText).style.color = `var(${NetworkLogView.getLoadEventColor()})`;
       }
     }
   }
@@ -1169,7 +1322,7 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
     this.needsRefresh = true;
 
     if (this.isShowing()) {
-      void coordinator.write(this.refresh.bind(this));
+      void coordinator.write('NetworkLogView.render', this.refresh.bind(this));
     }
   }
 
@@ -1192,9 +1345,7 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
   }
 
   private invalidateAllItems(deferUpdate?: boolean): void {
-    const targetManager = SDK.TargetManager.TargetManager.instance();
-    this.staleRequests = new Set(Logs.NetworkLog.NetworkLog.instance().requests().filter(
-        r => targetManager.isInScope(SDK.NetworkManager.NetworkManager.forRequest(r))));
+    this.staleRequests = new Set(Logs.NetworkLog.NetworkLog.instance().requests().filter(this.isInScope));
     if (deferUpdate) {
       this.scheduleRefresh();
     } else {
@@ -1306,6 +1457,22 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
     this.columnsInternal.scheduleRefresh();
   }
 
+  private removeNodeAndMaybeAncestors(node: NetworkRequestNode): void {
+    let parent: NetworkNode|
+        (DataGrid.DataGrid.DataGridNode<DataGrid.ViewportDataGrid.ViewportDataGridNode<
+             DataGrid.SortableDataGrid.SortableDataGridNode<NetworkNode>>>|
+         null) = node.parent;
+    if (!parent) {
+      return;
+    }
+    parent.removeChild(node);
+    while (parent && !parent.hasChildren() && parent.dataGrid && parent.dataGrid.rootNode() !== parent) {
+      const grandparent = (parent.parent as NetworkNode);
+      grandparent.removeChild(parent);
+      parent = grandparent;
+    }
+  }
+
   private refresh(): void {
     this.needsRefresh = false;
 
@@ -1324,7 +1491,7 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
     // While creating nodes it may add more entries into staleRequests because redirect request nodes update the parent
     // node so we loop until we have no more stale requests.
     while (this.staleRequests.size) {
-      const request = this.staleRequests.values().next().value;
+      const request = this.staleRequests.values().next().value as SDK.NetworkRequest.NetworkRequest;
       this.staleRequests.delete(request);
       let node = networkRequestToNode.get(request);
       if (!node) {
@@ -1334,15 +1501,16 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
     }
 
     for (const node of staleNodes) {
-      const isFilteredOut = !this.applyFilter(node);
-      if (isFilteredOut && node === this.hoveredNodeInternal) {
-        this.setHoveredNode(null);
-      }
-
-      if (!isFilteredOut) {
+      const request = node.request();
+      const isFilteredOut = !this.applyFilter(request);
+      if (isFilteredOut) {
+        if (node === this.hoveredNodeInternal) {
+          this.setHoveredNode(null);
+        }
+        node.selected = false;
+      } else {
         nodesToRefresh.push(node);
       }
-      const request = node.request();
       this.timeCalculatorInternal.updateBoundaries(request);
       this.durationCalculator.updateBoundaries(request);
       const newParent = this.parentNodeForInsert(node);
@@ -1357,19 +1525,7 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
       }
       const removeFromParent = node.parent && (isFilteredOut || node.parent !== newParent);
       if (removeFromParent) {
-        let parent: NetworkNode|
-            (DataGrid.DataGrid.DataGridNode<DataGrid.ViewportDataGrid.ViewportDataGridNode<
-                 DataGrid.SortableDataGrid.SortableDataGridNode<NetworkNode>>>|
-             null) = node.parent;
-        if (!parent) {
-          continue;
-        }
-        parent.removeChild(node);
-        while (parent && !parent.hasChildren() && parent.dataGrid && parent.dataGrid.rootNode() !== parent) {
-          const grandparent = (parent.parent as NetworkNode);
-          grandparent.removeChild(parent);
-          parent = grandparent;
-        }
+        this.removeNodeAndMaybeAncestors(node);
       }
 
       if (!newParent || isFilteredOut) {
@@ -1439,15 +1595,25 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
 
     this.dataGrid.rootNode().removeChildren();
     this.updateSummaryBar();
-    this.dataGrid.setStickToBottom(true);
     this.scheduleRefresh();
   }
 
+  // TODO(crbug.com/1477668)
   setTextFilterValue(filterString: string): void {
     this.textFilterUI.setValue(filterString);
-    this.dataURLFilterUI.setChecked(false);
-    this.onlyIssuesFilterUI.setChecked(false);
-    this.onlyBlockedRequestsUI.setChecked(false);
+    if (Root.Runtime.experiments.isEnabled(Root.Runtime.ExperimentName.NETWORK_PANEL_FILTER_BAR_REDESIGN)) {
+      this.networkHideDataURLSetting.set(false);
+      this.networkShowBlockedCookiesOnlySetting.set(false);
+      this.networkOnlyBlockedRequestsSetting.set(false);
+      this.networkOnlyThirdPartySetting.set(false);
+      this.networkHideChromeExtensions.set(false);
+    } else {
+      this.dataURLFilterUI?.setChecked(false);
+      this.onlyBlockedResponseCookiesFilterUI?.setChecked(false);
+      this.onlyBlockedRequestsUI?.setChecked(false);
+      this.onlyThirdPartyFilterUI?.setChecked(false);
+      this.hideChromeExtensionsUI?.setChecked(false);
+    }
     this.resourceCategoryFilterUI.reset();
   }
 
@@ -1462,11 +1628,27 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
     return node;
   }
 
-  private onRequestUpdated(event: Common.EventTarget.EventTargetEvent<SDK.NetworkRequest.NetworkRequest>): void {
-    const request = event.data;
+  private isInScope(request: SDK.NetworkRequest.NetworkRequest): boolean {
     const networkManager = SDK.NetworkManager.NetworkManager.forRequest(request);
-    if (!networkManager || SDK.TargetManager.TargetManager.instance().isInScope(networkManager)) {
+    return !networkManager || SDK.TargetManager.TargetManager.instance().isInScope(networkManager);
+  }
+
+  private onRequestUpdated(
+      event: Common.EventTarget.EventTargetEvent<{request: SDK.NetworkRequest.NetworkRequest, preserveLog?: boolean}>):
+      void {
+    const {request, preserveLog} = event.data;
+    if (this.isInScope(request) || preserveLog) {
       this.refreshRequest(request);
+    }
+  }
+
+  private onRequestRemoved(event: Common.EventTarget.EventTargetEvent<{request: SDK.NetworkRequest.NetworkRequest}>):
+      void {
+    const {request} = event.data;
+    this.staleRequests.delete(request);
+    const node = networkRequestToNode.get(request);
+    if (node) {
+      this.removeNodeAndMaybeAncestors(node);
     }
   }
 
@@ -1489,17 +1671,17 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
 
     if (request.mixedContentType !== Protocol.Security.MixedContentType.None) {
       this.suggestionBuilder.addItem(
-          NetworkForward.UIFilter.FilterType.MixedContent, NetworkForward.UIFilter.MixedContentFilterValues.All);
+          NetworkForward.UIFilter.FilterType.MixedContent, NetworkForward.UIFilter.MixedContentFilterValues.ALL);
     }
 
     if (request.mixedContentType === Protocol.Security.MixedContentType.OptionallyBlockable) {
       this.suggestionBuilder.addItem(
-          NetworkForward.UIFilter.FilterType.MixedContent, NetworkForward.UIFilter.MixedContentFilterValues.Displayed);
+          NetworkForward.UIFilter.FilterType.MixedContent, NetworkForward.UIFilter.MixedContentFilterValues.DISPLAYED);
     }
 
     if (request.mixedContentType === Protocol.Security.MixedContentType.Blockable) {
-      const suggestion = request.wasBlocked() ? NetworkForward.UIFilter.MixedContentFilterValues.Blocked :
-                                                NetworkForward.UIFilter.MixedContentFilterValues.BlockOverridden;
+      const suggestion = request.wasBlocked() ? NetworkForward.UIFilter.MixedContentFilterValues.BLOCKED :
+                                                NetworkForward.UIFilter.MixedContentFilterValues.BLOCK_OVERRIDDEN;
       this.suggestionBuilder.addItem(NetworkForward.UIFilter.FilterType.MixedContent, suggestion);
     }
 
@@ -1539,26 +1721,39 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
   handleContextMenuForRequest(contextMenu: UI.ContextMenu.ContextMenu, request: SDK.NetworkRequest.NetworkRequest):
       void {
     contextMenu.appendApplicableItems(request);
-    let copyMenu = contextMenu.clipboardSection().appendSubMenuItem(i18nString(UIStrings.copy));
-    const footerSection = copyMenu.footerSection();
+    const filtered = this.filterBar.hasActiveFilter();
+    const copyMenu = contextMenu.clipboardSection().appendSubMenuItem(i18nString(UIStrings.copy), false, 'copy');
     if (request) {
+      if (UI.ActionRegistry.ActionRegistry.instance().hasAction('drjones.network-panel-context')) {
+        UI.Context.Context.instance().setFlavor(SDK.NetworkRequest.NetworkRequest, request);
+        contextMenu.headerSection().appendAction(
+            'drjones.network-panel-context',
+        );
+      }
       copyMenu.defaultSection().appendItem(
-          UI.UIUtils.copyLinkAddressLabel(),
+          i18nString(UIStrings.copyURL),
           Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText.bind(
-              Host.InspectorFrontendHost.InspectorFrontendHostInstance, request.contentURL()));
+              Host.InspectorFrontendHost.InspectorFrontendHostInstance, request.contentURL()),
+          {jslogContext: 'copy-url'});
+      copyMenu.footerSection().appendItem(
+          filtered ? i18nString(UIStrings.copyAllListedURLs) : i18nString(UIStrings.copyAllURLs),
+          this.copyAllURLs.bind(this), {jslogContext: 'copy-all-urls'});
       if (request.requestHeadersText()) {
-        copyMenu.defaultSection().appendItem(
-            i18nString(UIStrings.copyRequestHeaders), NetworkLogView.copyRequestHeaders.bind(null, request));
+        copyMenu.saveSection().appendItem(
+            i18nString(UIStrings.copyRequestHeaders), NetworkLogView.copyRequestHeaders.bind(null, request),
+            {jslogContext: 'copy-request-headers'});
       }
 
       if (request.responseHeadersText) {
-        copyMenu.defaultSection().appendItem(
-            i18nString(UIStrings.copyResponseHeaders), NetworkLogView.copyResponseHeaders.bind(null, request));
+        copyMenu.saveSection().appendItem(
+            i18nString(UIStrings.copyResponseHeaders), NetworkLogView.copyResponseHeaders.bind(null, request),
+            {jslogContext: 'copy-response-headers'});
       }
 
       if (request.finished) {
-        copyMenu.defaultSection().appendItem(
-            i18nString(UIStrings.copyResponse), NetworkLogView.copyResponse.bind(null, request));
+        copyMenu.saveSection().appendItem(
+            i18nString(UIStrings.copyResponse), NetworkLogView.copyResponse.bind(null, request),
+            {jslogContext: 'copy-response'});
       }
 
       const initiator = request.initiator();
@@ -1571,66 +1766,81 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
           // any callFrames, but its parent frames do.
           const stackTraceText = computeStackTraceText(stack);
           if (stackTraceText !== '') {
-            copyMenu.defaultSection().appendItem(i18nString(UIStrings.copyStacktrace), () => {
+            copyMenu.saveSection().appendItem(i18nString(UIStrings.copyStacktrace), () => {
               Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(stackTraceText);
-            });
+            }, {jslogContext: 'copy-stacktrace'});
           }
         }
       }
 
       const disableIfBlob = request.isBlobRequest();
       if (Host.Platform.isWin()) {
-        footerSection.appendItem(
-            i18nString(UIStrings.copyAsPowershell), this.copyPowerShellCommand.bind(this, request), disableIfBlob);
-        footerSection.appendItem(
-            i18nString(UIStrings.copyAsFetch), this.copyFetchCall.bind(this, request, FetchStyle.Browser),
-            disableIfBlob);
-        footerSection.appendItem(
-            i18nString(UIStrings.copyAsNodejsFetch), this.copyFetchCall.bind(this, request, FetchStyle.NodeJs),
-            disableIfBlob);
-        footerSection.appendItem(
-            i18nString(UIStrings.copyAsCurlCmd), this.copyCurlCommand.bind(this, request, 'win'), disableIfBlob);
-        footerSection.appendItem(
-            i18nString(UIStrings.copyAsCurlBash), this.copyCurlCommand.bind(this, request, 'unix'), disableIfBlob);
-        footerSection.appendItem(i18nString(UIStrings.copyAllAsPowershell), this.copyAllPowerShellCommand.bind(this));
-        footerSection.appendItem(
-            i18nString(UIStrings.copyAllAsFetch), this.copyAllFetchCall.bind(this, FetchStyle.Browser));
-        footerSection.appendItem(
-            i18nString(UIStrings.copyAllAsNodejsFetch), this.copyAllFetchCall.bind(this, FetchStyle.NodeJs));
-        footerSection.appendItem(i18nString(UIStrings.copyAllAsCurlCmd), this.copyAllCurlCommand.bind(this, 'win'));
-        footerSection.appendItem(i18nString(UIStrings.copyAllAsCurlBash), this.copyAllCurlCommand.bind(this, 'unix'));
+        copyMenu.defaultSection().appendItem(
+            i18nString(UIStrings.copyAsCurlCmd), this.copyCurlCommand.bind(this, request, 'win'),
+            {disabled: disableIfBlob, jslogContext: 'copy-as-curl-cmd'});
+        copyMenu.defaultSection().appendItem(
+            i18nString(UIStrings.copyAsCurlBash), this.copyCurlCommand.bind(this, request, 'unix'),
+            {disabled: disableIfBlob, jslogContext: 'copy-as-curl-bash'});
       } else {
-        footerSection.appendItem(
-            i18nString(UIStrings.copyAsPowershell), this.copyPowerShellCommand.bind(this, request), disableIfBlob);
-        footerSection.appendItem(
-            i18nString(UIStrings.copyAsFetch), this.copyFetchCall.bind(this, request, FetchStyle.Browser),
-            disableIfBlob);
-        footerSection.appendItem(
-            i18nString(UIStrings.copyAsNodejsFetch), this.copyFetchCall.bind(this, request, FetchStyle.NodeJs),
-            disableIfBlob);
-        footerSection.appendItem(
-            i18nString(UIStrings.copyAsCurl), this.copyCurlCommand.bind(this, request, 'unix'), disableIfBlob);
-        footerSection.appendItem(i18nString(UIStrings.copyAllAsPowershell), this.copyAllPowerShellCommand.bind(this));
-        footerSection.appendItem(
-            i18nString(UIStrings.copyAllAsFetch), this.copyAllFetchCall.bind(this, FetchStyle.Browser));
-        footerSection.appendItem(
-            i18nString(UIStrings.copyAllAsNodejsFetch), this.copyAllFetchCall.bind(this, FetchStyle.NodeJs));
-        footerSection.appendItem(i18nString(UIStrings.copyAllAsCurl), this.copyAllCurlCommand.bind(this, 'unix'));
+        copyMenu.defaultSection().appendItem(
+            i18nString(UIStrings.copyAsCurl), this.copyCurlCommand.bind(this, request, 'unix'),
+            {disabled: disableIfBlob, jslogContext: 'copy-as-curl'});
       }
-    } else {
-      copyMenu = contextMenu.clipboardSection().appendSubMenuItem(i18nString(UIStrings.copy));
-    }
-    footerSection.appendItem(i18nString(UIStrings.copyAllAsHar), this.copyAll.bind(this));
+      copyMenu.defaultSection().appendItem(
+          i18nString(UIStrings.copyAsPowershell), this.copyPowerShellCommand.bind(this, request),
+          {disabled: disableIfBlob, jslogContext: 'copy-as-powershell'});
+      copyMenu.defaultSection().appendItem(
+          i18nString(UIStrings.copyAsFetch), this.copyFetchCall.bind(this, request, FetchStyle.BROWSER),
+          {disabled: disableIfBlob, jslogContext: 'copy-as-fetch'});
+      copyMenu.defaultSection().appendItem(
+          i18nString(UIStrings.copyAsNodejsFetch), this.copyFetchCall.bind(this, request, FetchStyle.NODE_JS),
+          {disabled: disableIfBlob, jslogContext: 'copy-as-nodejs-fetch'});
 
-    contextMenu.saveSection().appendItem(i18nString(UIStrings.saveAllAsHarWithContent), this.exportAll.bind(this));
-    if (Root.Runtime.experiments.isEnabled(Root.Runtime.ExperimentName.HEADER_OVERRIDES)) {
-      contextMenu.saveSection().appendItem(
-          i18nString(UIStrings.overrideHeaders), this.#handleCreateResponseHeaderOverrideClick.bind(this, request));
+      if (Host.Platform.isWin()) {
+        copyMenu.footerSection().appendItem(
+            filtered ? i18nString(UIStrings.copyAllListedAsCurlCmd) : i18nString(UIStrings.copyAllAsCurlCmd),
+            this.copyAllCurlCommand.bind(this, 'win'), {jslogContext: 'copy-all-as-curl-cmd'});
+        copyMenu.footerSection().appendItem(
+            filtered ? i18nString(UIStrings.copyAllListedAsCurlBash) : i18nString(UIStrings.copyAllAsCurlBash),
+            this.copyAllCurlCommand.bind(this, 'unix'), {jslogContext: 'copy-all-as-curl-bash'});
+      } else {
+        copyMenu.footerSection().appendItem(
+            filtered ? i18nString(UIStrings.copyAllListedAsCurl) : i18nString(UIStrings.copyAllAsCurl),
+            this.copyAllCurlCommand.bind(this, 'unix'), {jslogContext: 'copy-all-as-curl'});
+      }
+      copyMenu.footerSection().appendItem(
+          filtered ? i18nString(UIStrings.copyAllListedAsPowershell) : i18nString(UIStrings.copyAllAsPowershell),
+          this.copyAllPowerShellCommand.bind(this), {jslogContext: 'copy-all-as-powershell'});
+      copyMenu.footerSection().appendItem(
+          filtered ? i18nString(UIStrings.copyAllListedAsFetch) : i18nString(UIStrings.copyAllAsFetch),
+          this.copyAllFetchCall.bind(this, FetchStyle.BROWSER), {jslogContext: 'copy-all-as-fetch'});
+      copyMenu.footerSection().appendItem(
+          filtered ? i18nString(UIStrings.copyAllListedAsNodejsFetch) : i18nString(UIStrings.copyAllAsNodejsFetch),
+          this.copyAllFetchCall.bind(this, FetchStyle.NODE_JS), {jslogContext: 'copy-all-as-nodejs-fetch'});
+    }
+    copyMenu.footerSection().appendItem(
+        filtered ? i18nString(UIStrings.copyAllListedAsHarSanitized) : i18nString(UIStrings.copyAllAsHarSanitized),
+        this.copyAllAsHAR.bind(this, {sanitize: true}), {jslogContext: 'copy-all-as-har'});
+    if (this.networkShowOptionsToGenerateHarWithSensitiveData.get()) {
+      copyMenu.footerSection().appendItem(
+          filtered ? i18nString(UIStrings.copyAllListedAsHarWithSensitiveData) :
+                     i18nString(UIStrings.copyAllAsHarWithSensitiveData),
+          this.copyAllAsHAR.bind(this, {sanitize: false}), {jslogContext: 'copy-all-as-har-with-sensitive-data'});
     }
 
-    contextMenu.editSection().appendItem(i18nString(UIStrings.clearBrowserCache), this.clearBrowserCache.bind(this));
+    contextMenu.overrideSection().appendItem(
+        i18nString(UIStrings.overrideHeaders), this.#handleCreateResponseHeaderOverrideClick.bind(this, request), {
+          disabled:
+              Persistence.NetworkPersistenceManager.NetworkPersistenceManager.isForbiddenNetworkUrl(request.url()),
+          jslogContext: 'override-headers',
+        });
+
     contextMenu.editSection().appendItem(
-        i18nString(UIStrings.clearBrowserCookies), this.clearBrowserCookies.bind(this));
+        i18nString(UIStrings.clearBrowserCache), this.clearBrowserCache.bind(this),
+        {jslogContext: 'clear-browser-cache'});
+    contextMenu.editSection().appendItem(
+        i18nString(UIStrings.clearBrowserCookies), this.clearBrowserCookies.bind(this),
+        {jslogContext: 'clear-browser-cookies'});
 
     if (request) {
       const maxBlockedURLLength = 20;
@@ -1641,65 +1851,65 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
         patterns.push({enabled: true, url: url as Platform.DevToolsPath.UrlString});
         manager.setBlockedPatterns(patterns);
         manager.setBlockingEnabled(true);
-        // #ifdef OHOS_DEVTOOLS
-        if (adaptForOhos) {
-          return;
-        }
-        // #endif OHOS_DEVTOOLS
         void UI.ViewManager.ViewManager.instance().showView('network.blocked-urls');
       }
 
       function removeBlockedURL(url: string): void {
         patterns = patterns.filter(pattern => pattern.url !== url);
         manager.setBlockedPatterns(patterns);
-        // #ifdef OHOS_DEVTOOLS
-        if (adaptForOhos) {
-          return;
-        }
-        // #endif OHOS_DEVTOOLS
         void UI.ViewManager.ViewManager.instance().showView('network.blocked-urls');
       }
 
       const urlWithoutScheme = request.parsedURL.urlWithoutScheme();
       if (urlWithoutScheme && !patterns.find(pattern => pattern.url === urlWithoutScheme)) {
         contextMenu.debugSection().appendItem(
-            i18nString(UIStrings.blockRequestUrl), addBlockedURL.bind(null, urlWithoutScheme));
+            i18nString(UIStrings.blockRequestUrl), addBlockedURL.bind(null, urlWithoutScheme),
+            {jslogContext: 'block-request-url'});
       } else if (urlWithoutScheme) {
         const croppedURL = Platform.StringUtilities.trimMiddle(urlWithoutScheme, maxBlockedURLLength);
         contextMenu.debugSection().appendItem(
-            i18nString(UIStrings.unblockS, {PH1: croppedURL}), removeBlockedURL.bind(null, urlWithoutScheme));
+            i18nString(UIStrings.unblockS, {PH1: croppedURL}), removeBlockedURL.bind(null, urlWithoutScheme),
+            {jslogContext: 'unblock'});
       }
 
       const domain = request.parsedURL.domain();
       if (domain && !patterns.find(pattern => pattern.url === domain)) {
         contextMenu.debugSection().appendItem(
-            i18nString(UIStrings.blockRequestDomain), addBlockedURL.bind(null, domain));
+            i18nString(UIStrings.blockRequestDomain), addBlockedURL.bind(null, domain),
+            {jslogContext: 'block-request-domain'});
       } else if (domain) {
         const croppedDomain = Platform.StringUtilities.trimMiddle(domain, maxBlockedURLLength);
         contextMenu.debugSection().appendItem(
-            i18nString(UIStrings.unblockS, {PH1: croppedDomain}), removeBlockedURL.bind(null, domain));
+            i18nString(UIStrings.unblockS, {PH1: croppedDomain}), removeBlockedURL.bind(null, domain),
+            {jslogContext: 'unblock'});
       }
 
       if (SDK.NetworkManager.NetworkManager.canReplayRequest(request)) {
         contextMenu.debugSection().appendItem(
-            i18nString(UIStrings.replayXhr), SDK.NetworkManager.NetworkManager.replayRequest.bind(null, request));
+            i18nString(UIStrings.replayXhr), SDK.NetworkManager.NetworkManager.replayRequest.bind(null, request),
+            {jslogContext: 'replay-xhr'});
       }
     }
   }
 
   private harRequests(): SDK.NetworkRequest.NetworkRequest[] {
-    return Logs.NetworkLog.NetworkLog.instance()
-        .requests()
-        .filter(NetworkLogView.getHTTPRequestsFilter)
-        .filter(request => {
-          return request.finished ||
-              (request.resourceType() === Common.ResourceType.resourceTypes.WebSocket && request.responseReceivedTime);
-        });
+    const requests = Logs.NetworkLog.NetworkLog.instance().requests().filter(request => this.applyFilter(request));
+    return requests.filter(NetworkLogView.getHTTPRequestsFilter).filter(request => {
+      return request.finished ||
+          (request.resourceType() === Common.ResourceType.resourceTypes.WebSocket && request.responseReceivedTime);
+    });
   }
 
-  private async copyAll(): Promise<void> {
-    const harArchive = {log: await HAR.Log.Log.build(this.harRequests())};
+  private async copyAllAsHAR(options: HAR.Log.BuildOptions): Promise<void> {
+    const harArchive = {log: await HAR.Log.Log.build(this.harRequests(), options)};
     Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(JSON.stringify(harArchive, null, 2));
+  }
+
+  private copyAllURLs(): void {
+    const requests = Logs.NetworkLog.NetworkLog.instance().requests().filter(request => this.applyFilter(request));
+    const nonBlobRequests = this.filterOutBlobRequests(requests);
+    const urls = nonBlobRequests.map(request => request.url());
+    Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(urls.join('\n'));
   }
 
   private async copyCurlCommand(request: SDK.NetworkRequest.NetworkRequest, platform: 'unix'|'win'): Promise<void> {
@@ -1708,7 +1918,8 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
   }
 
   private async copyAllCurlCommand(platform: 'unix'|'win'): Promise<void> {
-    const commands = await this.generateAllCurlCommand(Logs.NetworkLog.NetworkLog.instance().requests(), platform);
+    const requests = Logs.NetworkLog.NetworkLog.instance().requests().filter(request => this.applyFilter(request));
+    const commands = await this.generateAllCurlCommand(requests, platform);
     Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(commands);
   }
 
@@ -1718,7 +1929,8 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
   }
 
   private async copyAllFetchCall(style: FetchStyle): Promise<void> {
-    const commands = await this.generateAllFetchCall(Logs.NetworkLog.NetworkLog.instance().requests(), style);
+    const requests = Logs.NetworkLog.NetworkLog.instance().requests().filter(request => this.applyFilter(request));
+    const commands = await this.generateAllFetchCall(requests, style);
     Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(commands);
   }
 
@@ -1728,11 +1940,12 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
   }
 
   private async copyAllPowerShellCommand(): Promise<void> {
-    const commands = await this.generateAllPowerShellCommand(Logs.NetworkLog.NetworkLog.instance().requests());
+    const requests = Logs.NetworkLog.NetworkLog.instance().requests().filter(request => this.applyFilter(request));
+    const commands = await this.generateAllPowerShellCommand(requests);
     Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(commands);
   }
 
-  async exportAll(): Promise<void> {
+  async exportAll(options: HAR.Log.BuildOptions): Promise<void> {
     const mainTarget = SDK.TargetManager.TargetManager.instance().scopeTarget();
     if (!mainTarget) {
       return;
@@ -1748,7 +1961,7 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
 
     const progressIndicator = new UI.ProgressIndicator.ProgressIndicator();
     this.progressBarContainer.appendChild(progressIndicator.element);
-    await HAR.Writer.Writer.write(stream, this.harRequests(), progressIndicator);
+    await HAR.Writer.Writer.write(stream, this.harRequests(), options, progressIndicator);
     progressIndicator.done();
     void stream.close();
   }
@@ -1758,11 +1971,11 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
         NetworkForward.UIRequestLocation.UIRequestLocation.responseHeaderMatch(request, {name: '', value: ''});
     const networkPersistanceManager = Persistence.NetworkPersistenceManager.NetworkPersistenceManager.instance();
     if (networkPersistanceManager.project()) {
-      Common.Settings.Settings.instance().moduleSetting('persistenceNetworkOverridesEnabled').set(true);
+      Common.Settings.Settings.instance().moduleSetting('persistence-network-overrides-enabled').set(true);
       await networkPersistanceManager.getOrCreateHeadersUISourceCodeFromUrl(request.url());
       await Common.Revealer.reveal(requestLocation);
     } else {  // If folder for local overrides has not been provided yet
-      UI.InspectorView.InspectorView.instance().displaySelectOverrideFolderInfobar(async(): Promise<void> => {
+      UI.InspectorView.InspectorView.instance().displaySelectOverrideFolderInfobar(async () => {
         await Sources.SourcesNavigator.OverridesNavigatorView.instance().setupNewWorkspace();
         await networkPersistanceManager.getOrCreateHeadersUISourceCodeFromUrl(request.url());
         await Common.Revealer.reveal(requestLocation);
@@ -1782,30 +1995,44 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
     }
   }
 
-  private removeAllHighlights(): void {
-    this.removeAllNodeHighlights();
-  }
-
-  private applyFilter(node: NetworkRequestNode): boolean {
-    const request = node.request();
+  private applyFilter(request: SDK.NetworkRequest.NetworkRequest): boolean {
     if (this.timeFilter && !this.timeFilter(request)) {
       return false;
     }
-    const categoryName = request.resourceType().category().title();
+    const categoryName = request.resourceType().category().name;
     if (!this.resourceCategoryFilterUI.accept(categoryName)) {
       return false;
     }
-    if (this.dataURLFilterUI.checked() && (request.parsedURL.isDataURL() || request.parsedURL.isBlobURL())) {
+    const [hideDataURL, blockedCookies, blockedRequests, thirdParty, hideExtensionURL] =
+        Root.Runtime.experiments.isEnabled(Root.Runtime.ExperimentName.NETWORK_PANEL_FILTER_BAR_REDESIGN) ?
+        [
+          this.networkHideDataURLSetting.get(),
+          this.networkShowBlockedCookiesOnlySetting.get(),
+          this.networkOnlyBlockedRequestsSetting.get(),
+          this.networkOnlyThirdPartySetting.get(),
+          this.networkHideChromeExtensions.get(),
+        ] :
+        [
+          this.dataURLFilterUI?.checked(),
+          this.onlyBlockedResponseCookiesFilterUI?.checked(),
+          this.onlyBlockedRequestsUI?.checked(),
+          this.onlyThirdPartyFilterUI?.checked(),
+          this.hideChromeExtensionsUI?.checked(),
+        ];
+
+    if (hideDataURL && (request.parsedURL.isDataURL() || request.parsedURL.isBlobURL())) {
       return false;
     }
-    if (this.onlyIssuesFilterUI.checked() &&
-        !IssuesManager.RelatedIssue.hasIssueOfCategory(request, IssuesManager.Issue.IssueCategory.Cookie)) {
+    if (blockedCookies && !request.blockedResponseCookies().length) {
       return false;
     }
-    if (this.onlyBlockedRequestsUI.checked() && !request.wasBlocked() && !request.corsErrorStatus()) {
+    if (blockedRequests && !request.wasBlocked() && !request.corsErrorStatus()) {
       return false;
     }
-    if (this.onlyThirdPartyFilterUI.checked() && request.isSameSite()) {
+    if (thirdParty && request.isSameSite()) {
+      return false;
+    }
+    if (hideExtensionURL && request.scheme === 'chrome-extension') {
       return false;
     }
     for (let i = 0; i < this.filters.length; ++i) {
@@ -1867,16 +2094,16 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
         return NetworkLogView.requestResponseHeaderSetCookieFilter.bind(null, value);
 
       case NetworkForward.UIFilter.FilterType.Is:
-        if (value.toLowerCase() === NetworkForward.UIFilter.IsFilterType.Running) {
+        if (value.toLowerCase() === NetworkForward.UIFilter.IsFilterType.RUNNING) {
           return NetworkLogView.runningRequestFilter;
         }
-        if (value.toLowerCase() === NetworkForward.UIFilter.IsFilterType.FromCache) {
+        if (value.toLowerCase() === NetworkForward.UIFilter.IsFilterType.FROM_CACHE) {
           return NetworkLogView.fromCacheRequestFilter;
         }
-        if (value.toLowerCase() === NetworkForward.UIFilter.IsFilterType.ServiceWorkerIntercepted) {
+        if (value.toLowerCase() === NetworkForward.UIFilter.IsFilterType.SERVICE_WORKER_INTERCEPTED) {
           return NetworkLogView.interceptedByServiceWorkerFilter;
         }
-        if (value.toLowerCase() === NetworkForward.UIFilter.IsFilterType.ServiceWorkerInitiated) {
+        if (value.toLowerCase() === NetworkForward.UIFilter.IsFilterType.SERVICE_WORKER_INITIATED) {
           return NetworkLogView.initiatedByServiceWorkerFilter;
         }
         break;
@@ -1925,6 +2152,9 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
       case NetworkForward.UIFilter.FilterType.StatusCode:
         return NetworkLogView.statusCodeFilter.bind(null, value);
 
+      case NetworkForward.UIFilter.FilterType.HasOverrides:
+        return NetworkLogView.hasOverridesFilter.bind(null, value);
+
       case NetworkForward.UIFilter.FilterType.ResourceType:
         return NetworkLogView.resourceTypeFilter.bind(null, value);
 
@@ -1951,7 +2181,7 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
   }
 
   private filterRequests(): void {
-    this.removeAllHighlights();
+    this.removeAllNodeHighlights();
     this.invalidateAllItems();
   }
 
@@ -2091,7 +2321,7 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
       mode: 'cors',
     };
 
-    if (style === FetchStyle.NodeJs) {
+    if (style === FetchStyle.NODE_JS) {
       const cookieHeader = requestHeaders.find(header => header.name.toLowerCase() === 'cookie');
       const extraHeaders: HeadersInit = {};
       // According to https://www.npmjs.com/package/node-fetch#class-request the
@@ -2129,14 +2359,16 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
     return commands.join(' ;\n');
   }
 
-  static async generateCurlCommand(request: SDK.NetworkRequest.NetworkRequest, platform: 'unix'|'win'): Promise<string> {
+  static async generateCurlCommand(request: SDK.NetworkRequest.NetworkRequest, platform: 'unix'|'win'):
+      Promise<string> {
     let command: string[] = [];
     // Most of these headers are derived from the URL and are automatically added by cURL.
     // The |Accept-Encoding| header is ignored to prevent decompression errors. crbug.com/1015321
-    const ignoredHeaders = new Set<string>(['accept-encoding', 'host', 'method', 'path', 'scheme', 'version']);
+    const ignoredHeaders =
+        new Set<string>(['accept-encoding', 'host', 'method', 'path', 'scheme', 'version', 'authority', 'protocol']);
 
     function escapeStringWin(str: string): string {
-      /* Only escape the " characters when necessary.
+      /* Always escape the " characters so that we can use caret escaping.
 
          Because cmd.exe parser and MS Crt arguments parsers use some of the
          same escape characters, they can interact with each other in
@@ -2237,7 +2469,6 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
       }
     }
     command = command.concat(data);
-    command.push('--compressed');
 
     if (request.securityState() === Protocol.Security.SecurityState.Insecure) {
       command.push('--insecure');
@@ -2288,10 +2519,10 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
         props.push(`$session.UserAgent = ${escapeString(userAgentHeader.value)}`);
       }
 
-      for (const cookie of request.includedRequestCookies()) {
-        const name = escapeString(cookie.name());
-        const value = escapeString(cookie.value());
-        const domain = escapeString(cookie.domain());
+      for (const includedCookie of request.includedRequestCookies()) {
+        const name = escapeString(includedCookie.cookie.name());
+        const value = escapeString(includedCookie.cookie.value());
+        const domain = escapeString(includedCookie.cookie.domain());
         props.push(`$session.Cookies.Add((New-Object System.Net.Cookie(${name}, ${value}, "/", ${domain})))`);
       }
 
@@ -2355,11 +2586,11 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
   }
 
   static getDCLEventColor(): string {
-    return ThemeSupport.ThemeSupport.instance().getComputedValue('--color-syntax-3');
+    return '--sys-color-token-attribute-value';
   }
 
   static getLoadEventColor(): string {
-    return ThemeSupport.ThemeSupport.instance().getComputedValue('--color-syntax-1');
+    return '--sys-color-token-property-special';
   }
 }
 
@@ -2383,10 +2614,10 @@ export function isRequestFilteredOut(request: NetworkRequestNode): boolean {
 }
 
 export const HTTPSchemas = {
-  'http': true,
-  'https': true,
-  'ws': true,
-  'wss': true,
+  http: true,
+  https: true,
+  ws: true,
+  wss: true,
 };
 
 const searchKeys: string[] = Object.values(NetworkForward.UIFilter.FilterType);
@@ -2396,4 +2627,166 @@ export interface GroupLookupInterface {
   reset(): void;
 }
 
+export const overrideFilter = {
+  yes: 'yes',
+  no: 'no',
+  content: 'content',
+  headers: 'headers',
+};
+
 export type Filter = (request: SDK.NetworkRequest.NetworkRequest) => boolean;
+
+export class MoreFiltersDropDownUI extends
+    Common.ObjectWrapper.ObjectWrapper<UI.FilterBar.FilterUIEventTypes> implements UI.FilterBar.FilterUI {
+  private readonly filterElement: HTMLDivElement;
+  private readonly dropDownButton: UI.Toolbar.ToolbarCombobox;
+  private networkHideDataURLSetting: Common.Settings.Setting<boolean>;
+  private networkHideChromeExtensionsSetting: Common.Settings.Setting<boolean>;
+  private networkShowBlockedCookiesOnlySetting: Common.Settings.Setting<boolean>;
+  private networkOnlyBlockedRequestsSetting: Common.Settings.Setting<boolean>;
+  private networkOnlyThirdPartySetting: Common.Settings.Setting<boolean>;
+  private contextMenu?: UI.ContextMenu.ContextMenu;
+  private activeFiltersCount: HTMLElement;
+  private activeFiltersCountAdorner: Adorners.Adorner.Adorner;
+  private hasChanged = false;
+
+  constructor() {
+    super();
+
+    this.networkHideDataURLSetting = Common.Settings.Settings.instance().createSetting('network-hide-data-url', false);
+    this.networkHideChromeExtensionsSetting =
+        Common.Settings.Settings.instance().createSetting('network-hide-chrome-extensions', false);
+    this.networkShowBlockedCookiesOnlySetting =
+        Common.Settings.Settings.instance().createSetting('network-show-blocked-cookies-only-setting', false);
+    this.networkOnlyBlockedRequestsSetting =
+        Common.Settings.Settings.instance().createSetting('network-only-blocked-requests', false);
+    this.networkOnlyThirdPartySetting =
+        Common.Settings.Settings.instance().createSetting('network-only-third-party-setting', false);
+
+    this.filterElement = document.createElement('div');
+    this.filterElement.setAttribute('aria-label', 'Show only/hide requests dropdown');
+    this.filterElement.setAttribute('jslog', `${VisualLogging.dropDown('more-filters').track({click: true})}`);
+
+    this.activeFiltersCountAdorner = new Adorners.Adorner.Adorner();
+    this.activeFiltersCount = document.createElement('span');
+    this.activeFiltersCountAdorner.data = {
+      name: 'countWrapper',
+      content: this.activeFiltersCount,
+    };
+    this.activeFiltersCountAdorner.classList.add('active-filters-count');
+    this.updateActiveFiltersCount();
+
+    this.dropDownButton = new UI.Toolbar.ToolbarCombobox(i18nString(UIStrings.showOnlyHideRequests));
+    this.dropDownButton.setText(i18nString(UIStrings.moreFilters));
+    this.dropDownButton.setAdorner(this.activeFiltersCountAdorner);
+    this.filterElement.appendChild(this.dropDownButton.element);
+    this.dropDownButton.element.classList.add('dropdown-filterbar');
+    this.dropDownButton.addEventListener(
+        UI.Toolbar.ToolbarButton.Events.CLICK, this.showMoreFiltersContextMenu.bind(this));
+    UI.ARIAUtils.markAsMenuButton(this.dropDownButton.element);
+    this.updateTooltip();
+  }
+
+  #onSettingChanged(): void {
+    this.hasChanged = true;
+    this.dispatchEventToListeners(UI.FilterBar.FilterUIEvents.FILTER_CHANGED);
+  }
+
+  showMoreFiltersContextMenu(event: Common.EventTarget.EventTargetEvent<Event>): void {
+    const mouseEvent = event.data;
+    this.hasChanged = false;
+
+    this.networkHideDataURLSetting.addChangeListener(this.#onSettingChanged.bind(this));
+    this.networkHideChromeExtensionsSetting.addChangeListener(this.#onSettingChanged.bind(this));
+    this.networkShowBlockedCookiesOnlySetting.addChangeListener(this.#onSettingChanged.bind(this));
+    this.networkOnlyBlockedRequestsSetting.addChangeListener(this.#onSettingChanged.bind(this));
+    this.networkOnlyThirdPartySetting.addChangeListener(this.#onSettingChanged.bind(this));
+    this.contextMenu = new UI.ContextMenu.ContextMenu(mouseEvent, {
+      useSoftMenu: true,
+      keepOpen: true,
+      x: this.dropDownButton.element.getBoundingClientRect().left,
+      y: this.dropDownButton.element.getBoundingClientRect().top +
+          (this.dropDownButton.element as HTMLElement).offsetHeight,
+    });
+
+    this.contextMenu.defaultSection().appendCheckboxItem(
+        i18nString(UIStrings.hideDataUrls),
+        () => this.networkHideDataURLSetting.set(!this.networkHideDataURLSetting.get()), {
+          checked: this.networkHideDataURLSetting.get(),
+          tooltip: i18nString(UIStrings.hidesDataAndBlobUrls),
+          jslogContext: 'hide-data-urls',
+        });
+    this.contextMenu.defaultSection().appendCheckboxItem(
+        i18nString(UIStrings.chromeExtensions),
+        () => this.networkHideChromeExtensionsSetting.set(!this.networkHideChromeExtensionsSetting.get()), {
+          checked: this.networkHideChromeExtensionsSetting.get(),
+          tooltip: i18nString(UIStrings.hideChromeExtension),
+          jslogContext: 'hide-extension-urls',
+        });
+    this.contextMenu.defaultSection().appendSeparator();
+
+    this.contextMenu.defaultSection().appendCheckboxItem(
+        i18nString(UIStrings.hasBlockedCookies),
+        () => this.networkShowBlockedCookiesOnlySetting.set(!this.networkShowBlockedCookiesOnlySetting.get()), {
+          checked: this.networkShowBlockedCookiesOnlySetting.get(),
+          tooltip: i18nString(UIStrings.onlyShowRequestsWithBlockedCookies),
+          jslogContext: 'only-blocked-response-cookies',
+        });
+    this.contextMenu.defaultSection().appendCheckboxItem(
+        i18nString(UIStrings.blockedRequests),
+        () => this.networkOnlyBlockedRequestsSetting.set(!this.networkOnlyBlockedRequestsSetting.get()), {
+          checked: this.networkOnlyBlockedRequestsSetting.get(),
+          tooltip: i18nString(UIStrings.onlyShowBlockedRequests),
+          jslogContext: 'only-blocked-requests',
+        });
+    this.contextMenu.defaultSection().appendCheckboxItem(
+        i18nString(UIStrings.thirdParty),
+        () => this.networkOnlyThirdPartySetting.set(!this.networkOnlyThirdPartySetting.get()), {
+          checked: this.networkOnlyThirdPartySetting.get(),
+          tooltip: i18nString(UIStrings.onlyShowThirdPartyRequests),
+          jslogContext: 'only-3rd-party-requests',
+        });
+
+    void this.contextMenu.show();
+  }
+
+  selectedFilters(): string[] {
+    const filters = [
+      ...this.networkHideDataURLSetting.get() ? [i18nString(UIStrings.hideDataUrls)] : [],
+      ...this.networkHideChromeExtensionsSetting.get() ? [i18nString(UIStrings.chromeExtensions)] : [],
+      ...this.networkShowBlockedCookiesOnlySetting.get() ? [i18nString(UIStrings.hasBlockedCookies)] : [],
+      ...this.networkOnlyBlockedRequestsSetting.get() ? [i18nString(UIStrings.blockedRequests)] : [],
+      ...this.networkOnlyThirdPartySetting.get() ? [i18nString(UIStrings.thirdParty)] : [],
+    ];
+    return filters;
+  }
+
+  updateActiveFiltersCount(): void {
+    const count = this.selectedFilters().length;
+    this.activeFiltersCount.textContent = count.toString();
+    count ? this.activeFiltersCountAdorner.classList.remove('hidden') :
+            this.activeFiltersCountAdorner.classList.add('hidden');
+  }
+
+  updateTooltip(): void {
+    if (this.selectedFilters().length) {
+      this.dropDownButton.setTitle(this.selectedFilters().join(', '));
+    } else {
+      this.dropDownButton.setTitle(UIStrings.showOnlyHideRequests);
+    }
+  }
+
+  discard(): void {
+    if (this.contextMenu) {
+      this.contextMenu.discard();
+    }
+  }
+
+  isActive(): boolean {
+    return this.selectedFilters().length !== 0;
+  }
+
+  element(): HTMLDivElement {
+    return this.filterElement;
+  }
+}

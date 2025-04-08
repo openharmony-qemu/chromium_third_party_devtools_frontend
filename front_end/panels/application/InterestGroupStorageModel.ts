@@ -59,13 +59,23 @@ export class InterestGroupStorageModel extends SDK.SDKModel.SDKModel<EventTypes>
   }
 
   interestGroupAccessed(event: Protocol.Storage.InterestGroupAccessedEvent): void {
-    this.dispatchEventToListeners(Events.InterestGroupAccess, event);
+    this.dispatchEventToListeners(Events.INTEREST_GROUP_ACCESS, event);
+  }
+
+  attributionReportingTriggerRegistered(_event: Protocol.Storage.AttributionReportingTriggerRegisteredEvent): void {
   }
 
   indexedDBListUpdated(_event: Protocol.Storage.IndexedDBListUpdatedEvent): void {
   }
 
   indexedDBContentUpdated(_event: Protocol.Storage.IndexedDBContentUpdatedEvent): void {
+  }
+
+  interestGroupAuctionEventOccurred(_event: Protocol.Storage.InterestGroupAuctionEventOccurredEvent): void {
+  }
+
+  interestGroupAuctionNetworkRequestCreated(_event: Protocol.Storage.InterestGroupAuctionNetworkRequestCreatedEvent):
+      void {
   }
 
   cacheStorageListUpdated(_event: Protocol.Storage.CacheStorageListUpdatedEvent): void {
@@ -82,16 +92,18 @@ export class InterestGroupStorageModel extends SDK.SDKModel.SDKModel<EventTypes>
 
   storageBucketDeleted(_event: Protocol.Storage.StorageBucketDeletedEvent): void {
   }
+
+  attributionReportingSourceRegistered(_event: Protocol.Storage.AttributionReportingSourceRegisteredEvent): void {
+  }
 }
 
 SDK.SDKModel.SDKModel.register(
-    InterestGroupStorageModel, {capabilities: SDK.Target.Capability.Storage, autostart: false});
+    InterestGroupStorageModel, {capabilities: SDK.Target.Capability.STORAGE, autostart: false});
 
-// eslint-disable-next-line rulesdir/const_enum
-export enum Events {
-  InterestGroupAccess = 'InterestGroupAccess',
+export const enum Events {
+  INTEREST_GROUP_ACCESS = 'InterestGroupAccess',
 }
 
 export type EventTypes = {
-  [Events.InterestGroupAccess]: Protocol.Storage.InterestGroupAccessedEvent,
+  [Events.INTEREST_GROUP_ACCESS]: Protocol.Storage.InterestGroupAccessedEvent,
 };

@@ -3,21 +3,10 @@
 // found in the LICENSE file.
 
 import * as Common from '../../../../core/common/common.js';
-import * as i18n from '../../../../core/i18n/i18n.js';
 import * as Platform from '../../../../core/platform/platform.js';
 import * as Coordinator from '../../../components/render_coordinator/render_coordinator.js';
-import * as UI from '../../legacy.js';
 
-import {DataGridImpl, DataGridNode, type DataGridData, type Parameters} from './DataGrid.js';
-
-const UIStrings = {
-  /**
-   *@description accessible name for expandible nodes in datagrids
-   */
-  collapsed: 'collapsed',
-};
-const str_ = i18n.i18n.registerUIStrings('ui/legacy/components/data_grid/ViewportDataGrid.ts', UIStrings);
-const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
+import {type DataGridData, DataGridImpl, DataGridNode, type Parameters} from './DataGrid.js';
 
 const coordinator = Coordinator.RenderCoordinator.RenderCoordinator.instance();
 
@@ -25,7 +14,15 @@ export class ViewportDataGrid<T> extends Common.ObjectWrapper.eventMixin<EventTy
     DataGridImpl)<ViewportDataGridNode<T>> {
   private readonly onScrollBound: (event: Event|null) => void;
   private visibleNodes: ViewportDataGridNode<T>[];
-  stickToBottom: boolean;
+  /** A datagrid preference to express that the grid represents an updating log of rows (eg Network panel request log, websocket messages).
+   * If `true`, the datagrid will mostly keep the scroll at the bottom, so new items are visible.
+   * If the data is sorted descending (eg Performance Call Tree, heap snapshot), keep the default of `false`.
+   */
+  enableAutoScrollToBottom: boolean = false;
+  /** When true, the datagrid will manipulate the scrollTop to focus on the bottom, mostly so new additions are visible.
+   * Some actions will unset this, like revealing or expanding a particular node.
+   * Only matters if enableAutoScrollToBottom is true. */
+  keepScrollingToBottom: boolean = false;
   private updateIsFromUser: boolean;
   private lastScrollTop: number;
   private firstVisibleIsStriped: boolean;
@@ -40,7 +37,6 @@ export class ViewportDataGrid<T> extends Common.ObjectWrapper.eventMixin<EventTy
     this.visibleNodes = [];
     this.inline = false;
 
-    this.stickToBottom = false;
     this.updateIsFromUser = false;
     this.lastScrollTop = 0;
     this.firstVisibleIsStriped = false;
@@ -71,19 +67,18 @@ export class ViewportDataGrid<T> extends Common.ObjectWrapper.eventMixin<EventTy
   }
 
   override onResize(): void {
-    if (this.stickToBottom) {
+    if (this.keepScrollingToBottom) {
       this.scrollContainer.scrollTop = this.scrollContainer.scrollHeight - this.scrollContainer.clientHeight;
     }
     this.scheduleUpdate();
     super.onResize();
   }
 
-  setStickToBottom(stick: boolean): void {
-    this.stickToBottom = stick;
+  setEnableAutoScrollToBottom(stick: boolean): void {
+    this.keepScrollingToBottom = this.enableAutoScrollToBottom = stick;
   }
 
   private onScroll(_event: Event|null): void {
-    this.stickToBottom = UI.UIUtils.isScrolledToBottom(this.scrollContainer);
     if (this.lastScrollTop !== this.scrollContainer.scrollTop) {
       this.scheduleUpdate(true);
     }
@@ -94,11 +89,8 @@ export class ViewportDataGrid<T> extends Common.ObjectWrapper.eventMixin<EventTy
   }
 
   scheduleUpdate(isFromUser?: boolean): void {
-    if (this.stickToBottom && isFromUser) {
-      this.stickToBottom = UI.UIUtils.isScrolledToBottom(this.scrollContainer);
-    }
     this.updateIsFromUser = this.updateIsFromUser || Boolean(isFromUser);
-    void coordinator.write(this.update.bind(this));
+    void coordinator.write('ViewportDataGrid.render', this.update.bind(this));
   }
 
   // TODO(allada) This should be fixed to never be needed. It is needed right now for network because removing
@@ -146,9 +138,14 @@ export class ViewportDataGrid<T> extends Common.ObjectWrapper.eventMixin<EventTy
       bottomPadding += nodes[i].nodeSelfHeight();
     }
 
+    if (this.enableAutoScrollToBottom) {
+      // If we're scrolled to the very end, keep the scroll viewport focused to the end (as new items arrive)
+      this.keepScrollingToBottom = end === nodes.length;
+    }
+
     return {
-      topPadding: topPadding,
-      bottomPadding: bottomPadding,
+      topPadding,
+      bottomPadding,
       contentHeight: y - topPadding,
       visibleNodes: nodes.slice(start, end),
       offset: start,
@@ -169,7 +166,7 @@ export class ViewportDataGrid<T> extends Common.ObjectWrapper.eventMixin<EventTy
     let scrollTop: number = this.scrollContainer.scrollTop;
     const currentScrollTop = scrollTop;
     const maxScrollTop = Math.max(0, this.contentHeight() - clientHeight);
-    if (!this.updateIsFromUser && this.stickToBottom) {
+    if (!this.updateIsFromUser && this.keepScrollingToBottom) {
       scrollTop = maxScrollTop;
     }
     this.updateIsFromUser = false;
@@ -197,7 +194,7 @@ export class ViewportDataGrid<T> extends Common.ObjectWrapper.eventMixin<EventTy
       const nodes = (this.rootNode() as ViewportDataGridNode<T>).flatChildren();
       const index = nodes.indexOf(visibleNodes[0]);
       this.updateStripesClass(Boolean(index % 2));
-      if (this.stickToBottom && index !== -1 && Boolean(index % 2) !== this.firstVisibleIsStriped) {
+      if (this.keepScrollingToBottom && index !== -1 && Boolean(index % 2) !== this.firstVisibleIsStriped) {
         offset += 1;
       }
     }
@@ -227,7 +224,7 @@ export class ViewportDataGrid<T> extends Common.ObjectWrapper.eventMixin<EventTy
       this.updateWidths();
     }
     this.visibleNodes = visibleNodes;
-    this.dispatchEventToListeners(Events.ViewportCalculated);
+    this.dispatchEventToListeners(Events.VIEWPORT_CALCULATED);
   }
 
   revealViewportNode(node: ViewportDataGridNode<T>): void {
@@ -245,7 +242,7 @@ export class ViewportDataGrid<T> extends Common.ObjectWrapper.eventMixin<EventTy
     const visibleHeight = this.scrollContainer.offsetHeight - this.headerHeightInScroller();
     if (scrollTop > fromY) {
       scrollTop = fromY;
-      this.stickToBottom = false;
+      this.keepScrollingToBottom = false;
     } else if (scrollTop + visibleHeight < toY) {
       scrollTop = toY - visibleHeight;
     }
@@ -253,14 +250,12 @@ export class ViewportDataGrid<T> extends Common.ObjectWrapper.eventMixin<EventTy
   }
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export enum Events {
-  ViewportCalculated = 'ViewportCalculated',
+export const enum Events {
+  VIEWPORT_CALCULATED = 'ViewportCalculated',
 }
 
 export type EventTypes = {
-  [Events.ViewportCalculated]: void,
+  [Events.VIEWPORT_CALCULATED]: void,
 };
 
 export class ViewportDataGridNode<T> extends DataGridNode<ViewportDataGridNode<T>> {
@@ -415,7 +410,7 @@ export class ViewportDataGridNode<T> extends DataGridNode<ViewportDataGridNode<T
       existingElement.classList.remove('expanded');
     }
     if (this.selected) {
-      (this.dataGrid as ViewportDataGrid<T>).updateGridAccessibleName(i18nString(UIStrings.collapsed));
+      (this.dataGrid as ViewportDataGrid<T>).announceSelectedGridNode();
     }
     (this.dataGrid as ViewportDataGrid<T>).scheduleUpdateStructure();
   }
@@ -424,7 +419,7 @@ export class ViewportDataGridNode<T> extends DataGridNode<ViewportDataGridNode<T
     if (this.expanded) {
       return;
     }
-    (this.dataGrid as ViewportDataGrid<T>).stickToBottom = false;
+    (this.dataGrid as ViewportDataGrid<T>).keepScrollingToBottom = false;
     this.clearFlatNodes();
     super.expand();
     (this.dataGrid as ViewportDataGrid<T>).scheduleUpdateStructure();

@@ -4,11 +4,11 @@
 
 import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
-import * as SDK from '../../core/sdk/sdk.js';
+import type * as SDK from '../../core/sdk/sdk.js';
 import * as UI from '../../ui/legacy/legacy.js';
 
-import {type HeapSnapshotView} from './HeapSnapshotView.js';
-import {type ProfileType} from './ProfileHeader.js';
+import type {HeapSnapshotView} from './HeapSnapshotView.js';
+import type {ProfileType} from './ProfileHeader.js';
 import {ProfilesPanel} from './ProfilesPanel.js';
 import {instance} from './ProfileTypeRegistry.js';
 
@@ -21,13 +21,17 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('panels/profiler/HeapProfilerPanel.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 let heapProfilerPanelInstance: HeapProfilerPanel;
-export class HeapProfilerPanel extends ProfilesPanel implements UI.ContextMenu.Provider,
+export class HeapProfilerPanel extends ProfilesPanel implements UI.ContextMenu.Provider<SDK.RemoteObject.RemoteObject>,
                                                                 UI.ActionRegistration.ActionDelegate {
   constructor() {
     const registry = instance;
-    const profileTypes =
-        [registry.heapSnapshotProfileType, registry.trackingHeapSnapshotProfileType, registry.samplingHeapProfileType];
-    super('heap_profiler', profileTypes as ProfileType[], 'profiler.heap-toggle-recording');
+    const profileTypes = [
+      registry.heapSnapshotProfileType,
+      registry.trackingHeapSnapshotProfileType,
+      registry.samplingHeapProfileType,
+      registry.detachedElementProfileType,
+    ];
+    super('heap-profiler', profileTypes as ProfileType[], 'profiler.heap-toggle-recording');
   }
 
   static instance(): HeapProfilerPanel {
@@ -37,16 +41,12 @@ export class HeapProfilerPanel extends ProfilesPanel implements UI.ContextMenu.P
     return heapProfilerPanelInstance;
   }
 
-  appendApplicableItems(event: Event, contextMenu: UI.ContextMenu.ContextMenu, target: Object): void {
-    if (!(target instanceof SDK.RemoteObject.RemoteObject)) {
-      return;
-    }
-
+  appendApplicableItems(_event: Event, contextMenu: UI.ContextMenu.ContextMenu, object: SDK.RemoteObject.RemoteObject):
+      void {
     if (!this.isShowing()) {
       return;
     }
 
-    const object = (target as SDK.RemoteObject.RemoteObject);
     if (!object.objectId) {
       return;
     }
@@ -71,7 +71,8 @@ export class HeapProfilerPanel extends ProfilesPanel implements UI.ContextMenu.P
     }
 
     contextMenu.revealSection().appendItem(
-        i18nString(UIStrings.revealInSummaryView), revealInView.bind(this, 'Summary'));
+        i18nString(UIStrings.revealInSummaryView), revealInView.bind(this, 'Summary'),
+        {jslogContext: 'reveal-in-summary'});
   }
 
   handleAction(_context: UI.Context.Context, _actionId: string): boolean {
@@ -87,11 +88,12 @@ export class HeapProfilerPanel extends ProfilesPanel implements UI.ContextMenu.P
     super.wasShown();
     UI.Context.Context.instance().setFlavor(HeapProfilerPanel, this);
     // Record the memory tool load time.
-    Host.userMetrics.panelLoaded('heap_profiler', 'DevTools.Launch.HeapProfiler');
+    Host.userMetrics.panelLoaded('heap-profiler', 'DevTools.Launch.HeapProfiler');
   }
 
   override willHide(): void {
     UI.Context.Context.instance().setFlavor(HeapProfilerPanel, null);
+    super.willHide();
   }
 
   override showObject(snapshotObjectId: string, perspectiveName: string): void {

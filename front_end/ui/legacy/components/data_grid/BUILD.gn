@@ -14,6 +14,7 @@ generate_css("css_files") {
 devtools_module("data_grid") {
   sources = [
     "DataGrid.ts",
+    "DataGridWithPreview.ts",
     "ShowMoreDataGridNode.ts",
     "SortableDataGrid.ts",
     "ViewportDataGrid.ts",
@@ -53,13 +54,13 @@ devtools_entrypoint("bundle") {
   visibility += devtools_ui_legacy_visibility
 }
 
-devtools_entrypoint("legacy") {
-  entrypoint = "data_grid-legacy.ts"
+ts_library("unittests") {
+  testonly = true
 
-  deps = [ ":bundle" ]
+  sources = [ "DataGrid.test.ts" ]
 
-  visibility = [
-    "../../../..:legacy_entrypoints",
-    "../../../../legacy_test_runner/*",
+  deps = [
+    ":bundle",
+    "../../../../testing",
   ]
 }

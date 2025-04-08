@@ -6,7 +6,7 @@ import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
 import * as TextUtils from '../../models/text_utils/text_utils.js';
 
-import {type ConsoleGroupViewMessage, type ConsoleViewMessage} from './ConsoleViewMessage.js';
+import type {ConsoleGroupViewMessage, ConsoleViewMessage} from './ConsoleViewMessage.js';
 
 export type LevelsMask = {
   [x: string]: boolean,
@@ -147,10 +147,10 @@ export class ConsoleFilter {
   }
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export enum FilterType {
+  /* eslint-disable @typescript-eslint/naming-convention -- Used by web_tests. */
   Context = 'context',
   Source = 'source',
   Url = 'url',
+  /* eslint-enable @typescript-eslint/naming-convention */
 }

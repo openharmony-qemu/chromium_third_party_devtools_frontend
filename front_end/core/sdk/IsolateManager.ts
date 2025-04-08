@@ -4,10 +4,9 @@
 
 import * as Common from '../common/common.js';
 
-import {type HeapProfilerModel} from './HeapProfilerModel.js';
+import type {HeapProfilerModel} from './HeapProfilerModel.js';
 import {RuntimeModel} from './RuntimeModel.js';
-
-import {TargetManager, type SDKModelObserver} from './TargetManager.js';
+import {type SDKModelObserver, TargetManager} from './TargetManager.js';
 
 let isolateManagerInstance: IsolateManager;
 
@@ -138,14 +137,12 @@ export interface Observer {
   isolateChanged(isolate: Isolate): void;
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export enum Events {
-  MemoryChanged = 'MemoryChanged',
+export const enum Events {
+  MEMORY_CHANGED = 'MemoryChanged',
 }
 
 export type EventTypes = {
-  [Events.MemoryChanged]: Isolate,
+  [Events.MEMORY_CHANGED]: Isolate,
 };
 
 export const MemoryTrendWindowMs = 120e3;
@@ -190,7 +187,7 @@ export class Isolate {
     }
     this.#usedHeapSizeInternal = usage.usedSize;
     this.#memoryTrend.add(this.#usedHeapSizeInternal);
-    IsolateManager.instance().dispatchEventToListeners(Events.MemoryChanged, this);
+    IsolateManager.instance().dispatchEventToListeners(Events.MEMORY_CHANGED, this);
   }
 
   samplesCount(): number {
@@ -206,11 +203,6 @@ export class Isolate {
    */
   usedHeapSizeGrowRate(): number {
     return this.#memoryTrend.fitSlope();
-  }
-
-  isMainThread(): boolean {
-    const model = this.runtimeModel();
-    return model ? model.target().id() === 'main' : false;
   }
 }
 

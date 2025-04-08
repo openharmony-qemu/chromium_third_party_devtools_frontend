@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import {assertNotNullOrUndefined, getBrowserAndPages, goToResource} from '../../shared/helper.js';
-import {describe, it} from '../../shared/mocha-extensions.js';
+
 import {
   ensureResourceSectionIsExpanded,
   expandIssue,
@@ -13,7 +13,7 @@ import {
   waitForTableFromResourceSectionContents,
 } from '../helpers/issues-helpers.js';
 
-describe('Cors Private Network issue', async () => {
+describe('Cors Private Network issue', () => {
   beforeEach(async () => {
     await goToResource('empty.html');
   });

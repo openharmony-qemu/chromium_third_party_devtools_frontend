@@ -3,12 +3,13 @@
 // found in the LICENSE file.
 
 import type * as Platform from '../../core/platform/platform.js';
+import type * as Root from '../root/root.js';
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export enum Events {
+  /* eslint-disable @typescript-eslint/naming-convention -- Accessed from web_tests */
   AppendedToURL = 'appendedToURL',
   CanceledSaveURL = 'canceledSaveURL',
+  ColorThemeChanged = 'colorThemeChanged',
   ContextMenuCleared = 'contextMenuCleared',
   ContextMenuItemSelected = 'contextMenuItemSelected',
   DeviceCountUpdated = 'deviceCountUpdated',
@@ -27,7 +28,6 @@ export enum Events {
   IndexingWorked = 'indexingWorked',
   IndexingDone = 'indexingDone',
   KeyEventUnhandled = 'keyEventUnhandled',
-  ReattachRootTarget = 'reattachMainTarget',
   ReloadInspectedPage = 'reloadInspectedPage',
   RevealSourceLine = 'revealSourceLine',
   SavedURL = 'savedURL',
@@ -35,13 +35,13 @@ export enum Events {
   SetInspectedTabId = 'setInspectedTabId',
   SetUseSoftMenu = 'setUseSoftMenu',
   ShowPanel = 'showPanel',
+  /* eslint-enable @typescript-eslint/naming-convention */
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export const EventDescriptors = [
   [Events.AppendedToURL, 'appendedToURL', ['url']],
   [Events.CanceledSaveURL, 'canceledSaveURL', ['url']],
+  [Events.ColorThemeChanged, 'colorThemeChanged', []],
   [Events.ContextMenuCleared, 'contextMenuCleared', []],
   [Events.ContextMenuItemSelected, 'contextMenuItemSelected', ['id']],
   [Events.DeviceCountUpdated, 'deviceCountUpdated', ['count']],
@@ -60,7 +60,6 @@ export const EventDescriptors = [
   [Events.IndexingWorked, 'indexingWorked', ['requestId', 'fileSystemPath', 'worked']],
   [Events.IndexingDone, 'indexingDone', ['requestId', 'fileSystemPath']],
   [Events.KeyEventUnhandled, 'keyEventUnhandled', ['event']],
-  [Events.ReattachRootTarget, 'reattachMainTarget', []],
   [Events.ReloadInspectedPage, 'reloadInspectedPage', ['hard']],
   [Events.RevealSourceLine, 'revealSourceLine', ['url', 'lineNumber', 'columnNumber']],
   [Events.SavedURL, 'savedURL', ['url', 'fileSystemPath']],
@@ -136,6 +135,70 @@ export interface SearchCompletedEvent {
   files: Platform.DevToolsPath.RawPathString[];
 }
 
+export interface DoAidaConversationResult {
+  statusCode?: number;
+  headers?: {
+    [x: string]: string,
+  };
+  netError?: number;
+  netErrorName?: string;
+  error?: string;
+  detail?: string;
+}
+
+export interface AidaClientResult {
+  response?: string;
+  error?: string;
+  detail?: string;
+}
+
+export interface VisualElementImpression {
+  id: number;
+  type: number;
+  parent?: number;
+  context?: number;
+  width?: number;
+  height?: number;
+}
+
+export interface ImpressionEvent {
+  impressions: VisualElementImpression[];
+}
+
+export interface ResizeEvent {
+  veid: number;
+  width?: number;
+  height?: number;
+}
+
+export interface ClickEvent {
+  veid: number;
+  mouseButton?: number;
+  context?: number;
+  doubleClick: boolean;
+}
+
+export interface HoverEvent {
+  veid: number;
+  time?: number;
+  context?: number;
+}
+
+export interface DragEvent {
+  veid: number;
+  context?: number;
+}
+
+export interface ChangeEvent {
+  veid: number;
+  context?: number;
+}
+
+export interface KeyDownEvent {
+  veid?: number;
+  context?: number;
+}
+
 // While `EventDescriptors` are used to dynamically dispatch host binding events,
 // the `EventTypes` "type map" is used for type-checking said events by TypeScript.
 // `EventTypes` is not used at runtime.
@@ -144,6 +207,7 @@ export interface SearchCompletedEvent {
 export type EventTypes = {
   [Events.AppendedToURL]: Platform.DevToolsPath.RawPathString|Platform.DevToolsPath.UrlString,
   [Events.CanceledSaveURL]: Platform.DevToolsPath.UrlString,
+  [Events.ColorThemeChanged]: void,
   [Events.ContextMenuCleared]: void,
   [Events.ContextMenuItemSelected]: number,
   [Events.DeviceCountUpdated]: number,
@@ -162,7 +226,6 @@ export type EventTypes = {
   [Events.IndexingWorked]: IndexingWorkedEvent,
   [Events.IndexingDone]: IndexingEvent,
   [Events.KeyEventUnhandled]: KeyEventUnhandledEvent,
-  [Events.ReattachRootTarget]: void,
   [Events.ReloadInspectedPage]: boolean,
   [Events.RevealSourceLine]: RevealSourceLineEvent,
   [Events.SavedURL]: SavedURLEvent,
@@ -199,13 +262,15 @@ export interface InspectorFrontendHostAPI {
 
   openInNewTab(url: Platform.DevToolsPath.UrlString): void;
 
+  openSearchResultsInNewTab(query: string): void;
+
   showItemInFolder(fileSystemPath: Platform.DevToolsPath.RawPathString): void;
 
   removeFileSystem(fileSystemPath: Platform.DevToolsPath.RawPathString): void;
 
   requestFileSystems(): void;
 
-  save(url: Platform.DevToolsPath.UrlString, content: string, forceSaveAs: boolean): void;
+  save(url: Platform.DevToolsPath.UrlString, content: string, forceSaveAs: boolean, isBase64: boolean): void;
 
   append(url: Platform.DevToolsPath.UrlString, content: string): void;
 
@@ -244,9 +309,14 @@ export interface InspectorFrontendHostAPI {
 
   getSyncInformation(callback: (arg0: SyncInformation) => void): void;
 
+  getHostConfig(callback: (arg0: Root.Runtime.HostConfig) => void): void;
+
   upgradeDraggedFileSystemPermissions(fileSystem: FileSystem): void;
 
   platform(): string;
+
+  recordCountHistogram(histogramName: string, sample: number, min: number, exclusiveMax: number, bucketSize: number):
+      void;
 
   recordEnumeratedHistogram(actionName: EnumeratedHistogram, actionCode: number, bucketSize: number): void;
 
@@ -297,15 +367,35 @@ export interface InspectorFrontendHostAPI {
   setAddExtensionCallback(callback: (arg0: ExtensionDescriptor) => void): void;
 
   initialTargetId(): Promise<string|null>;
+
+  doAidaConversation: (request: string, streamId: number, cb: (result: DoAidaConversationResult) => void) => void;
+  registerAidaClientEvent: (request: string, cb: (result: AidaClientResult) => void) => void;
+
+  recordImpression(event: ImpressionEvent): void;
+  recordClick(event: ClickEvent): void;
+  recordHover(event: HoverEvent): void;
+  recordDrag(event: DragEvent): void;
+  recordChange(event: ChangeEvent): void;
+  recordKeyDown(event: KeyDownEvent): void;
+}
+
+export interface AcceleratorDescriptor {
+  keyCode: number;
+  modifiers: number;
 }
 
 export interface ContextMenuDescriptor {
   type: 'checkbox'|'item'|'separator'|'subMenu';
   id?: number;
   label?: string;
+  accelerator?: AcceleratorDescriptor;
+  isExperimentalFeature?: boolean;
   enabled?: boolean;
   checked?: boolean;
+  isDevToolsPerformanceMenuItem?: boolean;
   subItems?: ContextMenuDescriptor[];
+  shortcut?: string;
+  jslogContext?: string;
 }
 export interface LoadNetworkResourceResult {
   statusCode: number;
@@ -321,6 +411,12 @@ export interface ExtensionDescriptor {
   startPage: string;
   name: string;
   exposeExperimentalAPIs: boolean;
+  hostsPolicy?: ExtensionHostsPolicy;
+  allowFileAccess?: boolean;
+}
+export interface ExtensionHostsPolicy {
+  runtimeAllowedHosts: string[];
+  runtimeBlockedHosts: string[];
 }
 export interface ShowSurveyResult {
   surveyShown: boolean;
@@ -337,6 +433,10 @@ export interface SyncInformation {
   accountEmail?: string;
   /** The image of the account used for syncing. Its a base64 encoded PNG */
   accountImage?: string;
+  /** The full name of the account used for syncing */
+  accountFullName?: string;
+  /** Whether Chrome Sync is paused, equivalent to the user being logged out automatically */
+  isSyncPaused?: boolean;
 }
 
 /**
@@ -346,14 +446,11 @@ export interface SyncInformation {
  * front_end/devtools_compatibility.js
  * @readonly
  */
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export enum EnumeratedHistogram {
+export const enum EnumeratedHistogram {
+  /* eslint-disable @typescript-eslint/naming-convention -- Shadows a legacy enum */
   ActionTaken = 'DevTools.ActionTaken',
-  BreakpointWithConditionAdded = 'DevTools.BreakpointWithConditionAdded',
-  BreakpointEditDialogRevealedFrom = 'DevTools.BreakpointEditDialogRevealedFrom',
-  PanelClosed = 'DevTools.PanelClosed',
   PanelShown = 'DevTools.PanelShown',
+  PanelShownInLocation = 'DevTools.PanelShownInLocation',
   SidebarPaneShown = 'DevTools.SidebarPaneShown',
   KeyboardShortcutFired = 'DevTools.KeyboardShortcutFired',
   IssueCreated = 'DevTools.IssueCreated',
@@ -362,12 +459,11 @@ export enum EnumeratedHistogram {
   IssuesPanelResourceOpened = 'DevTools.IssuesPanelResourceOpened',
   KeybindSetSettingChanged = 'DevTools.KeybindSetSettingChanged',
   ExperimentEnabledAtLaunch = 'DevTools.ExperimentEnabledAtLaunch',
+  ExperimentDisabledAtLaunch = 'DevTools.ExperimentDisabledAtLaunch',
   ExperimentEnabled = 'DevTools.ExperimentEnabled',
   ExperimentDisabled = 'DevTools.ExperimentDisabled',
   DeveloperResourceLoaded = 'DevTools.DeveloperResourceLoaded',
   DeveloperResourceScheme = 'DevTools.DeveloperResourceScheme',
-  LinearMemoryInspectorRevealedFrom = 'DevTools.LinearMemoryInspector.RevealedFrom',
-  LinearMemoryInspectorTarget = 'DevTools.LinearMemoryInspector.Target',
   Language = 'DevTools.Language',
   SyncSetting = 'DevTools.SyncSetting',
   RecordingAssertion = 'DevTools.RecordingAssertion',
@@ -379,15 +475,21 @@ export enum EnumeratedHistogram {
   RecordingReplaySpeed = 'DevTools.RecordingReplaySpeed',
   RecordingReplayStarted = 'DevTools.RecordingReplayStarted',
   RecordingToggled = 'DevTools.RecordingToggled',
+  SourcesPanelFileDebugged = 'DevTools.SourcesPanelFileDebugged',
   SourcesPanelFileOpened = 'DevTools.SourcesPanelFileOpened',
   NetworkPanelResponsePreviewOpened = 'DevTools.NetworkPanelResponsePreviewOpened',
   StyleTextCopied = 'DevTools.StyleTextCopied',
   ManifestSectionSelected = 'DevTools.ManifestSectionSelected',
   CSSHintShown = 'DevTools.CSSHintShown',
   LighthouseModeRun = 'DevTools.LighthouseModeRun',
-  ColorConvertedFrom = 'DevTools.ColorConvertedFrom',
-  ColorPickerOpenedFrom = 'DevTools.ColorPickerOpenedFrom',
+  LighthouseCategoryUsed = 'DevTools.LighthouseCategoryUsed',
   CSSPropertyDocumentation = 'DevTools.CSSPropertyDocumentation',
-  InlineScriptParsed = 'DevTools.InlineScriptParsed',
-  VMInlineScriptTypeShown = 'DevTools.VMInlineScriptShown',
+  SwatchActivated = 'DevTools.SwatchActivated',
+  AnimationPlaybackRateChanged = 'DevTools.AnimationPlaybackRateChanged',
+  AnimationPointDragged = 'DevTools.AnimationPointDragged',
+  LegacyResourceTypeFilterNumberOfSelectedChanged = 'DevTools.LegacyResourceTypeFilterNumberOfSelectedChanged',
+  LegacyResourceTypeFilterItemSelected = 'DevTools.LegacyResourceTypeFilterItemSelected',
+  ResourceTypeFilterNumberOfSelectedChanged = 'DevTools.ResourceTypeFilterNumberOfSelectedChanged',
+  ResourceTypeFilterItemSelected = 'DevTools.ResourceTypeFilterItemSelected',
+  /* eslint-disable @typescript-eslint/naming-convention -- Shadows a legacy enum */
 }

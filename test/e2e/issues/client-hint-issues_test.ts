@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import {assertNotNullOrUndefined, goToResource} from '../../shared/helper.js';
-import {describe, it} from '../../shared/mocha-extensions.js';
+
 import {
   ensureResourceSectionIsExpanded,
   expandIssue,
@@ -13,7 +13,7 @@ import {
   waitForTableFromResourceSectionContents,
 } from '../helpers/issues-helpers.js';
 
-describe('Client Hint issues test', async () => {
+describe('Client Hint issues test', () => {
   it('should display issue when Client Hints are used with invalid origin for DelegateCH', async () => {
     await goToResource('issues/client-hint-issue-DelegateCH-MetaTagAllowListInvalidOrigin.html');
     await navigateToIssuesTab();

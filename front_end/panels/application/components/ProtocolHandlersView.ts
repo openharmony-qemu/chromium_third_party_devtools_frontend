@@ -2,20 +2,23 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import '../../../ui/components/icon_button/icon_button.js';
+
 import * as Host from '../../../core/host/host.js';
 import * as i18n from '../../../core/i18n/i18n.js';
 import * as Platform from '../../../core/platform/platform.js';
 import * as Buttons from '../../../ui/components/buttons/buttons.js';
-import * as ComponentHelpers from '../../../ui/components/helpers/helpers.js';
-import * as IconButton from '../../../ui/components/icon_button/icon_button.js';
 import * as Input from '../../../ui/components/input/input.js';
 // inspectorCommonStyles is imported for the chrome-select class that is used for the dropdown
 // eslint-disable-next-line rulesdir/es_modules_import
 import inspectorCommonStyles from '../../../ui/legacy/inspectorCommon.css.js';
 import * as UI from '../../../ui/legacy/legacy.js';
 import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import * as VisualLogging from '../../../ui/visual_logging/visual_logging.js';
 
 import protocolHandlersViewStyles from './protocolHandlersView.css.js';
+
+const {html} = LitHtml;
 
 const PROTOCOL_DOCUMENT_URL = 'https://web.dev/url-protocol-handler/';
 const UIStrings = {
@@ -84,7 +87,6 @@ export interface ProtocolHandlersData {
 }
 
 export class ProtocolHandlersView extends HTMLElement {
-  static readonly litTagName = LitHtml.literal`devtools-protocol-handlers-view`;
   readonly #shadow = this.attachShadow({mode: 'open'});
   #protocolHandlers: ProtocolHandler[] = [];
   #manifestLink: Platform.DevToolsPath.UrlString = Platform.DevToolsPath.EmptyUrlString;
@@ -107,29 +109,33 @@ export class ProtocolHandlersView extends HTMLElement {
   }
 
   #renderStatusMessage(): LitHtml.TemplateResult {
-    const manifestInTextLink = UI.XLink.XLink.create(this.#manifestLink, i18nString(UIStrings.manifest));
+    const manifestInTextLink =
+        UI.XLink.XLink.create(this.#manifestLink, i18nString(UIStrings.manifest), undefined, undefined, 'manifest');
     const statusString = this.#protocolHandlers.length > 0 ? UIStrings.protocolDetected : UIStrings.protocolNotDetected;
-    const iconData: IconButton.Icon.IconData = this.#protocolHandlers.length > 0 ?
-        {iconName: 'check-circle', color: 'var(--icon-checkmark-green)', width: '16px', height: '16px'} :
-        {iconName: 'info', color: 'var(--icon-default)', width: '16px', height: '16px'};
-    return LitHtml.html`
+    // clang-format off
+    return html`
     <div class="protocol-handlers-row status">
-            <${IconButton.Icon.Icon.litTagName} class="inline-icon" .data=${iconData as IconButton.Icon.IconData}>
-            </${IconButton.Icon.Icon.litTagName}>
+            <devtools-icon class="inline-icon"
+                                                name=${this.#protocolHandlers.length > 0 ? 'check-circle' : 'info'}>
+            </devtools-icon>
             ${i18n.i18n.getFormatLocalizedString(str_, statusString, {
       PH1: manifestInTextLink,
     })}
     </div>
     `;
+    // clang-format on
   }
 
   #renderProtocolTest(): LitHtml.LitTemplate {
     if (this.#protocolHandlers.length === 0) {
       return LitHtml.nothing;
     }
-    const protocolOptions = this.#protocolHandlers.filter(p => p.protocol)
-                                .map(p => LitHtml.html`<option value=${p.protocol}>${p.protocol}://</option>`);
-    return LitHtml.html`
+    const protocolOptions =
+        this.#protocolHandlers.filter(p => p.protocol)
+            .map(p => html`<option value=${p.protocol} jslog=${VisualLogging.item(p.protocol).track({
+                   click: true,
+                 })}>${p.protocol}://</option>`);
+    return html`
        <div class="protocol-handlers-row">
         <select class="chrome-select protocol-select" @change=${this.#handleProtocolSelect} aria-label=${
         i18nString(UIStrings.dropdownLabel)}>
@@ -137,11 +143,10 @@ export class ProtocolHandlersView extends HTMLElement {
         </select>
         <input .value=${this.#queryInputState} class="devtools-text-input" type="text" @change=${
         this.#handleQueryInputChange} aria-label=${i18nString(UIStrings.textboxLabel)}
-        placeholder=${i18nString(UIStrings.textboxPlaceholder)}/>
-        <${Buttons.Button.Button.litTagName} .variant=${Buttons.Button.Variant.PRIMARY} @click=${
-        this.#handleTestProtocolClick}>
+        placeholder=${i18nString(UIStrings.textboxPlaceholder)} />
+        <devtools-button .variant=${Buttons.Button.Variant.PRIMARY} @click=${this.#handleTestProtocolClick}>
             ${i18nString(UIStrings.testProtocol)}
-        </${Buttons.Button.Button.litTagName}>
+        </devtools-button>
         </div>
       `;
   }
@@ -170,36 +175,23 @@ export class ProtocolHandlersView extends HTMLElement {
   }
 
   #render(): void {
-    // #ifdef OHOS_DEVTOOLS
-    const adaptForOhos = true;
-    if (adaptForOhos) {
-      // clang-format off
-      LitHtml.render(LitHtml.html`
-        ${this.#renderStatusMessage()}
-        ${this.#renderProtocolTest()}
-      `, this.#shadow, {host: this});
-      // clang-format on
-    } else {
-      const protocolDocLink =
-          UI.XLink.XLink.create(PROTOCOL_DOCUMENT_URL, i18nString(UIStrings.protocolHandlerRegistrations));
-      // clang-format off
-      LitHtml.render(LitHtml.html`
-        ${this.#renderStatusMessage()}
-        <div class="protocol-handlers-row">
-            ${i18n.i18n.getFormatLocalizedString(str_, UIStrings.needHelpReadOur, {PH1: protocolDocLink})}
-        </div>
-        ${this.#renderProtocolTest()}
-      `, this.#shadow, {host: this});
-      // clang-format on
-    }
-    // #endif OHOS_DEVTOOLS
+    const protocolDocLink = UI.XLink.XLink.create(
+        PROTOCOL_DOCUMENT_URL, i18nString(UIStrings.protocolHandlerRegistrations), undefined, undefined, 'learn-more');
+    // clang-format off
+    LitHtml.render(html`
+      ${this.#renderStatusMessage()}
+      <div class="protocol-handlers-row">
+          ${i18n.i18n.getFormatLocalizedString(str_, UIStrings.needHelpReadOur, {PH1: protocolDocLink})}
+      </div>
+      ${this.#renderProtocolTest()}
+    `, this.#shadow, {host: this});
+    // clang-format on
   }
 }
 
-ComponentHelpers.CustomElements.defineComponent('devtools-protocol-handlers-view', ProtocolHandlersView);
+customElements.define('devtools-protocol-handlers-view', ProtocolHandlersView);
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface HTMLElementTagNameMap {
     'devtools-protocol-handlers-view': ProtocolHandlersView;
   }

@@ -3,16 +3,16 @@
 # found in the LICENSE file.
 
 import("../../../../../scripts/build/ninja/copy.gni")
-import("../../../../../third_party/typescript/typescript.gni")
+import("../../../../../scripts/build/typescript/typescript.gni")
 
 ts_library("ts") {
   testonly = true
   sources = [ "basic.ts" ]
 
   deps = [
-    "../../../../../test/unittests/front_end/helpers",
+    "../../../../panels/linear_memory_inspector/components:bundle",
+    "../../../../testing",
     "../../../../ui/components/helpers:bundle",
-    "../../../../ui/components/linear_memory_inspector:bundle",
   ]
 }
 

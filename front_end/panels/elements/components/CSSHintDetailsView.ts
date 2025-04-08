@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import * as ComponentHelpers from '../../../ui/components/helpers/helpers.js';
-import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import '../../../ui/legacy/legacy.js';
+
 import * as i18n from '../../../core/i18n/i18n.js';
+import * as LitHtml from '../../../ui/lit-html/lit-html.js';
 
 import cssHintDetailsViewStyles from './cssHintDetailsView.css.js';
 
@@ -26,7 +27,6 @@ interface Hint {
 }
 
 export class CSSHintDetailsView extends HTMLElement {
-    static readonly litTagName = LitHtml.literal`devtools-css-hint-details-view`;
     readonly #shadow = this.attachShadow({mode: 'open'});
     readonly #authoringHint: Hint;
 
@@ -49,7 +49,7 @@ export class CSSHintDetailsView extends HTMLElement {
               <div class="hint-popup-possible-fix">
                   ${Directives.unsafeHTML(this.#authoringHint.getPossibleFixMessage())}
                   ${link ? html`
-                      <x-link id="learn-more" href=${link} class="clickable underlined unbreakable-text"}>
+                      <x-link id="learn-more" href=${link} class="clickable underlined unbreakable-text">
                           ${i18nString(UIStrings.learnMore)}
                       </x-link>
                   `: ''}
@@ -63,11 +63,10 @@ export class CSSHintDetailsView extends HTMLElement {
     }
 }
 
-ComponentHelpers.CustomElements.defineComponent('devtools-css-hint-details-view', CSSHintDetailsView);
+customElements.define('devtools-css-hint-details-view', CSSHintDetailsView);
 
 declare global {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    interface HTMLElementTagNameMap {
-      'devtools-css-hint-details-view': CSSHintDetailsView;
-    }
+  interface HTMLElementTagNameMap {
+    'devtools-css-hint-details-view': CSSHintDetailsView;
+  }
 }

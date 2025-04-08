@@ -11,6 +11,8 @@ import './NetworkManager.js';
 import './RuntimeModel.js';
 
 import * as AccessibilityModel from './AccessibilityModel.js';
+import * as AnimationModel from './AnimationModel.js';
+import * as AutofillModel from './AutofillModel.js';
 import * as CategorizedBreakpoint from './CategorizedBreakpoint.js';
 import * as ChildTargetManager from './ChildTargetManager.js';
 import * as CompilerSourceMappingContentProvider from './CompilerSourceMappingContentProvider.js';
@@ -41,8 +43,8 @@ import * as DebuggerModel from './DebuggerModel.js';
 import * as DOMDebuggerModel from './DOMDebuggerModel.js';
 import * as DOMModel from './DOMModel.js';
 import * as EmulationModel from './EmulationModel.js';
+import * as EnhancedTracesParser from './EnhancedTracesParser.js';
 import * as EventBreakpointsModel from './EventBreakpointsModel.js';
-import * as FilmStripModel from './FilmStripModel.js';
 import * as FrameAssociated from './FrameAssociated.js';
 import * as FrameManager from './FrameManager.js';
 import * as HeapProfilerModel from './HeapProfilerModel.js';
@@ -70,21 +72,26 @@ import * as ScreenCaptureModel from './ScreenCaptureModel.js';
 import * as Script from './Script.js';
 import * as SDKModel from './SDKModel.js';
 import * as SecurityOriginManager from './SecurityOriginManager.js';
+import * as ServerSentEventProtocol from './ServerSentEventsProtocol.js';
 import * as ServerTiming from './ServerTiming.js';
 import * as ServiceWorkerCacheModel from './ServiceWorkerCacheModel.js';
 import * as ServiceWorkerManager from './ServiceWorkerManager.js';
 import * as SourceMap from './SourceMap.js';
 import * as SourceMapManager from './SourceMapManager.js';
+import * as SourceMapScopeChainEntry from './SourceMapScopeChainEntry.js';
+import * as SourceMapScopes from './SourceMapScopes.js';
+import * as SourceMapScopesInfo from './SourceMapScopesInfo.js';
+import * as StorageBucketsModel from './StorageBucketsModel.js';
 import * as StorageKeyManager from './StorageKeyManager.js';
 import * as Target from './Target.js';
 import * as TargetManager from './TargetManager.js';
-import * as TraceSDKServices from './TraceSDKServices.js';
-import * as TracingManager from './TracingManager.js';
-import * as TracingModel from './TracingModel.js';
+import * as TraceObject from './TraceObject.js';
 import * as WebAuthnModel from './WebAuthnModel.js';
 
 export {
   AccessibilityModel,
+  AnimationModel,
+  AutofillModel,
   CategorizedBreakpoint,
   ChildTargetManager,
   CompilerSourceMappingContentProvider,
@@ -115,8 +122,8 @@ export {
   DOMDebuggerModel,
   DOMModel,
   EmulationModel,
+  EnhancedTracesParser,
   EventBreakpointsModel,
-  FilmStripModel,
   FrameAssociated,
   FrameManager,
   HeapProfilerModel,
@@ -144,16 +151,19 @@ export {
   Script,
   SDKModel,
   SecurityOriginManager,
+  ServerSentEventProtocol,
   ServerTiming,
   ServiceWorkerCacheModel,
   ServiceWorkerManager,
   SourceMap,
   SourceMapManager,
+  SourceMapScopeChainEntry,
+  SourceMapScopes,
+  SourceMapScopesInfo,
+  StorageBucketsModel,
   StorageKeyManager,
   Target,
   TargetManager,
-  TraceSDKServices,
-  TracingManager,
-  TracingModel,
+  TraceObject,
   WebAuthnModel,
 };

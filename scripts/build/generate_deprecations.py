@@ -26,6 +26,13 @@ GENERATED_LOCATION = path.join(ROOT_DIRECTORY, 'front_end', 'generated',
 READ_LOCATION = path.join(ROOT_DIRECTORY, 'third_party', 'blink', 'renderer',
                           'core', 'frame', 'deprecation', 'deprecation.json5')
 
+# Deprecations in this list are exempt from code generation as they are not
+# dispatched to the DevTools.
+EXEMPTED_FROM_DEVTOOLS_GENERATION = {
+    "ThirdPartyCookieAccessWarning",
+    "ThirdPartyCookieAccessError",
+}
+
 
 def deprecations_from_file(file_name):
     with open(file_name) as json5_file:
@@ -37,7 +44,13 @@ def deprecations_from_file(file_name):
     meta = {}
     ui_strings = {}
     for entry in doc["data"]:
+        if "obsolete_to_be_removed_after_milestone" in entry:
+            continue
+
         name = entry["name"]
+
+        if name in EXEMPTED_FROM_DEVTOOLS_GENERATION:
+            continue
 
         meta_for_entry = {}
         if "milestone" in entry:

@@ -3,25 +3,28 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {type BrowserAndPages} from '../../conductor/puppeteer-state.js';
 
+import {unregisterAllServiceWorkers} from '../../conductor/hooks.js';
+import type {BrowserAndPages} from '../../conductor/puppeteer-state.js';
 import {
   click,
-  disableExperiment,
   getBrowserAndPages,
+  hasClass,
   pressKey,
   step,
   waitFor,
   waitForElementWithTextContent,
   waitForFunction,
 } from '../../shared/helper.js';
-import {describe, it} from '../../shared/mocha-extensions.js';
 import {
+  clearTextFilter,
   getAllRequestNames,
   navigateToNetworkTab,
   selectRequestByName,
   setCacheDisabled,
+  setInvert,
   setPersistLog,
+  setTextFilter,
   waitForSelectedRequestChange,
   waitForSomeRequestsToAppear,
 } from '../helpers/network-helpers.js';
@@ -43,7 +46,7 @@ async function getRequestRowInfo(frontend: BrowserAndPages['frontend'], name: st
   return {status: statusColumn[index], time: timeColumn[index], type: typeColumn[index]};
 }
 
-describe('The Network Tab', async function() {
+describe('The Network Tab', function() {
   if (this.timeout() !== 0.0) {
     // These tests take some time on slow windows machines.
     this.timeout(10000);
@@ -53,21 +56,25 @@ describe('The Network Tab', async function() {
   };
 
   beforeEach(async () => {
-    // Automatic pretty printing doesn't play well with the assertions.
-    await disableExperiment('sourcesPrettyPrint');
-
     await navigateToNetworkTab('empty.html');
+    await setTextFilter('favicon.ico');
+    await setInvert(true);
     await setCacheDisabled(true);
     await setPersistLog(false);
+  });
+
+  afterEach(async () => {
+    await unregisterAllServiceWorkers();
+    await clearTextFilter();
   });
 
   it('can click on checkbox label to toggle checkbox', async () => {
     await navigateToNetworkTab('resources-from-cache.html');
 
     // Click the label next to the checkbox input element
-    await click('[aria-label="Disable cache"] + label');
+    await click('[title^="Disable cache"] + label');
 
-    const checkbox = await waitFor('[aria-label="Disable cache"]');
+    const checkbox = await waitFor('[title^="Disable cache"]');
     const checked = await checkbox.evaluate(box => (box as HTMLInputElement).checked);
 
     assert.strictEqual(checked, false, 'The disable cache checkbox should be unchecked');
@@ -157,18 +164,23 @@ describe('The Network Tab', async function() {
 
     // Open the HTML file that was loaded
     await click('td.name-column');
-    // Wait for the detailed network information pane to show up
-    await waitFor('[aria-label="Response"]');
     // Open the raw response HTML
     await click('[aria-label="Response"]');
+    // Disable pretty printing
+    const prettyPrintButton = await waitFor('[title="Pretty print"]');
+    if (await hasClass(prettyPrintButton, 'toggled')) {
+      await click('[title="Pretty print"]');
+    }
+    // await new Promise<void>(resolve => setTimeout(resolve, 25000));
+    assert.isFalse(await hasClass(prettyPrintButton, 'toggled'));
     // Wait for the raw response editor to show up
     const codeMirrorEditor = await waitFor('[aria-label="Code editor"]');
 
     const htmlRawResponse = await codeMirrorEditor.evaluate(editor => editor.textContent);
 
-    assert.strictEqual(
+    assert.include(
         htmlRawResponse,
-        '<html><body>The following word is written using cyrillic letters and should look like "SUCCESS": SU\u0421\u0421\u0415SS.</body></html>');
+        '<body>The following word is written using cyrillic letters and should look like "SUCCESS": SU\u0421\u0421\u0415SS.</body>');
   });
 
   it('the correct MIME type when resources came from HTTP cache', async () => {
@@ -269,7 +281,7 @@ describe('The Network Tab', async function() {
       const expectedValues = JSON.stringify(['Remote Address Space', 'Local', 'Local']);
       await waitForFunction(async () => {
         const remoteAddressSpaceValues = await frontend.$$eval(
-            'pierce/.remoteaddress-space-column',
+            'pierce/.remote-address-space-column',
             cells => cells.map(element => element.textContent),
         );
         return JSON.stringify(remoteAddressSpaceValues) === expectedValues;
@@ -376,8 +388,10 @@ describe('The Network Tab', async function() {
     await navigateToNetworkTab('send_beacon_on_unload.html');
 
     await setCacheDisabled(true);
+    await target.bringToFront();
     await target.reload({waitUntil: 'networkidle0'});
 
+    await frontend.bringToFront();
     await waitForSomeRequestsToAppear(1);
 
     await setPersistLog(true);
@@ -387,9 +401,9 @@ describe('The Network Tab', async function() {
 
     // We need to wait for the network log to update.
     await waitForFunction(async () => {
-      const {status, time} = await getRequestRowInfo(frontend, 'sendBeacon');
+      const {status} = await getRequestRowInfo(frontend, 'sendBeacon');
       // Depending on timing of the reporting, the status infomation (404) might reach DevTools in time.
-      return (status === '(unknown)' || status === '404Not Found') && time === '(unknown)';
+      return (status === '(unknown)' || status === '404Not Found');
     });
   });
 
@@ -422,8 +436,7 @@ describe('The Network Tab', async function() {
       return document.querySelector('.network-log-grid tbody tr.selected')?.getAttribute('style');
     });
 
-    assert.deepStrictEqual(
-        await getSelectedRequestBgColor(), 'background-color: var(--network-grid-focus-selected-color);');
+    assert.deepStrictEqual(await getSelectedRequestBgColor(), 'background-color: var(--color-grid-focus-selected);');
   });
 
   it('shows the request panel when clicked during a websocket message (https://crbug.com/1222382)', async () => {
@@ -452,7 +465,7 @@ describe('The Network Tab', async function() {
       }),
     ];
     await navigateToNetworkTab('service-worker.html');
-    await target.waitForXPath('//div[@id="content" and text()="pong"]');
+    await target.waitForSelector('xpath///div[@id="content" and text()="pong"]');
     await Promise.all(promises);
   });
 });

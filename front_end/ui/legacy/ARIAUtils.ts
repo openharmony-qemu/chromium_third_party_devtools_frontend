@@ -4,12 +4,12 @@
 
 import * as Platform from '../../core/platform/platform.js';
 
-// TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-// eslint-disable-next-line @typescript-eslint/naming-convention
-let _id = 0;
+import {Dialog} from './Dialog.js';
+
+let id = 0;
 
 export function nextId(prefix: string): string {
-  return (prefix || '') + ++_id;
+  return (prefix || '') + ++id;
 }
 
 export function bindLabelToControl(label: Element, control: Element): void {
@@ -253,26 +253,15 @@ export function setLevel(element: Element, level: number): void {
   element.setAttribute('aria-level', level.toString());
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export enum AutocompleteInteractionModel {
-  // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-  // eslint-disable-next-line @typescript-eslint/naming-convention
-  inline = 'inline',
-  // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-  // eslint-disable-next-line @typescript-eslint/naming-convention
-  list = 'list',
-  // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-  // eslint-disable-next-line @typescript-eslint/naming-convention
-  both = 'both',
-  // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-  // eslint-disable-next-line @typescript-eslint/naming-convention
-  none = 'none',
+export const enum AutocompleteInteractionModel {
+  INLINE = 'inline',
+  LIST = 'list',
+  BOTH = 'both',
+  NONE = 'none',
 }
 
 export function setAutocomplete(
-    element: Element,
-    interactionModel: AutocompleteInteractionModel|undefined = AutocompleteInteractionModel.none): void {
+    element: Element, interactionModel: AutocompleteInteractionModel = AutocompleteInteractionModel.NONE): void {
   element.setAttribute('aria-autocomplete', interactionModel);
 }
 
@@ -281,17 +270,17 @@ export function clearAutocomplete(element: Element): void {
 }
 
 export const enum PopupRole {
-  False = 'false',      // (default) Indicates the element does not have a popup.
-  True = 'true',        // Indicates the popup is a menu.
-  Menu = 'menu',        // Indicates the popup is a menu.
-  ListBox = 'listbox',  // Indicates the popup is a listbox.
-  Tree = 'tree',        // Indicates the popup is a tree.
-  Grid = 'grid',        // Indicates the popup is a grid.
-  Dialog = 'dialog',    // Indicates the popup is a dialog.
+  FALSE = 'false',       // (default) Indicates the element does not have a popup.
+  TRUE = 'true',         // Indicates the popup is a menu.
+  MENU = 'menu',         // Indicates the popup is a menu.
+  LIST_BOX = 'listbox',  // Indicates the popup is a listbox.
+  TREE = 'tree',         // Indicates the popup is a tree.
+  GRID = 'grid',         // Indicates the popup is a grid.
+  DIALOG = 'dialog',     // Indicates the popup is a dialog.
 }
 
-export function setHasPopup(element: Element, value: PopupRole = PopupRole.False): void {
-  if (value !== PopupRole.False) {
+export function setHasPopup(element: Element, value: PopupRole = PopupRole.FALSE): void {
+  if (value !== PopupRole.FALSE) {
     element.setAttribute('aria-haspopup', value);
   } else {
     element.removeAttribute('aria-haspopup');
@@ -340,7 +329,7 @@ export function setProgressBarValue(element: Element, valueNow: number, valueTex
   }
 }
 
-export function setAccessibleName(element: Element, name: string): void {
+export function setLabel(element: Element, name: string): void {
   element.setAttribute('aria-label', name);
 }
 
@@ -391,37 +380,48 @@ function hideFromLayout(element: HTMLElement): void {
   element.style.overflow = 'hidden';
 }
 
-let alertElementOne: HTMLElement|undefined;
-let alertElementTwo: HTMLElement|undefined;
-let alertToggle: boolean = false;
+type AlertState = {
+  one: HTMLDivElement,
+  two: HTMLDivElement,
+  alertToggle: boolean,
+};
+const alertElements = new WeakMap<HTMLElement, AlertState>();
+
+function createAlertElement(container: HTMLElement): HTMLDivElement {
+  const element = container.createChild('div');
+  hideFromLayout(element);
+  element.setAttribute('role', 'alert');
+  element.setAttribute('aria-atomic', 'true');
+  return element as HTMLDivElement;
+}
+
+export function getOrCreateAlertElements(container: HTMLElement = document.body): AlertState {
+  let state = alertElements.get(container);
+  if (!state) {
+    state = {
+      one: createAlertElement(container),
+      two: createAlertElement(container),
+      alertToggle: false,
+    };
+    alertElements.set(container, state);
+  }
+  return state;
+}
 
 /**
  * This function instantiates and switches off returning one of two offscreen alert elements.
  * We utilize two alert elements to ensure that alerts with the same string are still registered
  * as changes and trigger screen reader announcement.
  */
-export function alertElementInstance(): HTMLElement {
-  if (!alertElementOne) {
-    const element = document.body.createChild('div') as HTMLElement;
-    hideFromLayout(element);
-    element.setAttribute('role', 'alert');
-    element.setAttribute('aria-atomic', 'true');
-    alertElementOne = element;
+export function alertElementInstance(container = document.body): HTMLElement {
+  const state = getOrCreateAlertElements(container);
+  state.alertToggle = !state.alertToggle;
+  if (state.alertToggle) {
+    state.two.textContent = '';
+    return state.one;
   }
-  if (!alertElementTwo) {
-    const element = document.body.createChild('div') as HTMLElement;
-    hideFromLayout(element);
-    element.setAttribute('role', 'alert');
-    element.setAttribute('aria-atomic', 'true');
-    alertElementTwo = element;
-  }
-  alertToggle = !alertToggle;
-  if (alertToggle) {
-    alertElementTwo.textContent = '';
-    return alertElementOne;
-  }
-  alertElementOne.textContent = '';
-  return alertElementTwo;
+  state.one.textContent = '';
+  return state.two;
 }
 
 /**
@@ -429,6 +429,7 @@ export function alertElementInstance(): HTMLElement {
  * Setting the textContent would allow the SR to access the offscreen element via browse mode
  */
 export function alert(message: string): void {
-  const element = alertElementInstance();
+  const dialog = Dialog.getInstance();
+  const element = alertElementInstance(dialog && dialog.isShowing() ? dialog.contentElement : undefined);
   element.textContent = Platform.StringUtilities.trimEndWithMaxLength(message, 10000);
 }

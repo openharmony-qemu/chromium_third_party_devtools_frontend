@@ -6,15 +6,15 @@ import * as Common from '../../core/common/common.js';
 import type * as Platform from '../../core/platform/platform.js';
 import * as UI from '../../ui/legacy/legacy.js';
 
-import {type ResourcesPanel} from './ResourcesPanel.js';
+import type {ResourcesPanel} from './ResourcesPanel.js';
 
 export class ApplicationPanelTreeElement extends UI.TreeOutline.TreeElement {
   protected readonly resourcesPanel: ResourcesPanel;
 
-  constructor(resourcesPanel: ResourcesPanel, title: string, expandable: boolean) {
-    super(title, expandable);
+  constructor(resourcesPanel: ResourcesPanel, title: string, expandable: boolean, jslogContext: string) {
+    super(title, expandable, jslogContext);
     this.resourcesPanel = resourcesPanel;
-    UI.ARIAUtils.setAccessibleName(this.listItemElement, title);
+    UI.ARIAUtils.setLabel(this.listItemElement, title);
     this.listItemElement.tabIndex = -1;
   }
 
@@ -56,9 +56,9 @@ export class ExpandableApplicationPanelTreeElement extends ApplicationPanelTreeE
   protected categoryLink: Platform.DevToolsPath.UrlString|null;
 
   constructor(resourcesPanel: ResourcesPanel, categoryName: string, settingsKey: string, settingsDefault = false) {
-    super(resourcesPanel, categoryName, false);
+    super(resourcesPanel, categoryName, false, settingsKey);
     this.expandedSetting =
-        Common.Settings.Settings.instance().createSetting('resources' + settingsKey + 'Expanded', settingsDefault);
+        Common.Settings.Settings.instance().createSetting('resources-' + settingsKey + '-expanded', settingsDefault);
     this.categoryName = categoryName;
     this.categoryLink = null;
   }

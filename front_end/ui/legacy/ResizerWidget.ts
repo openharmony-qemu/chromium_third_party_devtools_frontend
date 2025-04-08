@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as Common from '../../core/common/common.js';
+
 import {elementDragStart} from './UIUtils.js';
 
 export class ResizerWidget extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
@@ -97,7 +98,7 @@ export class ResizerWidget extends Common.ObjectWrapper.ObjectWrapper<EventTypes
   }
 
   sendDragStart(x: number, y: number): void {
-    this.dispatchEventToListeners(Events.ResizeStart, {startX: x, currentX: x, startY: y, currentY: y});
+    this.dispatchEventToListeners(Events.RESIZE_START, {startX: x, currentX: x, startY: y, currentY: y});
   }
 
   private drag(event: MouseEvent): boolean {
@@ -111,25 +112,21 @@ export class ResizerWidget extends Common.ObjectWrapper.ObjectWrapper<EventTypes
   }
 
   sendDragMove(startX: number, currentX: number, startY: number, currentY: number, shiftKey: boolean): void {
-    this.dispatchEventToListeners(
-        Events.ResizeUpdateXY,
-        {startX: startX, currentX: currentX, startY: startY, currentY: currentY, shiftKey: shiftKey});
+    this.dispatchEventToListeners(Events.RESIZE_UPDATE_XY, {startX, currentX, startY, currentY, shiftKey});
   }
 
   private dragEnd(_event: MouseEvent): void {
-    this.dispatchEventToListeners(Events.ResizeEnd);
+    this.dispatchEventToListeners(Events.RESIZE_END);
     delete this.startX;
     delete this.startY;
   }
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export enum Events {
-  ResizeStart = 'ResizeStart',
-  ResizeUpdateXY = 'ResizeUpdateXY',
-  ResizeUpdatePosition = 'ResizeUpdatePosition',
-  ResizeEnd = 'ResizeEnd',
+export const enum Events {
+  RESIZE_START = 'ResizeStart',
+  RESIZE_UPDATE_XY = 'ResizeUpdateXY',
+  RESIZE_UPDATE_POSITION = 'ResizeUpdatePosition',
+  RESIZE_END = 'ResizeEnd',
 }
 
 export interface ResizeStartXYEvent {
@@ -159,10 +156,10 @@ export interface ResizeUpdatePositionEvent {
 }
 
 export type EventTypes = {
-  [Events.ResizeStart]: ResizeStartXYEvent|ResizeStartPositionEvent,
-  [Events.ResizeUpdateXY]: ResizeUpdateXYEvent,
-  [Events.ResizeUpdatePosition]: ResizeUpdatePositionEvent,
-  [Events.ResizeEnd]: void,
+  [Events.RESIZE_START]: ResizeStartXYEvent|ResizeStartPositionEvent,
+  [Events.RESIZE_UPDATE_XY]: ResizeUpdateXYEvent,
+  [Events.RESIZE_UPDATE_POSITION]: ResizeUpdatePositionEvent,
+  [Events.RESIZE_END]: void,
 };
 
 export class SimpleResizerWidget extends ResizerWidget {
@@ -190,16 +187,16 @@ export class SimpleResizerWidget extends ResizerWidget {
 
   override sendDragStart(x: number, y: number): void {
     const position = this.isVerticalInternal ? y : x;
-    this.dispatchEventToListeners(Events.ResizeStart, {startPosition: position, currentPosition: position});
+    this.dispatchEventToListeners(Events.RESIZE_START, {startPosition: position, currentPosition: position});
   }
 
   override sendDragMove(startX: number, currentX: number, startY: number, currentY: number, shiftKey: boolean): void {
     if (this.isVerticalInternal) {
       this.dispatchEventToListeners(
-          Events.ResizeUpdatePosition, {startPosition: startY, currentPosition: currentY, shiftKey: shiftKey});
+          Events.RESIZE_UPDATE_POSITION, {startPosition: startY, currentPosition: currentY, shiftKey});
     } else {
       this.dispatchEventToListeners(
-          Events.ResizeUpdatePosition, {startPosition: startX, currentPosition: currentX, shiftKey: shiftKey});
+          Events.RESIZE_UPDATE_POSITION, {startPosition: startX, currentPosition: currentX, shiftKey});
     }
   }
 }

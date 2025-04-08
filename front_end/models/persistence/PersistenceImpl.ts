@@ -8,6 +8,7 @@ import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as Bindings from '../bindings/bindings.js';
+import * as BreakpointManager from '../breakpoints/breakpoints.js';
 import * as Workspace from '../workspace/workspace.js';
 
 import {Automapping, type AutomappingStatus} from './Automapping.js';
@@ -17,14 +18,15 @@ let persistenceInstance: PersistenceImpl;
 
 export class PersistenceImpl extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
   private readonly workspace: Workspace.Workspace.WorkspaceImpl;
-  private readonly breakpointManager: Bindings.BreakpointManager.BreakpointManager;
+  private readonly breakpointManager: BreakpointManager.BreakpointManager.BreakpointManager;
   private readonly filePathPrefixesToBindingCount: FilePathPrefixesBindingCounts;
   private subscribedBindingEventListeners:
       Platform.MapUtilities.Multimap<Workspace.UISourceCode.UISourceCode, () => void>;
   private readonly mapping: Automapping;
 
   constructor(
-      workspace: Workspace.Workspace.WorkspaceImpl, breakpointManager: Bindings.BreakpointManager.BreakpointManager) {
+      workspace: Workspace.Workspace.WorkspaceImpl,
+      breakpointManager: BreakpointManager.BreakpointManager.BreakpointManager) {
     super();
     this.workspace = workspace;
     this.breakpointManager = breakpointManager;
@@ -42,7 +44,7 @@ export class PersistenceImpl extends Common.ObjectWrapper.ObjectWrapper<EventTyp
   static instance(opts: {
     forceNew: boolean|null,
     workspace: Workspace.Workspace.WorkspaceImpl|null,
-    breakpointManager: Bindings.BreakpointManager.BreakpointManager|null,
+    breakpointManager: BreakpointManager.BreakpointManager.BreakpointManager|null,
   } = {forceNew: null, workspace: null, breakpointManager: null}): PersistenceImpl {
     const {forceNew, workspace, breakpointManager} = opts;
     if (!persistenceInstance || forceNew) {
@@ -178,9 +180,9 @@ export class PersistenceImpl extends Common.ObjectWrapper.ObjectWrapper<EventTyp
     }
 
     const target = Bindings.NetworkProject.NetworkProject.targetForUISourceCode(binding.network);
-    if (target && target.type() === SDK.Target.Type.Node) {
+    if (target && target.type() === SDK.Target.Type.NODE) {
       const newContent = uiSourceCode.workingCopy();
-      void other.requestContent().then(() => {
+      void other.requestContentData().then(() => {
         const nodeJSContent = PersistenceImpl.rewrapNodeJSContent(other, other.workingCopy(), newContent);
         setWorkingCopy.call(this, () => nodeJSContent);
       });
@@ -215,7 +217,7 @@ export class PersistenceImpl extends Common.ObjectWrapper.ObjectWrapper<EventTyp
     }
     const other = binding.network === uiSourceCode ? binding.fileSystem : binding.network;
     const target = Bindings.NetworkProject.NetworkProject.targetForUISourceCode(binding.network);
-    if (target && target.type() === SDK.Target.Type.Node) {
+    if (target && target.type() === SDK.Target.Type.NODE) {
       void other.requestContent().then(currentContent => {
         const nodeJSContent = PersistenceImpl.rewrapNodeJSContent(other, currentContent.content || '', newContent);
         setContent.call(this, nodeJSContent);
@@ -267,7 +269,7 @@ export class PersistenceImpl extends Common.ObjectWrapper.ObjectWrapper<EventTyp
       await breakpoint.remove(false /* keepInStorage */);
       return this.breakpointManager.setBreakpoint(
           to, breakpoint.lineNumber(), breakpoint.columnNumber(), breakpoint.condition(), breakpoint.enabled(),
-          breakpoint.isLogpoint(), Bindings.BreakpointManager.BreakpointOrigin.OTHER);
+          breakpoint.isLogpoint(), BreakpointManager.BreakpointManager.BreakpointOrigin.OTHER);
     }));
   }
 
@@ -376,32 +378,17 @@ export const NodePrefix = '(function (exports, require, module, __filename, __di
 export const NodeSuffix = '\n});';
 export const NodeShebang = '#!/usr/bin/env node';
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export enum Events {
+  /* eslint-disable @typescript-eslint/naming-convention -- Used by web_tests. */
   BindingCreated = 'BindingCreated',
   BindingRemoved = 'BindingRemoved',
+  /* eslint-enable @typescript-eslint/naming-convention */
 }
 
 export type EventTypes = {
   [Events.BindingCreated]: PersistenceBinding,
   [Events.BindingRemoved]: PersistenceBinding,
 };
-
-export class PathEncoder {
-  private readonly encoder: Common.CharacterIdMap.CharacterIdMap<string>;
-  constructor() {
-    this.encoder = new Common.CharacterIdMap.CharacterIdMap();
-  }
-
-  encode(path: string): string {
-    return path.split('/').map(token => this.encoder.toChar(token)).join('');
-  }
-
-  decode(path: string): string {
-    return path.split('').map(token => this.encoder.fromChar(token)).join('/');
-  }
-}
 
 export class PersistenceBinding {
   network: Workspace.UISourceCode.UISourceCode;

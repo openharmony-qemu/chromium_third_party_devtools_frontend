@@ -29,14 +29,14 @@
  */
 
 import * as Common from '../../core/common/common.js';
+import * as Host from '../../core/host/host.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as TextUtils from '../text_utils/text_utils.js';
 import * as Workspace from '../workspace/workspace.js';
 
-import {type IsolatedFileSystem} from './IsolatedFileSystem.js';
-
+import type {IsolatedFileSystem} from './IsolatedFileSystem.js';
 import {Events, type IsolatedFileSystemManager} from './IsolatedFileSystemManager.js';
-import {type PlatformFileSystem} from './PlatformFileSystem.js';
+import type {PlatformFileSystem} from './PlatformFileSystem.js';
 
 export class FileSystemWorkspaceBinding {
   readonly isolatedFileSystemManager: IsolatedFileSystemManager;
@@ -235,7 +235,7 @@ export class FileSystem extends Workspace.Workspace.ProjectStore {
   }
 
   requestFileContent(uiSourceCode: Workspace.UISourceCode.UISourceCode):
-      Promise<TextUtils.ContentProvider.DeferredContent> {
+      Promise<TextUtils.ContentData.ContentDataOrError> {
     const filePath = this.filePathForUISourceCode(uiSourceCode);
     return this.fileSystemInternal.requestFileContent(filePath);
   }
@@ -293,17 +293,15 @@ export class FileSystem extends Workspace.Workspace.ProjectStore {
       uiSourceCode: Workspace.UISourceCode.UISourceCode, query: string, caseSensitive: boolean,
       isRegex: boolean): Promise<TextUtils.ContentProvider.SearchMatch[]> {
     const filePath = this.filePathForUISourceCode(uiSourceCode);
-    const {content} = await this.fileSystemInternal.requestFileContent(filePath);
-    if (content) {
-      return TextUtils.TextUtils.performSearchInContent(content, query, caseSensitive, isRegex);
-    }
-    return [];
+    const content = await this.fileSystemInternal.requestFileContent(filePath);
+    return TextUtils.TextUtils.performSearchInContentData(content, query, caseSensitive, isRegex);
   }
 
   async findFilesMatchingSearchRequest(
-      searchConfig: Workspace.Workspace.ProjectSearchConfig, filesMatchingFileQuery: Platform.DevToolsPath.UrlString[],
-      progress: Common.Progress.Progress): Promise<string[]> {
-    let result: string[] = filesMatchingFileQuery;
+      searchConfig: Workspace.SearchConfig.SearchConfig, filesMatchingFileQuery: Workspace.UISourceCode.UISourceCode[],
+      progress: Common.Progress.Progress):
+      Promise<Map<Workspace.UISourceCode.UISourceCode, TextUtils.ContentProvider.SearchMatch[]|null>> {
+    let workingFileSet: string[] = filesMatchingFileQuery.map(uiSoureCode => uiSoureCode.url());
     const queriesToRun = searchConfig.queries().slice();
     if (!queriesToRun.length) {
       queriesToRun.push('');
@@ -313,8 +311,17 @@ export class FileSystem extends Workspace.Workspace.ProjectStore {
     for (const query of queriesToRun) {
       const files = await this.fileSystemInternal.searchInPath(searchConfig.isRegex() ? '' : query, progress);
       files.sort(Platform.StringUtilities.naturalOrderComparator);
-      result = Platform.ArrayUtilities.intersectOrdered(result, files, Platform.StringUtilities.naturalOrderComparator);
+      workingFileSet = Platform.ArrayUtilities.intersectOrdered(
+          workingFileSet, files, Platform.StringUtilities.naturalOrderComparator);
       progress.incrementWorked(1);
+    }
+
+    const result = new Map();
+    for (const file of workingFileSet) {
+      const uiSourceCode = this.uiSourceCodeForURL(file as Platform.DevToolsPath.UrlString);
+      if (uiSourceCode) {
+        result.set(uiSourceCode, null);
+      }
     }
 
     progress.done();
@@ -326,8 +333,13 @@ export class FileSystem extends Workspace.Workspace.ProjectStore {
   }
 
   populate(): void {
-    const chunkSize = 1000;
     const filePaths = this.fileSystemInternal.initialFilePaths();
+    if (filePaths.length === 0) {
+      return;
+    }
+
+    const chunkSize = 1000;
+    const startTime = performance.now();
     reportFileChunk.call(this, 0);
 
     function reportFileChunk(this: FileSystem, from: number): void {
@@ -337,6 +349,8 @@ export class FileSystem extends Workspace.Workspace.ProjectStore {
       }
       if (to < filePaths.length) {
         window.setTimeout(reportFileChunk.bind(this, to), 100);
+      } else if (this.type() === 'filesystem') {
+        Host.userMetrics.workspacesPopulated(performance.now() - startTime);
       }
     }
   }
@@ -375,8 +389,7 @@ export class FileSystem extends Workspace.Workspace.ProjectStore {
     if (!filePath) {
       return null;
     }
-    const uiSourceCode = this.addFile(filePath);
-    uiSourceCode.setContent(content, Boolean(isBase64));
+    const uiSourceCode = this.addFile(filePath, content, isBase64);
     this.creatingFilesGuard.delete(guardFileName);
     return uiSourceCode;
   }
@@ -390,14 +403,22 @@ export class FileSystem extends Workspace.Workspace.ProjectStore {
     });
   }
 
+  override deleteDirectoryRecursively(path: Platform.DevToolsPath.EncodedPathString): Promise<boolean> {
+    return this.fileSystemInternal.deleteDirectoryRecursively(path);
+  }
+
   override remove(): void {
     this.fileSystemWorkspaceBinding.isolatedFileSystemManager.removeFileSystem(this.fileSystemInternal);
   }
 
-  private addFile(filePath: Platform.DevToolsPath.EncodedPathString): Workspace.UISourceCode.UISourceCode {
+  private addFile(filePath: Platform.DevToolsPath.EncodedPathString, content?: string, isBase64?: boolean):
+      Workspace.UISourceCode.UISourceCode {
     const contentType = this.fileSystemInternal.contentType(filePath);
     const uiSourceCode =
         this.createUISourceCode(Common.ParsedURL.ParsedURL.concatenate(this.fileSystemBaseURL, filePath), contentType);
+    if (content !== undefined) {
+      uiSourceCode.setContent(content, Boolean(isBase64));
+    }
     this.addUISourceCode(uiSourceCode);
     return uiSourceCode;
   }

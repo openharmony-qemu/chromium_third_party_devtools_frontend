@@ -12,10 +12,6 @@ import * as UI from '../../legacy.js';
 import {FilteredListWidget, Provider, registerProvider} from './FilteredListWidget.js';
 import {QuickOpenImpl} from './QuickOpen.js';
 
-// #ifdef OHOS_DEVTOOLS
-const adaptForOhos = true;
-// #endif OHOS_DEVTOOLS
-
 const UIStrings = {
   /**
    * @description Message to display if a setting change requires a reload of DevTools
@@ -66,6 +62,7 @@ export class CommandMenu {
       keys,
       title,
       shortcut,
+      jslogContext,
       executeHandler,
       availableHandler,
       userActionCode,
@@ -76,12 +73,13 @@ export class CommandMenu {
     let handler = executeHandler;
     if (userActionCode) {
       const actionCode = userActionCode;
-      handler = (): void => {
+      handler = () => {
         Host.userMetrics.actionTaken(actionCode);
         executeHandler();
       };
     }
-    return new Command(category, title, keys, shortcut, handler, availableHandler, deprecationWarning, isPanelOrDrawer);
+    return new Command(
+        category, title, keys, shortcut, jslogContext, handler, availableHandler, deprecationWarning, isPanelOrDrawer);
   }
 
   static createSettingCommand<V>(setting: Common.Settings.Setting<V>, title: Common.UIString.LocalizedString, value: V):
@@ -92,18 +90,25 @@ export class CommandMenu {
     }
     const tags = setting.tags() || '';
     const reloadRequired = Boolean(setting.reloadRequired());
+
     return CommandMenu.createCommand({
       category: Common.Settings.getLocalizedSettingsCategory(category),
       keys: tags,
       title,
       shortcut: '',
-      executeHandler: (): void => {
+      jslogContext: Platform.StringUtilities.toKebabCase(`${setting.name}-${value}`),
+      executeHandler: () => {
         if (setting.deprecation?.disabled &&
             (!setting.deprecation?.experiment || setting.deprecation.experiment.isEnabled())) {
           void Common.Revealer.reveal(setting);
           return;
         }
         setting.set(value);
+
+        if (setting.name === 'emulate-page-focus') {
+          Host.userMetrics.actionTaken(Host.UserMetrics.Action.ToggleEmulateFocusedPageFromCommandMenu);
+        }
+
         if (reloadRequired) {
           UI.InspectorView.InspectorView.instance().displayReloadRequiredWarning(
               i18nString(UIStrings.oneOrMoreSettingsHaveChanged));
@@ -138,6 +143,7 @@ export class CommandMenu {
       keys: action.tags() || '',
       title: action.title(),
       shortcut,
+      jslogContext: action.id(),
       executeHandler: action.execute.bind(action),
       userActionCode,
       availableHandler: undefined,
@@ -159,7 +165,7 @@ export class CommandMenu {
 
     const executeHandler = (): Promise<void> => {
       if (id === 'issues-pane') {
-        Host.userMetrics.issuesPanelOpenedFrom(Host.UserMetrics.IssueOpener.CommandMenu);
+        Host.userMetrics.issuesPanelOpenedFrom(Host.UserMetrics.IssueOpener.COMMAND_MENU);
       }
       return UI.ViewManager.ViewManager.instance().showView(id, /* userGesture */ true);
     };
@@ -169,6 +175,7 @@ export class CommandMenu {
       keys: tags,
       title,
       shortcut: '',
+      jslogContext: id,
       executeHandler,
       userActionCode,
       availableHandler: undefined,
@@ -183,7 +190,7 @@ export class CommandMenu {
         locations.set(name, category);
       }
     }
-    const views = UI.ViewManager.getRegisteredViewExtensions();
+    const views = UI.ViewManager.getRegisteredViewExtensions(Common.Settings.Settings.instance().getHostConfig());
     for (const view of views) {
       const viewLocation = view.location();
       const category = viewLocation && locations.get(viewLocation);
@@ -201,7 +208,7 @@ export class CommandMenu {
       this.commandsInternal.push(CommandMenu.createRevealViewCommand(options));
     }
     // Populate allowlisted settings.
-    const settingsRegistrations = Common.Settings.getRegisteredSettings();
+    const settingsRegistrations = Common.Settings.Settings.instance().getRegisteredSettings();
     for (const settingRegistration of settingsRegistrations) {
       const options = settingRegistration.options;
       if (!options || !settingRegistration.category) {
@@ -236,6 +243,7 @@ export interface CreateCommandOptions {
   keys: string;
   title: Common.UIString.LocalizedString;
   shortcut: string;
+  jslogContext: string;
   executeHandler: () => void;
   availableHandler?: () => boolean;
   userActionCode?: number;
@@ -243,8 +251,7 @@ export interface CreateCommandOptions {
   isPanelOrDrawer?: PanelOrDrawer;
 }
 
-// eslint-disable-next-line rulesdir/const_enum
-export enum PanelOrDrawer {
+export const enum PanelOrDrawer {
   PANEL = 'PANEL',
   DRAWER = 'DRAWER',
 }
@@ -253,7 +260,7 @@ export class CommandMenuProvider extends Provider {
   private commands: Command[];
 
   constructor(commandsForTest: Command[] = []) {
-    super();
+    super('command');
     this.commands = commandsForTest;
   }
 
@@ -273,9 +280,13 @@ export class CommandMenuProvider extends Provider {
     }
 
     for (const command of allCommands) {
-      if (command.available()) {
-        this.commands.push(command);
+      if (!command.available()) {
+        continue;
       }
+      if (this.commands.find(({title, category}) => title === command.title && category === command.category)) {
+        continue;
+      }
+      this.commands.push(command);
     }
 
     this.commands = this.commands.sort(commandComparator);
@@ -335,8 +346,12 @@ export class CommandMenuProvider extends Provider {
     }
     const index = Platform.StringUtilities.hashCode(command.category) % MaterialPaletteColors.length;
     tagElement.style.backgroundColor = MaterialPaletteColors[index];
-    tagElement.style.color = 'var(--color-background)';
+    tagElement.style.color = '#fff';
     tagElement.textContent = command.category;
+  }
+
+  override jslogContextAt(itemIndex: number): string {
+    return this.commands[itemIndex].jslogContext;
   }
 
   override selectItem(itemIndex: number|null, _promptValue: string): void {
@@ -377,6 +392,7 @@ export class Command {
   readonly title: Common.UIString.LocalizedString;
   readonly key: string;
   readonly shortcut: string;
+  readonly jslogContext: string;
   readonly deprecationWarning?: Platform.UIString.LocalizedString;
   readonly isPanelOrDrawer?: PanelOrDrawer;
 
@@ -385,12 +401,13 @@ export class Command {
 
   constructor(
       category: Common.UIString.LocalizedString, title: Common.UIString.LocalizedString, key: string, shortcut: string,
-      executeHandler: () => unknown, availableHandler?: () => boolean,
+      jslogContext: string, executeHandler: () => unknown, availableHandler?: () => boolean,
       deprecationWarning?: Platform.UIString.LocalizedString, isPanelOrDrawer?: PanelOrDrawer) {
     this.category = category;
     this.title = title;
     this.key = category + '\0' + title + '\0' + key;
     this.shortcut = shortcut;
+    this.jslogContext = jslogContext;
     this.#executeHandler = executeHandler;
     this.#availableHandler = availableHandler;
     this.deprecationWarning = deprecationWarning;
@@ -406,19 +423,7 @@ export class Command {
   }
 }
 
-let showActionDelegateInstance: ShowActionDelegate;
 export class ShowActionDelegate implements UI.ActionRegistration.ActionDelegate {
-  static instance(opts: {
-    forceNew: boolean|null,
-  } = {forceNew: null}): ShowActionDelegate {
-    const {forceNew} = opts;
-    if (!showActionDelegateInstance || forceNew) {
-      showActionDelegateInstance = new ShowActionDelegate();
-    }
-
-    return showActionDelegateInstance;
-  }
-
   handleAction(_context: UI.Context.Context, _actionId: string): boolean {
     Host.InspectorFrontendHost.InspectorFrontendHostInstance.bringToFront();
     QuickOpenImpl.show('>');
@@ -426,17 +431,11 @@ export class ShowActionDelegate implements UI.ActionRegistration.ActionDelegate 
   }
 }
 
-// #ifdef OHOS_DEVTOOLS
-if (adaptForOhos) {
-  // arkweb doesn't support command.
-} else {
-  registerProvider({
-    prefix: '>',
-    iconName: 'chevron-right',
-    iconWidth: '20px',
-    provider: () => Promise.resolve(new CommandMenuProvider()),
-    titlePrefix: (): Common.UIString.LocalizedString => i18nString(UIStrings.run),
-    titleSuggestion: (): Common.UIString.LocalizedString => i18nString(UIStrings.command),
-  });
-}
-// #endif OHOS_DEVTOOLS
+registerProvider({
+  prefix: '>',
+  iconName: 'chevron-right',
+  iconWidth: '20px',
+  provider: () => Promise.resolve(new CommandMenuProvider()),
+  titlePrefix: () => i18nString(UIStrings.run),
+  titleSuggestion: () => i18nString(UIStrings.command),
+});

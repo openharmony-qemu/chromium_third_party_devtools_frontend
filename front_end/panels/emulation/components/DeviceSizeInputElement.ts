@@ -4,9 +4,11 @@
 
 import type * as Platform from '../../../core/platform/platform.js';
 import * as EmulationModel from '../../../models/emulation/emulation.js';
-import * as ComponentHelpers from '../../../ui/components/helpers/helpers.js';
-import * as LitHtml from '../../../ui/lit-html/lit-html.js';
 import * as UILegacy from '../../../ui/legacy/legacy.js';
+import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import * as VisualLogging from '../../../ui/visual_logging/visual_logging.js';
+
+const {html} = LitHtml;
 
 class SizeChangedEvent extends Event {
   static readonly eventName = 'sizechanged';
@@ -25,12 +27,12 @@ export class SizeInputElement extends HTMLElement {
   #size = '0';
   #placeholder = '';
   #title: Platform.UIString.LocalizedString;
+  #jslogContext: string;
 
-  static readonly litTagName = LitHtml.literal`device-mode-emulation-size-input`;
-
-  constructor(title: Platform.UIString.LocalizedString) {
+  constructor(title: Platform.UIString.LocalizedString, {jslogContext}: {jslogContext: string}) {
     super();
     this.#title = title;
+    this.#jslogContext = jslogContext;
   }
 
   connectedCallback(): void {
@@ -60,7 +62,7 @@ export class SizeInputElement extends HTMLElement {
         // to use proper constructed stylesheets, when the code runs
         // in the correct frame context.
         // eslint-disable-next-line rulesdir/ban_style_tags_in_lit_html
-        LitHtml.html`
+        html`
       <style>
         input {
           /*
@@ -71,6 +73,8 @@ export class SizeInputElement extends HTMLElement {
            */
           width: calc(4ch + 2ch + 2px);
           max-height: 18px;
+          border: var(--sys-color-neutral-outline);
+          border-radius: 4px;
           margin: 0 2px;
           text-align: center;
           font-size: inherit;
@@ -88,6 +92,7 @@ export class SizeInputElement extends HTMLElement {
       <input type="number"
              max=${EmulationModel.DeviceModeModel.MaxDeviceSize}
              min=${EmulationModel.DeviceModeModel.MinDeviceSize}
+             jslog=${VisualLogging.textField().track({change: true}).context(this.#jslogContext)}
              maxlength="4"
              title=${this.#title}
              placeholder=${this.#placeholder}
@@ -118,10 +123,9 @@ export class SizeInputElement extends HTMLElement {
   }
 }
 
-ComponentHelpers.CustomElements.defineComponent('device-mode-emulation-size-input', SizeInputElement);
+customElements.define('device-mode-emulation-size-input', SizeInputElement);
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface HTMLElementTagNameMap {
     'device-mode-emulation-size-input': SizeInputElement;
   }

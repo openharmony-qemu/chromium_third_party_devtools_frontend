@@ -27,7 +27,6 @@ import './ElementsPanel.js';
 import './ClassesPaneWidget.js';
 import './ElementStatePaneWidget.js';
 import './ElementsTreeElementHighlighter.js';
-import './TopLayerContainer.js';
 import './AccessibilityTreeUtils.js';
 import './AccessibilityTreeView.js';
 
@@ -49,12 +48,13 @@ import * as ElementsTreeOutline from './ElementsTreeOutline.js';
 import * as EventListenersWidget from './EventListenersWidget.js';
 import * as InspectElementModeController from './InspectElementModeController.js';
 import * as LayersWidget from './LayersWidget.js';
-import * as LayoutSidebarPane from './LayoutSidebarPane.js';
 import * as MarkerDecorator from './MarkerDecorator.js';
 import * as MetricsSidebarPane from './MetricsSidebarPane.js';
 import * as NodeStackTraceWidget from './NodeStackTraceWidget.js';
 import * as PlatformFontsWidget from './PlatformFontsWidget.js';
 import * as PropertiesWidget from './PropertiesWidget.js';
+import * as PropertyMatchers from './PropertyMatchers.js';
+import * as PropertyRenderer from './PropertyRenderer.js';
 import * as StyleEditorWidget from './StyleEditorWidget.js';
 import * as StylePropertiesSection from './StylePropertiesSection.js';
 import * as StylePropertyHighlighter from './StylePropertyHighlighter.js';
@@ -83,12 +83,13 @@ export {
   EventListenersWidget,
   InspectElementModeController,
   LayersWidget,
-  LayoutSidebarPane,
   MarkerDecorator,
   MetricsSidebarPane,
   NodeStackTraceWidget,
   PlatformFontsWidget,
   PropertiesWidget,
+  PropertyMatchers,
+  PropertyRenderer,
   StyleEditorWidget,
   StylePropertiesSection,
   StylePropertyHighlighter,

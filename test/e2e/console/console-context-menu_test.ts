@@ -4,14 +4,19 @@
 
 import {assert} from 'chai';
 
-import {click, getBrowserAndPages, typeText} from '../../shared/helper.js';
-import {describe, it} from '../../shared/mocha-extensions.js';
+import {click, getBrowserAndPages, typeText, waitForFunction} from '../../shared/helper.js';
+
 import {clickOnContextMenu, CONSOLE_TAB_SELECTOR, focusConsolePrompt} from '../helpers/console-helpers.js';
 
-describe('The Console Tab', async function() {
+describe('The Console Tab', function() {
   beforeEach(async () => {
     const {frontend} = getBrowserAndPages();
-    await frontend.evaluate('{ navigator.clipboard.writeText = (data) => { globalThis._clipboardData = data; }};');
+    await frontend.bringToFront();
+    await frontend.evaluate(`
+      navigator.clipboard.writeText = (data) => {
+        globalThis._clipboardData = data;
+      };
+    `);
   });
 
   const RESULT_SELECTOR = '.console-message-text';
@@ -21,8 +26,10 @@ describe('The Console Tab', async function() {
     await click(CONSOLE_TAB_SELECTOR);
     await focusConsolePrompt();
     await typeText('\'string\\ncontent\'\n');
-    await clickOnContextMenu(RESULT_SELECTOR, 'Copy string contents');
-    const copiedContent = await frontend.evaluate('globalThis._clipboardData');
+    await clickOnContextMenu(RESULT_SELECTOR, 'copy-string-contents');
+    const copiedContent = await waitForFunction(async () => {
+      return await frontend.evaluate('globalThis._clipboardData');
+    });
     assert.deepEqual(copiedContent, 'string\ncontent');
   });
 
@@ -31,8 +38,10 @@ describe('The Console Tab', async function() {
     await click(CONSOLE_TAB_SELECTOR);
     await focusConsolePrompt();
     await typeText('\'string\\ncontent\'\n');
-    await clickOnContextMenu(RESULT_SELECTOR, 'Copy string as JavaScript literal');
-    const copiedContent = await frontend.evaluate('globalThis._clipboardData');
+    await clickOnContextMenu(RESULT_SELECTOR, 'copy-string-as-js-literal');
+    const copiedContent = await waitForFunction(async () => {
+      return await frontend.evaluate('globalThis._clipboardData');
+    });
     assert.deepEqual(copiedContent, '\'string\\ncontent\'');
   });
 
@@ -41,8 +50,10 @@ describe('The Console Tab', async function() {
     await click(CONSOLE_TAB_SELECTOR);
     await focusConsolePrompt();
     await typeText('\'string\\ncontent\'\n');
-    await clickOnContextMenu(RESULT_SELECTOR, 'Copy string as JSON literal');
-    const copiedContent = await frontend.evaluate('globalThis._clipboardData');
+    await clickOnContextMenu(RESULT_SELECTOR, 'copy-string-as-json-literal');
+    const copiedContent = await waitForFunction(async () => {
+      return await frontend.evaluate('globalThis._clipboardData');
+    });
     assert.deepEqual(copiedContent, '"string\\ncontent"');
   });
 
@@ -51,8 +62,10 @@ describe('The Console Tab', async function() {
     await click(CONSOLE_TAB_SELECTOR);
     await focusConsolePrompt();
     await typeText('500\n');
-    await clickOnContextMenu(RESULT_SELECTOR, 'Copy number');
-    const copiedContent = await frontend.evaluate('globalThis._clipboardData');
+    await clickOnContextMenu(RESULT_SELECTOR, 'copy-primitive');
+    const copiedContent = await waitForFunction(async () => {
+      return await frontend.evaluate('globalThis._clipboardData');
+    });
     assert.deepEqual(copiedContent, '500');
   });
 
@@ -61,8 +74,10 @@ describe('The Console Tab', async function() {
     await click(CONSOLE_TAB_SELECTOR);
     await focusConsolePrompt();
     await typeText('500n\n');
-    await clickOnContextMenu(RESULT_SELECTOR, 'Copy bigint');
-    const copiedContent = await frontend.evaluate('globalThis._clipboardData');
+    await clickOnContextMenu(RESULT_SELECTOR, 'copy-primitive');
+    const copiedContent = await waitForFunction(async () => {
+      return await frontend.evaluate('globalThis._clipboardData');
+    });
     assert.deepEqual(copiedContent, '500n');
   });
 
@@ -71,8 +86,10 @@ describe('The Console Tab', async function() {
     await click(CONSOLE_TAB_SELECTOR);
     await focusConsolePrompt();
     await typeText('true\n');
-    await clickOnContextMenu(RESULT_SELECTOR, 'Copy boolean');
-    const copiedContent = await frontend.evaluate('globalThis._clipboardData');
+    await clickOnContextMenu(RESULT_SELECTOR, 'copy-primitive');
+    const copiedContent = await waitForFunction(async () => {
+      return await frontend.evaluate('globalThis._clipboardData');
+    });
     assert.deepEqual(copiedContent, 'true');
   });
 
@@ -81,8 +98,36 @@ describe('The Console Tab', async function() {
     await click(CONSOLE_TAB_SELECTOR);
     await focusConsolePrompt();
     await typeText('undefined\n');
-    await clickOnContextMenu(RESULT_SELECTOR, 'Copy undefined');
-    const copiedContent = await frontend.evaluate('globalThis._clipboardData');
+    await clickOnContextMenu(RESULT_SELECTOR, 'copy-primitive');
+    const copiedContent = await waitForFunction(async () => {
+      return await frontend.evaluate('globalThis._clipboardData');
+    });
     assert.deepEqual(copiedContent, 'undefined');
+  });
+
+  it('can copy maps', async () => {
+    const {frontend} = getBrowserAndPages();
+    await click(CONSOLE_TAB_SELECTOR);
+    await focusConsolePrompt();
+    await typeText('new Map([["key1","value1"],["key2","value2"]])\n');
+    await clickOnContextMenu(RESULT_SELECTOR, 'copy-object');
+    const copiedContent = await waitForFunction(async () => {
+      return await frontend.evaluate('globalThis._clipboardData');
+    });
+    assert.deepEqual(
+        copiedContent,
+        'new Map([\n    [\n        "key1",\n        "value1"\n    ],\n    [\n        "key2",\n        "value2"\n    ]\n])');
+  });
+
+  it('can copy sets', async () => {
+    const {frontend} = getBrowserAndPages();
+    await click(CONSOLE_TAB_SELECTOR);
+    await focusConsolePrompt();
+    await typeText('new Set(["a","b","c"])\n');
+    await clickOnContextMenu(RESULT_SELECTOR, 'copy-object');
+    const copiedContent = await waitForFunction(async () => {
+      return await frontend.evaluate('globalThis._clipboardData');
+    });
+    assert.deepEqual(copiedContent, 'new Set([\n    "a",\n    "b",\n    "c"\n])');
   });
 });

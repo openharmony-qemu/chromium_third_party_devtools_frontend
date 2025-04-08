@@ -32,11 +32,10 @@ import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
-import {type FilesChangedData} from './FileSystemWorkspaceBinding.js';
 
+import type {FilesChangedData} from './FileSystemWorkspaceBinding.js';
 import {IsolatedFileSystem} from './IsolatedFileSystem.js';
-
-import {type PlatformFileSystem} from './PlatformFileSystem.js';
+import type {PlatformFileSystem} from './PlatformFileSystem.js';
 
 const UIStrings = {
   /**
@@ -114,7 +113,7 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
     }
     const defaultExcludedFoldersPattern = defaultExcludedFolders.join('|');
     this.workspaceFolderExcludePatternSettingInternal = Common.Settings.Settings.instance().createRegExpSetting(
-        'workspaceFolderExcludePattern', defaultExcludedFoldersPattern, Host.Platform.isWin() ? 'i' : '');
+        'workspace-folder-exclude-pattern', defaultExcludedFoldersPattern, Host.Platform.isWin() ? 'i' : '');
 
     this.fileSystemRequestResolve = null;
     this.fileSystemsLoadedPromise = this.requestFileSystems();
@@ -160,6 +159,9 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
   }
 
   addFileSystem(type?: string): Promise<IsolatedFileSystem|null> {
+    Host.userMetrics.actionTaken(
+        type === 'overrides' ? Host.UserMetrics.Action.OverrideTabAddFolder :
+                               Host.UserMetrics.Action.WorkspaceTabAddFolder);
     return new Promise(resolve => {
       this.fileSystemRequestResolve = resolve;
       Host.InspectorFrontendHost.InspectorFrontendHostInstance.addFileSystem(type || '');
@@ -167,6 +169,9 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
   }
 
   removeFileSystem(fileSystem: PlatformFileSystem): void {
+    Host.userMetrics.actionTaken(
+        fileSystem.type() === 'overrides' ? Host.UserMetrics.Action.OverrideTabRemoveFolder :
+                                            Host.UserMetrics.Action.WorkspaceTabRemoveFolder);
     Host.InspectorFrontendHost.InspectorFrontendHostInstance.removeFileSystem(fileSystem.embedderPath());
   }
 
@@ -340,14 +345,14 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
   }
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export enum Events {
+  /* eslint-disable @typescript-eslint/naming-convention -- Used by web_tests. */
   FileSystemAdded = 'FileSystemAdded',
   FileSystemRemoved = 'FileSystemRemoved',
   FileSystemFilesChanged = 'FileSystemFilesChanged',
   ExcludedFolderAdded = 'ExcludedFolderAdded',
   ExcludedFolderRemoved = 'ExcludedFolderRemoved',
+  /* eslint-enable @typescript-eslint/naming-convention */
 }
 
 export type EventTypes = {

@@ -5,15 +5,16 @@
 import {assert} from 'chai';
 import * as fs from 'fs';
 import * as path from 'path';
+import type * as puppeteer from 'puppeteer-core';
 
-import type * as puppeteer from 'puppeteer';
-import {requireTestRunnerConfigSetting} from '../../conductor/test_runner_config.js';
-
+import {GEN_DIR} from '../../conductor/paths.js';
 import {
   $,
   $$,
   assertNotNullOrUndefined,
   click,
+  clickElement,
+  clickMoreTabsButton,
   getBrowserAndPages,
   getPendingEvents,
   getTestServerPort,
@@ -21,34 +22,37 @@ import {
   pasteText,
   platform,
   pressKey,
-  reloadDevTools,
+  setCheckBox,
   step,
   timeout,
   typeText,
   waitFor,
-  clickElement,
+  waitForAria,
   waitForFunction,
   waitForFunctionWithTries,
-  waitForAria,
+  waitForVisible,
 } from '../../shared/helper.js';
+
+import {openSoftContextMenuAndClickOnItem} from './context-menu-helpers.js';
+import {veImpression} from './visual-logging-helpers.js';
 
 export const ACTIVE_LINE = '.CodeMirror-activeline > pre > span';
 export const PAUSE_BUTTON = '[aria-label="Pause script execution"]';
 export const RESUME_BUTTON = '[aria-label="Resume script execution"]';
 export const SOURCES_LINES_SELECTOR = '.CodeMirror-code > div';
 export const PAUSE_INDICATOR_SELECTOR = '.paused-status';
+export const CODE_LINE_COLUMN_SELECTOR = '.cm-lineNumbers';
 export const CODE_LINE_SELECTOR = '.cm-lineNumbers .cm-gutterElement';
 export const SCOPE_LOCAL_VALUES_SELECTOR = 'li[aria-label="Local"] + ol';
+export const THREADS_SELECTOR = '[aria-label="Threads"]';
 export const SELECTED_THREAD_SELECTOR = 'div.thread-item.selected > div.thread-item-title';
 export const STEP_INTO_BUTTON = '[aria-label="Step into next function call"]';
 export const STEP_OVER_BUTTON = '[aria-label="Step over next function call"]';
 export const STEP_OUT_BUTTON = '[aria-label="Step out of current function"]';
-export const TURNED_OFF_PAUSE_BUTTON_SELECTOR = 'button.toolbar-state-off';
 export const TURNED_ON_PAUSE_BUTTON_SELECTOR = 'button.toolbar-state-on';
 export const DEBUGGER_PAUSED_EVENT = 'DevTools.DebuggerPaused';
 const WATCH_EXPRESSION_VALUE_SELECTOR = '.watch-expression-tree-item .object-value-string.value';
-export const MORE_TABS_SELECTOR = '[aria-label="More tabs"]';
-const OVERRIDES_TAB_SELECTOR = '[aria-label="Overrides"]';
+export const OVERRIDES_TAB_SELECTOR = '[aria-label="Overrides"]';
 export const ENABLE_OVERRIDES_SELECTOR = '[aria-label="Select folder for overrides"]';
 const CLEAR_CONFIGURATION_SELECTOR = '[aria-label="Clear configuration"]';
 export const PAUSE_ON_UNCAUGHT_EXCEPTION_SELECTOR = '.pause-on-uncaught-exceptions';
@@ -87,12 +91,16 @@ export async function doubleClickSourceTreeItem(selector: string) {
   await click(selector, {clickOptions: {clickCount: 2, offset: {x: 40, y: 10}}});
 }
 
+export async function waitForSourcesPanel(): Promise<void> {
+  // Wait for the navigation panel to show up
+  await Promise.any([waitFor('.navigator-file-tree-item'), waitFor('.empty-view')]);
+}
+
 export async function openSourcesPanel() {
   // Locate the button for switching to the sources tab.
   await click('#tab-sources');
 
-  // Wait for the navigation panel to show up
-  await waitFor('.navigator-file-tree-item');
+  await waitForSourcesPanel();
 }
 
 export async function openFileInSourcesPanel(testInput: string) {
@@ -103,12 +111,7 @@ export async function openFileInSourcesPanel(testInput: string) {
 
 export async function openRecorderSubPane() {
   const root = await waitFor('.navigator-tabbed-pane');
-
-  await waitFor('[aria-label="More tabs"]', root);
-  await click('[aria-label="More tabs"]', {root});
-
-  await waitFor('[aria-label="Recordings"]');
-
+  await clickMoreTabsButton(root);
   await click('[aria-label="Recordings"]');
   await waitFor('[aria-label="Add recording"]');
 }
@@ -126,12 +129,7 @@ export async function createNewRecording(recordingName: string) {
 
 export async function openSnippetsSubPane() {
   const root = await waitFor('.navigator-tabbed-pane');
-
-  await waitFor('[aria-label="More tabs"]', root);
-  await click('[aria-label="More tabs"]', {root});
-
-  await waitFor('[aria-label="Snippets"]');
-
+  await clickMoreTabsButton(root);
   await click('[aria-label="Snippets"]');
   await waitFor('[aria-label="New snippet"]');
 }
@@ -161,21 +159,22 @@ export async function createNewSnippet(snippetName: string, content?: string) {
   }
 }
 
+export async function openWorkspaceSubPane() {
+  const root = await waitFor('.navigator-tabbed-pane');
+  await click('[aria-label="Workspace"]', {root});
+  await waitFor('[aria-label="Workspace panel"]');
+}
+
 export async function openOverridesSubPane() {
   const root = await waitFor('.navigator-tabbed-pane');
-
-  await waitFor('[aria-label="More tabs"]', root);
-  await click('[aria-label="More tabs"]', {root});
-
-  await waitFor('[aria-label="Overrides"]');
-
+  await clickMoreTabsButton(root);
   await click('[aria-label="Overrides"]');
   await waitFor('[aria-label="Overrides panel"]');
 }
 
 export async function openFileInEditor(sourceFile: string) {
   await waitForSourceFiles(
-      SourceFileEvents.SourceFileLoaded, files => files.some(f => f.endsWith(sourceFile)),
+      SourceFileEvents.SOURCE_FILE_LOADED, files => files.some(f => f.endsWith(sourceFile)),
       // Open a particular file in the editor
       () => doubleClickSourceTreeItem(`[aria-label="${sourceFile}, file"]`));
 }
@@ -276,6 +275,39 @@ export async function isBreakpointSet(lineNumber: number|string) {
   const lineNumberElement = await getLineNumberElement(lineNumber);
   const breakpointLineParentClasses = await lineNumberElement?.evaluate(n => n.className);
   return breakpointLineParentClasses?.includes('cm-breakpoint');
+}
+
+/**
+ * @param lineNumber 1-based line number
+ * @param index 1-based index of the inline breakpoint in the given line
+ */
+export async function enableInlineBreakpointForLine(line: number, index: number) {
+  const {frontend} = getBrowserAndPages();
+  const decorationSelector = `pierce/.cm-content > :nth-child(${line}) > :nth-child(${index} of .cm-inlineBreakpoint)`;
+  await click(decorationSelector);
+  await waitForFunction(
+      () => frontend.$eval(decorationSelector, element => !element.classList.contains('cm-inlineBreakpoint-disabled')));
+}
+
+/**
+ * @param lineNumber 1-based line number
+ * @param index 1-based index of the inline breakpoint in the given line
+ * @param expectNoBreakpoint If we should wait for the line to not have any inline breakpoints after
+ *                           the click instead of a disabled one.
+ */
+export async function disableInlineBreakpointForLine(line: number, index: number, expectNoBreakpoint: boolean = false) {
+  const {frontend} = getBrowserAndPages();
+  const decorationSelector = `pierce/.cm-content > :nth-child(${line}) > :nth-child(${index} of .cm-inlineBreakpoint)`;
+  await click(decorationSelector);
+  if (expectNoBreakpoint) {
+    await waitForFunction(
+        () => frontend.$$eval(
+            `pierce/.cm-content > :nth-child(${line}) > .cm-inlineBreakpoint`, elements => elements.length === 0));
+  } else {
+    await waitForFunction(
+        () =>
+            frontend.$eval(decorationSelector, element => element.classList.contains('cm-inlineBreakpoint-disabled')));
+  }
 }
 
 export async function checkBreakpointDidNotActivate() {
@@ -381,6 +413,36 @@ export async function waitForStackTopMatch(matcher: RegExp) {
   return stepLocation;
 }
 
+export async function setEventListenerBreakpoint(groupName: string, eventName: string) {
+  const {frontend} = getBrowserAndPages();
+  const eventListenerBreakpointsSection = await waitForAria('Event Listener Breakpoints');
+  const expanded = await eventListenerBreakpointsSection.evaluate(el => el.getAttribute('aria-expanded'));
+  if (expanded !== 'true') {
+    await click('[aria-label="Event Listener Breakpoints"]');
+    await waitFor('[aria-label="Event Listener Breakpoints"][aria-expanded="true"]');
+  }
+
+  const eventSelector = `input[type="checkbox"][title="${eventName}"]`;
+  const groupSelector = `input[type="checkbox"][title="${groupName}"]`;
+  const groupCheckbox = await waitFor(groupSelector);
+  await waitForVisible(groupSelector);
+  const eventCheckbox = await waitFor(eventSelector);
+  if (!(await eventCheckbox.evaluate(x => x.checkVisibility()))) {
+    // Unfortunately the shadow DOM makes it hard to find the expander element
+    // we are attempting to click on, so we click to the left of the checkbox
+    // bounding box.
+    const rectData = await groupCheckbox.evaluate(element => {
+      const {left, top, width, height} = element.getBoundingClientRect();
+      return {left, top, width, height};
+    });
+
+    await frontend.mouse.click(rectData.left - 10, rectData.top + rectData.height * .5);
+    await waitForVisible(eventSelector);
+  }
+
+  await setCheckBox(eventSelector, true);
+}
+
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface Window {
@@ -391,8 +453,8 @@ declare global {
 }
 
 export const enum SourceFileEvents {
-  SourceFileLoaded = 'source-file-loaded',
-  AddedToSourceTree = 'source-tree-file-added',
+  SOURCE_FILE_LOADED = 'source-file-loaded',
+  ADDED_TO_SOURCE_TREE = 'source-tree-file-added',
 }
 
 let nextEventHandlerId = 0;
@@ -409,7 +471,7 @@ export async function waitForSourceFiles<T>(
     }
     const handler = (event: Event) => {
       const {detail} = event as CustomEvent<string>;
-      if (!detail.includes('__puppeteer_evaluation_script__')) {
+      if (!detail.includes('pptr:')) {
         window.__sourceFileEvents.get(eventHandlerId)?.files.push(detail);
       }
     };
@@ -440,7 +502,7 @@ export async function waitForSourceFiles<T>(
 
 export async function captureAddedSourceFiles(count: number, action: () => Promise<void>): Promise<string[]> {
   let capturedFileNames!: string[];
-  await waitForSourceFiles(SourceFileEvents.AddedToSourceTree, files => {
+  await waitForSourceFiles(SourceFileEvents.ADDED_TO_SOURCE_TREE, files => {
     capturedFileNames = files;
     return files.length >= count;
   }, action);
@@ -449,7 +511,7 @@ export async function captureAddedSourceFiles(count: number, action: () => Promi
 
 export async function reloadPageAndWaitForSourceFile(target: puppeteer.Page, sourceFile: string) {
   await waitForSourceFiles(
-      SourceFileEvents.SourceFileLoaded, files => files.some(f => f.endsWith(sourceFile)), () => target.reload());
+      SourceFileEvents.SOURCE_FILE_LOADED, files => files.some(f => f.endsWith(sourceFile)), () => target.reload());
 }
 
 export function isEqualOrAbbreviation(abbreviated: string, full: string): boolean {
@@ -572,19 +634,11 @@ export async function openNestedWorkerFile(selectors: NestedFileSelector) {
   await click(selectors.fileSelector);
 }
 
-export async function clickOnContextMenu(selector: string, label: string) {
-  // Find the selected node, right click.
-  await click(selector, {clickOptions: {button: 'right'}});
-
-  // Wait for the context menu option, and click it.
-  const labelSelector = `.soft-context-menu > [aria-label="${label}"]`;
-  await waitFor(labelSelector);
-  await click(labelSelector);
-}
-
 export async function inspectMemory(variableName: string) {
-  await clickOnContextMenu(
-      `[data-object-property-name-for-test="${variableName}"]`, 'Reveal in Memory Inspector panel');
+  await openSoftContextMenuAndClickOnItem(
+      `[data-object-property-name-for-test="${variableName}"]`,
+      'Open in Memory inspector panel',
+  );
 }
 
 export async function typeIntoSourcesAndSave(text: string) {
@@ -604,9 +658,7 @@ export async function getValuesForScope(scope: string, expandCount: number, wait
   const scopeSelector = `[aria-label="${scope}"]`;
   await waitFor(scopeSelector);
   for (let i = 0; i < expandCount; i++) {
-    const unexpandedSelector = `${scopeSelector} + ol li[aria-expanded=false]`;
-    await waitFor(unexpandedSelector);
-    await click(unexpandedSelector);
+    await click(`${scopeSelector} + ol li[aria-expanded=false]`);
   }
   const valueSelector = `${scopeSelector} + ol .name-and-value`;
   const valueSelectorElements = await waitForFunction(async () => {
@@ -683,14 +735,8 @@ export async function addSelectedTextToWatches() {
   await frontend.keyboard.up('Shift');
 }
 
-export async function refreshDevToolsAndRemoveBackendState(target: puppeteer.Page) {
-  // Navigate to a different site to make sure that back-end state will be removed.
-  await target.goto('about:blank');
-  await reloadDevTools({selectedPanel: {name: 'sources'}});
-}
-
 export async function enableLocalOverrides() {
-  await click(MORE_TABS_SELECTOR);
+  await clickMoreTabsButton();
   await click(OVERRIDES_TAB_SELECTOR);
   await click(ENABLE_OVERRIDES_SELECTOR);
   await waitFor(CLEAR_CONFIGURATION_SELECTOR);
@@ -716,9 +762,7 @@ export class WasmLocationLabels {
   }
 
   static load(source: string, wasm: string): WasmLocationLabels {
-    const testSuitePath = requireTestRunnerConfigSetting<string>('test-suite-path');
-    const target = requireTestRunnerConfigSetting<string>('target');
-    const mapFileName = path.join('out', target, testSuitePath, 'resources', `${wasm}.map.json`);
+    const mapFileName = path.join(GEN_DIR, 'test', 'e2e', 'resources', `${wasm}.map.json`);
     const mapFile = JSON.parse(fs.readFileSync(mapFileName, {encoding: 'utf-8'})) as Array<{
                       source: string,
                       generatedLine: number,
@@ -727,7 +771,7 @@ export class WasmLocationLabels {
                       originalLine: number,
                       originalColumn: number,
                     }>;
-    const sourceFileName = path.join('out', target, testSuitePath, 'resources', source);
+    const sourceFileName = path.join(GEN_DIR, 'test', 'e2e', 'resources', source);
     const sourceFile = fs.readFileSync(sourceFileName, {encoding: 'utf-8'});
     const labels = new Map<string, number>();
     for (const [index, line] of sourceFile.split('\n').entries()) {
@@ -760,11 +804,8 @@ export class WasmLocationLabels {
   }
 
   async checkLocationForLabel(label: string) {
-    const mappedLines = this.#mappings.get(label);
-    assertNotNullOrUndefined(mappedLines);
-
     const pauseLocation = await retrieveTopCallFrameWithoutResuming();
-    const pausedLine = mappedLines.find(
+    const pausedLine = this.#mappings.get(label)!.find(
         line => pauseLocation === `${path.basename(this.#wasm)}:0x${line.moduleOffset.toString(16)}` ||
             pauseLocation === `${path.basename(this.#source)}:${line.sourceLine}`);
     assertNotNullOrUndefined(pausedLine);
@@ -773,28 +814,18 @@ export class WasmLocationLabels {
 
   async addBreakpointsForLabelInSource(label: string) {
     const {frontend} = getBrowserAndPages();
-    const mappedLines = this.#mappings.get(label);
-    assertNotNullOrUndefined(mappedLines);
     await openFileInEditor(path.basename(this.#source));
-    for (const line of mappedLines) {
-      await addBreakpointForLine(frontend, line.sourceLine);
-    }
+    await Promise.all(this.#mappings.get(label)!.map(({sourceLine}) => addBreakpointForLine(frontend, sourceLine)));
   }
 
   async addBreakpointsForLabelInWasm(label: string) {
     const {frontend} = getBrowserAndPages();
-    const mappedLines = this.#mappings.get(label);
-    assertNotNullOrUndefined(mappedLines);
     await openFileInEditor(path.basename(this.#wasm));
     const visibleLines = await $$(CODE_LINE_SELECTOR);
     const lineNumbers = await Promise.all(visibleLines.map(line => line.evaluate(node => node.textContent)));
     const lineNumberLabels = new Map(lineNumbers.map(label => [Number(label), label]));
-
-    for (const line of mappedLines) {
-      const lineNumberLabel = lineNumberLabels.get(line.moduleOffset);
-      assertNotNullOrUndefined(lineNumberLabel);
-      await addBreakpointForLine(frontend, lineNumberLabel);
-    }
+    await Promise.all(this.#mappings.get(label)!.map(
+        ({moduleOffset}) => addBreakpointForLine(frontend, lineNumberLabels.get(moduleOffset)!)));
   }
 
   async setBreakpointInSourceAndRun(label: string, script: string) {
@@ -831,4 +862,86 @@ export async function retrieveCodeMirrorEditorContent(): Promise<Array<string>> 
 
 export async function waitForLines(lineCount: number): Promise<void> {
   await waitFor(new Array(lineCount).fill('.cm-line').join(' ~ '));
+}
+
+export async function isPrettyPrinted(): Promise<boolean> {
+  const prettyButton = await waitFor('[title="Pretty print"]');
+  const isPretty = await prettyButton.evaluate(e => e.classList.contains('toggled'));
+  return isPretty === true;
+}
+
+export function veImpressionForSourcesPanel() {
+  return veImpression('Panel', 'sources', [
+    veImpression(
+        'Toolbar', 'debug',
+        [
+          veImpression('Toggle', 'debugger.toggle-pause'),
+          veImpression('Action', 'debugger.step-over'),
+          veImpression('Action', 'debugger.step-into'),
+          veImpression('Action', 'debugger.step-out'),
+          veImpression('Action', 'debugger.step'),
+          veImpression('Toggle', 'debugger.toggle-breakpoints-active'),
+        ]),
+    veImpression(
+        'Pane', 'debug',
+        [
+          veImpression('SectionHeader', 'sources.watch'),
+          veImpression('SectionHeader', 'sources.js-breakpoints'),
+          veImpression('SectionHeader', 'sources.scope-chain'),
+          veImpression('SectionHeader', 'sources.callstack'),
+          veImpression('SectionHeader', 'sources.xhr-breakpoints'),
+          veImpression('SectionHeader', 'sources.dom-breakpoints'),
+          veImpression('SectionHeader', 'sources.global-listeners'),
+          veImpression('SectionHeader', 'sources.event-listener-breakpoints'),
+          veImpression('SectionHeader', 'sources.csp-violation-breakpoints'),
+          veImpression('Section', 'sources.scope-chain'),
+          veImpression('Section', 'sources.callstack'),
+          veImpression(
+              'Section', 'sources.js-breakpoints',
+              [
+                veImpression('Toggle', 'pause-uncaught'),
+                veImpression('Toggle', 'pause-on-caught-exception'),
+              ]),
+        ]),
+    veImpression(
+        'Pane', 'editor',
+        [
+          veImpression('Toolbar', 'bottom'),
+          veImpression(
+              'Toolbar', 'top',
+              [
+                veImpression('ToggleSubpane', 'navigator'),
+                veImpression('ToggleSubpane', 'debugger'),
+              ]),
+        ]),
+    veImpression(
+        'Toolbar', 'navigator',
+        [
+          veImpression('DropDown', 'more-tabs'),
+          veImpression('PanelTabHeader', 'navigator-network'),
+          veImpression('PanelTabHeader', 'navigator-files'),
+          veImpression('DropDown', 'more-options'),
+        ]),
+    veImpression(
+        'Pane', 'navigator-network',
+        [
+          veImpression(
+              'Tree', undefined,
+              [
+                veImpression(
+                    'TreeItem', 'frame',
+                    [
+                      veImpression('Expand'),
+                      veImpression(
+                          'TreeItem', 'domain',
+                          [
+                            veImpression('Expand'),
+                            veImpression('TreeItem', 'document', [
+                              veImpression('Value', 'title'),
+                            ]),
+                          ]),
+                    ]),
+              ]),
+        ]),
+  ]);
 }

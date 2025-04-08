@@ -57,11 +57,9 @@ export class NetworkProjectManager extends Common.ObjectWrapper.ObjectWrapper<Ev
   }
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export enum Events {
-  FrameAttributionAdded = 'FrameAttributionAdded',
-  FrameAttributionRemoved = 'FrameAttributionRemoved',
+export const enum Events {
+  FRAME_ATTRIBUTION_ADDED = 'FrameAttributionAdded',
+  FRAME_ATTRIBUTION_REMOVED = 'FrameAttributionRemoved',
 }
 
 export interface FrameAttributionEvent {
@@ -70,8 +68,8 @@ export interface FrameAttributionEvent {
 }
 
 export type EventTypes = {
-  [Events.FrameAttributionAdded]: FrameAttributionEvent,
-  [Events.FrameAttributionRemoved]: FrameAttributionEvent,
+  [Events.FRAME_ATTRIBUTION_ADDED]: FrameAttributionEvent,
+  [Events.FRAME_ATTRIBUTION_REMOVED]: FrameAttributionEvent,
 };
 
 export class NetworkProject {
@@ -95,7 +93,7 @@ export class NetworkProject {
       frame: SDK.ResourceTreeModel.ResourceTreeFrame,
       count: number,
     }>();
-    attribution.set(frameId, {frame: frame, count: 1});
+    attribution.set(frameId, {frame, count: 1});
     uiSourceCodeToAttributionMap.set(uiSourceCode, attribution);
   }
 
@@ -128,15 +126,15 @@ export class NetworkProject {
     if (!frameAttribution) {
       return;
     }
-    const attributionInfo = frameAttribution.get(frameId) || {frame: frame, count: 0};
+    const attributionInfo = frameAttribution.get(frameId) || {frame, count: 0};
     attributionInfo.count += 1;
     frameAttribution.set(frameId, attributionInfo);
     if (attributionInfo.count !== 1) {
       return;
     }
 
-    const data = {uiSourceCode: uiSourceCode, frame: frame};
-    NetworkProjectManager.instance().dispatchEventToListeners(Events.FrameAttributionAdded, data);
+    const data = {uiSourceCode, frame};
+    NetworkProjectManager.instance().dispatchEventToListeners(Events.FRAME_ATTRIBUTION_ADDED, data);
   }
 
   static removeFrameAttribution(uiSourceCode: Workspace.UISourceCode.UISourceCode, frameId: Protocol.Page.FrameId):
@@ -155,8 +153,8 @@ export class NetworkProject {
       return;
     }
     frameAttribution.delete(frameId);
-    const data = {uiSourceCode: uiSourceCode, frame: attributionInfo.frame};
-    NetworkProjectManager.instance().dispatchEventToListeners(Events.FrameAttributionRemoved, data);
+    const data = {uiSourceCode, frame: attributionInfo.frame};
+    NetworkProjectManager.instance().dispatchEventToListeners(Events.FRAME_ATTRIBUTION_REMOVED, data);
   }
 
   static targetForUISourceCode(uiSourceCode: Workspace.UISourceCode.UISourceCode): SDK.Target.Target|null {

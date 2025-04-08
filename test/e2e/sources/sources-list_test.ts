@@ -5,7 +5,7 @@
 import {assert} from 'chai';
 
 import {getBrowserAndPages, goToResource} from '../../shared/helper.js';
-import {describe, it} from '../../shared/mocha-extensions.js';
+
 import {navigateToElementsTab} from '../helpers/elements-helpers.js';
 import {
   captureAddedSourceFiles,
@@ -21,7 +21,7 @@ declare global {
   }
 }
 
-describe('The Sources Tab', async () => {
+describe('The Sources Tab', () => {
   it('can show JavaScript files after dynamic loading', async () => {
     const {target} = getBrowserAndPages();
 

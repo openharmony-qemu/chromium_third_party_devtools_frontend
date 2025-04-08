@@ -2,21 +2,18 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import type * as Protocol from '../../generated/protocol.js';
 import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
+import type * as Protocol from '../../generated/protocol.js';
 
 import {DeferredDOMNode, type DOMNode} from './DOMModel.js';
-
-import {Capability, type Target} from './Target.js';
 import {SDKModel} from './SDKModel.js';
+import {Capability, type Target} from './Target.js';
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export enum CoreAxPropertyName {
-  Name = 'name',
-  Description = 'description',
-  Value = 'value',
-  Role = 'role',
+export const enum CoreAxPropertyName {
+  NAME = 'name',
+  DESCRIPTION = 'description',
+  VALUE = 'value',
+  ROLE = 'role',
 }
 
 export interface CoreOrProtocolAxProperty {
@@ -63,7 +60,7 @@ export class AccessibilityNode {
     this.#descriptionInternal = payload.description || null;
     this.#valueInternal = payload.value || null;
     this.#propertiesInternal = payload.properties || null;
-    this.#childIds = payload.childIds || null;
+    this.#childIds = [...new Set(payload.childIds)];
     this.#parentId = payload.parentId || null;
     if (payload.frameId && !payload.parentId) {
       this.#frameId = payload.frameId;
@@ -97,13 +94,13 @@ export class AccessibilityNode {
     const properties: CoreOrProtocolAxProperty[] = [];
 
     if (this.#nameInternal) {
-      properties.push({name: CoreAxPropertyName.Name, value: this.#nameInternal});
+      properties.push({name: CoreAxPropertyName.NAME, value: this.#nameInternal});
     }
     if (this.#descriptionInternal) {
-      properties.push({name: CoreAxPropertyName.Description, value: this.#descriptionInternal});
+      properties.push({name: CoreAxPropertyName.DESCRIPTION, value: this.#descriptionInternal});
     }
     if (this.#valueInternal) {
-      properties.push({name: CoreAxPropertyName.Value, value: this.#valueInternal});
+      properties.push({name: CoreAxPropertyName.VALUE, value: this.#valueInternal});
     }
 
     return properties;
@@ -195,14 +192,12 @@ export class AccessibilityNode {
   }
 }
 
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export enum Events {
-  TreeUpdated = 'TreeUpdated',
+export const enum Events {
+  TREE_UPDATED = 'TreeUpdated',
 }
 
 export type EventTypes = {
-  [Events.TreeUpdated]: {root?: AccessibilityNode},
+  [Events.TREE_UPDATED]: {root?: AccessibilityNode},
 };
 
 export class AccessibilityModel extends SDKModel<EventTypes> implements ProtocolProxyApi.AccessibilityDispatcher {
@@ -255,12 +250,12 @@ export class AccessibilityModel extends SDKModel<EventTypes> implements Protocol
   loadComplete({root}: Protocol.Accessibility.LoadCompleteEvent): void {
     this.clear();
     this.#root = new AccessibilityNode(this, root);
-    this.dispatchEventToListeners(Events.TreeUpdated, {root: this.#root});
+    this.dispatchEventToListeners(Events.TREE_UPDATED, {root: this.#root});
   }
 
   nodesUpdated({nodes}: Protocol.Accessibility.NodesUpdatedEvent): void {
     this.createNodesFromPayload(nodes);
-    this.dispatchEventToListeners(Events.TreeUpdated, {});
+    this.dispatchEventToListeners(Events.TREE_UPDATED, {});
     return;
   }
 
