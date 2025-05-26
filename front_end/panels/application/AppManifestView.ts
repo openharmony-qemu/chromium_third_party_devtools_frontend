@@ -498,7 +498,14 @@ export class AppManifestView extends Common.ObjectWrapper.eventMixin<EventTypes,
     this.contentElement.setAttribute('jslog', `${VisualLogging.pane('manifest')}`);
 
     this.emptyView = emptyView;
-    this.emptyView.appendLink('https://web.dev/add-manifest/' as Platform.DevToolsPath.UrlString);
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
+      this.emptyView.appendLink('https://web.dev/add-manifest/' as Platform.DevToolsPath.UrlString);
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     this.emptyView.show(this.contentElement);
     this.emptyView.hideWidget();
@@ -683,10 +690,17 @@ export class AppManifestView extends Common.ObjectWrapper.eventMixin<EventTypes,
       helpIcon.setAttribute('jslog', `${VisualLogging.action('help').track({hover: true})}`);
       appIdField.appendChild(helpIcon);
 
-      const learnMoreLink = UI.XLink.XLink.create(
-          'https://developer.chrome.com/blog/pwa-manifest-id/', i18nString(UIStrings.learnMore), undefined, undefined,
-          'learn-more');
-      appIdField.appendChild(learnMoreLink);
+      // #ifdef ARKWEB_DEVTOOLS
+      const adaptForOhos = true;
+      if (adaptForOhos) {
+        // ohos doesn't support external links
+      } else {
+        const learnMoreLink = UI.XLink.XLink.create(
+            'https://developer.chrome.com/blog/pwa-manifest-id/', i18nString(UIStrings.learnMore), undefined, undefined,
+            'learn-more');
+        appIdField.appendChild(learnMoreLink);
+      }
+      // #endif ARKWEB_DEVTOOLS
 
       if (!stringProperty('id')) {
         const suggestedIdNote = appIdField.createChild('div', 'multiline-value');
@@ -789,11 +803,18 @@ export class AppManifestView extends Common.ObjectWrapper.eventMixin<EventTypes,
       this.iconsSection.setIconMasked(setIconMaskedCheckbox.checkboxElement.checked);
     });
     this.iconsSection.appendRow().appendChild(setIconMaskedCheckbox);
-    const documentationLink = UI.XLink.XLink.create(
-        'https://web.dev/maskable-icon/', i18nString(UIStrings.documentationOnMaskableIcons), undefined, undefined,
-        'learn-more');
-    this.iconsSection.appendRow().appendChild(
-        i18n.i18n.getFormatLocalizedString(str_, UIStrings.needHelpReadOurS, {PH1: documentationLink}));
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
+      const documentationLink = UI.XLink.XLink.create(
+          'https://web.dev/maskable-icon/', i18nString(UIStrings.documentationOnMaskableIcons), undefined, undefined,
+          'learn-more');
+      this.iconsSection.appendRow().appendChild(
+          i18n.i18n.getFormatLocalizedString(str_, UIStrings.needHelpReadOurS, {PH1: documentationLink}));
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     let squareSizedIconAvailable = false;
     for (const icon of icons) {

@@ -534,18 +534,25 @@ UI.ViewManager.registerViewExtension({
   },
 });
 
-UI.ViewManager.registerViewExtension({
-  location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
-  id: 'sources.quick',
-  commandPrompt: i18nLazyString(UIStrings.showQuickSource),
-  title: i18nLazyString(UIStrings.quickSource),
-  persistence: UI.ViewManager.ViewPersistence.CLOSEABLE,
-  order: 1000,
-  async loadView() {
-    const Sources = await loadSourcesModule();
-    return new Sources.SourcesPanel.QuickSourceView();
-  },
-});
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+if (adaptForOhos) {
+  // arkweb does't support network request blocking.
+} else {
+  UI.ViewManager.registerViewExtension({
+    location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
+    id: 'sources.quick',
+    commandPrompt: i18nLazyString(UIStrings.showQuickSource),
+    title: i18nLazyString(UIStrings.quickSource),
+    persistence: UI.ViewManager.ViewPersistence.CLOSEABLE,
+    order: 1000,
+    async loadView() {
+      const Sources = await loadSourcesModule();
+      return new Sources.SourcesPanel.QuickSourceView();
+    },
+  });
+}
+// #endif ARKWEB_DEVTOOLS
 
 UI.ViewManager.registerViewExtension({
   id: 'sources.threads',

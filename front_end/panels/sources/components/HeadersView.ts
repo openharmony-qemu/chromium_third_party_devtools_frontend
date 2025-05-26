@@ -359,30 +359,54 @@ export class HeadersViewComponent extends HTMLElement {
     }
 
     // clang-format off
-    LitHtml.render(html`
-      ${this.#headerOverrides.map((headerOverride, blockIndex) =>
-        html`
-          ${this.#renderApplyToRow(headerOverride.applyTo, blockIndex)}
-          ${headerOverride.headers.map((header, headerIndex) =>
-            html`
-              ${this.#renderHeaderRow(header, blockIndex, headerIndex)}
-            `,
-          )}
-        `,
-      )}
-      <devtools-button
-          .variant=${Buttons.Button.Variant.OUTLINED}
-          .jslogContext=${'headers-view.add-override-rule'}
-          class="add-block">
-        ${i18nString(UIStrings.addOverrideRule)}
-      </devtools-button>
-      <div class="learn-more-row">
-        <x-link
-            href="https://goo.gle/devtools-override"
-            class="link"
-            jslog=${VisualLogging.link('learn-more').track({click: true})}>${i18nString(UIStrings.learnMore)}</x-link>
-      </div>
-    `, this.#shadow, {host: this});
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      LitHtml.render(html`
+        ${this.#headerOverrides.map((headerOverride, blockIndex) =>
+          html`
+            ${this.#renderApplyToRow(headerOverride.applyTo, blockIndex)}
+            ${headerOverride.headers.map((header, headerIndex) =>
+              html`
+                ${this.#renderHeaderRow(header, blockIndex, headerIndex)}
+              `,
+            )}
+          `,
+        )}
+        <devtools-button
+            .variant=${Buttons.Button.Variant.OUTLINED}
+            .jslogContext=${'headers-view.add-override-rule'}
+            class="add-block">
+          ${i18nString(UIStrings.addOverrideRule)}
+        </devtools-button>
+      `, this.#shadow, {host: this});
+    } else {
+      LitHtml.render(html`
+        ${this.#headerOverrides.map((headerOverride, blockIndex) =>
+          html`
+            ${this.#renderApplyToRow(headerOverride.applyTo, blockIndex)}
+            ${headerOverride.headers.map((header, headerIndex) =>
+              html`
+                ${this.#renderHeaderRow(header, blockIndex, headerIndex)}
+              `,
+            )}
+          `,
+        )}
+        <devtools-button
+            .variant=${Buttons.Button.Variant.OUTLINED}
+            .jslogContext=${'headers-view.add-override-rule'}
+            class="add-block">
+          ${i18nString(UIStrings.addOverrideRule)}
+        </devtools-button>
+        <div class="learn-more-row">
+          <x-link
+              href="https://goo.gle/devtools-override"
+              class="link"
+              jslog=${VisualLogging.link('learn-more').track({click: true})}>${i18nString(UIStrings.learnMore)}</x-link>
+        </div>
+      `, this.#shadow, {host: this});
+    }
+    // #endif ARKWEB_DEVTOOLS
     // clang-format on
 
     if (this.#focusElement) {

@@ -72,6 +72,10 @@ import {
   NetworkTransferTimeCalculator,
 } from './NetworkTimeCalculator.js';
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 const UIStrings = {
   /**
    *@description Text in Network Log View of the Network panel
@@ -1103,10 +1107,16 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
       hintText.appendChild(
           i18n.i18n.getFormatLocalizedString(str_, UIStrings.recordToDisplayNetworkActivity, {PH1: recordNode}));
     }
-    hintText.createChild('br');
-    hintText.appendChild(UI.XLink.XLink.create(
-        'https://developer.chrome.com/docs/devtools/network/?utm_source=devtools&utm_campaign=2019Q1',
-        i18nString(UIStrings.learnMore), undefined, undefined, 'learn-more'));
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
+      hintText.createChild('br');
+      hintText.appendChild(UI.XLink.XLink.create(
+          'https://developer.chrome.com/docs/devtools/network/?utm_source=devtools&utm_campaign=2019Q1',
+          i18nString(UIStrings.learnMore), undefined, undefined, 'learn-more'));
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     this.setHidden(true);
   }
@@ -1851,12 +1861,22 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
         patterns.push({enabled: true, url: url as Platform.DevToolsPath.UrlString});
         manager.setBlockedPatterns(patterns);
         manager.setBlockingEnabled(true);
+        // #ifdef ARKWEB_DEVTOOLS
+        if (adaptForOhos) {
+          return;
+        }
+        // #endif ARKWEB_DEVTOOLS
         void UI.ViewManager.ViewManager.instance().showView('network.blocked-urls');
       }
 
       function removeBlockedURL(url: string): void {
         patterns = patterns.filter(pattern => pattern.url !== url);
         manager.setBlockedPatterns(patterns);
+        // #ifdef ARKWEB_DEVTOOLS
+        if (adaptForOhos) {
+          return;
+        }
+        // #endif ARKWEB_DEVTOOLS
         void UI.ViewManager.ViewManager.instance().showView('network.blocked-urls');
       }
 

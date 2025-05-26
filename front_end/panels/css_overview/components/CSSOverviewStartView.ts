@@ -77,6 +77,32 @@ export class CSSOverviewStartView extends HTMLElement {
   #render(): void {
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      render(html`
+        <div class="css-overview-start-view">
+          <devtools-panel-introduction-steps>
+            <span slot="title">${i18nString(UIStrings.identifyCSSImprovements)}</span>
+            <span slot="step-1">${i18nString(UIStrings.capturePageCSSOverview)}</span>
+            <span slot="step-2">${i18nString(UIStrings.identifyCSSImprovementsWithExampleIssues)}</span>
+            <span slot="step-3">${i18nString(UIStrings.locateAffectedElements)}</span>
+          </devtools-panel-introduction-steps>
+          <div class="start-capture-wrapper">
+            <devtools-button
+              class="start-capture"
+              .variant=${Buttons.Button.Variant.PRIMARY}
+              .jslogContext=${'css-overview.capture-overview'}
+              @click=${this.#onStartCaptureClick}>
+              ${i18nString(UIStrings.captureOverview)}
+            </devtools-button>
+          </div>
+        </div>
+      `, this.#shadow, {
+        host: this,
+      });
+    }
+    // #endif ARKWEB_DEVTOOLS
     render(html`
       <div class="css-overview-start-view">
         <devtools-panel-introduction-steps>

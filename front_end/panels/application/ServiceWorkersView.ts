@@ -227,19 +227,26 @@ export class ServiceWorkersView extends UI.Widget.VBox implements
     othersView.setHeaderVisible(false);
     othersView.show(othersDiv);
     const othersSection = othersView.appendSection(i18nString(UIStrings.serviceWorkersFromOtherOrigins));
-    const othersSectionRow = othersSection.appendRow();
-    const seeOthers =
-        UI.Fragment
-            .html`<a class="devtools-link" role="link" tabindex="0" href="chrome://serviceworker-internals" target="_blank" style="display: inline; cursor: pointer;">${
-                i18nString(UIStrings.seeAllRegistrations)}</a>`;
-    seeOthers.setAttribute('jslog', `${VisualLogging.link('view-all').track({click: true})}`);
-    self.onInvokeElement(seeOthers, event => {
-      const rootTarget = SDK.TargetManager.TargetManager.instance().rootTarget();
-      rootTarget &&
-          void rootTarget.targetAgent().invoke_createTarget({url: 'chrome://serviceworker-internals?devtools'});
-      event.consume(true);
-    });
-    othersSectionRow.appendChild(seeOthers);
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
+      const othersSectionRow = othersSection.appendRow();
+      const seeOthers =
+          UI.Fragment
+              .html`<a class="devtools-link" role="link" tabindex="0" href="chrome://serviceworker-internals" target="_blank" style="display: inline; cursor: pointer;">${
+                  i18nString(UIStrings.seeAllRegistrations)}</a>`;
+      seeOthers.setAttribute('jslog', `${VisualLogging.link('view-all').track({click: true})}`);
+      self.onInvokeElement(seeOthers, event => {
+        const rootTarget = SDK.TargetManager.TargetManager.instance().rootTarget();
+        rootTarget &&
+            void rootTarget.targetAgent().invoke_createTarget({url: 'chrome://serviceworker-internals?devtools'});
+        event.consume(true);
+      });
+      othersSectionRow.appendChild(seeOthers);
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     this.toolbar.appendToolbarItem(
         MobileThrottling.ThrottlingManager.throttlingManager().createOfflineToolbarCheckbox());

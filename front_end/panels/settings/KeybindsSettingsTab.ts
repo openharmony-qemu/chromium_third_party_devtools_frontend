@@ -136,11 +136,18 @@ export class KeybindsSettingsTab extends UI.Widget.VBox implements UI.ListContro
     UI.ARIAUtils.setLabel(this.list.element, i18nString(UIStrings.keyboardShortcutsList));
     const footer = document.createElement('div');
     footer.classList.add('keybinds-footer');
-    const docsLink = UI.XLink.XLink.create(
-        'https://developer.chrome.com/docs/devtools/shortcuts/', i18nString(UIStrings.FullListOfDevtoolsKeyboard),
-        undefined, undefined, 'learn-more');
-    docsLink.classList.add('docs-link');
-    footer.appendChild(docsLink);
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
+      const docsLink = UI.XLink.XLink.create(
+          'https://developer.chrome.com/docs/devtools/shortcuts/', i18nString(UIStrings.FullListOfDevtoolsKeyboard),
+          undefined, undefined, 'learn-more');
+      docsLink.classList.add('docs-link');
+      footer.appendChild(docsLink);
+    }
+    // #endif ARKWEB_DEVTOOLS
     const restoreDefaultShortcutsButton =
         UI.UIUtils.createTextButton(i18nString(UIStrings.RestoreDefaultShortcuts), () => {
           userShortcutsSetting.set([]);

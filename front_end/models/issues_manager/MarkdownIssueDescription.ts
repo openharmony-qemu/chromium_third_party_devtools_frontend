@@ -37,6 +37,17 @@ export function resolveLazyDescription(lazyDescription: LazyMarkdownIssueDescrip
     substitutionMap.set(key, value());
   });
 
+  // #ifdef ARKWEB_DEVTOOLS
+  const adaptForOhos = true;
+  if (adaptForOhos) {
+    return {
+      file: lazyDescription.file,
+      links: [],
+      substitutions: substitutionMap,
+    };
+  }
+  // #endif ARKWEB_DEVTOOLS
+
   const description = {
     file: lazyDescription.file,
     links: lazyDescription.links.map(linksMap),
@@ -87,6 +98,16 @@ export function createIssueDescriptionFromRawMarkdown(
     throw new Error('Markdown issue descriptions must start with a heading');
   }
 
+  // #ifdef ARKWEB_DEVTOOLS
+  const adaptForOhos = true;
+  if (adaptForOhos) {
+    return {
+      title,
+      markdown: markdownAst.slice(1),
+      links: [],
+    };
+  }
+  // #endif ARKWEB_DEVTOOLS
   return {
     title,
     markdown: markdownAst.slice(1),

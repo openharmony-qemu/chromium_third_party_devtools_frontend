@@ -53,6 +53,11 @@ export class ReportsGridStatusHeader extends HTMLElement {
   #render(): void {
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      render(html`${i18nString(UIStrings.status)}`, this.#shadow, {host: this});
+    } else {
     render(html`
       ${i18nString(UIStrings.status)}
       <x-link href="https://web.dev/reporting-api/#report-status"
@@ -65,6 +70,8 @@ export class ReportsGridStatusHeader extends HTMLElement {
           }}></devtools-icon>
       </x-link>
     `, this.#shadow, {host: this});
+    }
+    // #endif ARKWEB_DEVTOOLS
     // clang-format on
   }
 }

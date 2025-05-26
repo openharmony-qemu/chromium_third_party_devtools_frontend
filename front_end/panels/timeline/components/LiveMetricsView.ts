@@ -627,7 +627,13 @@ export class LiveMetricsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
 
     const deviceLinkEl = UI.XLink.XLink.create(
         'https://developer.chrome.com/docs/devtools/device-mode', i18nString(UIStrings.simulateDifferentDevices));
-    const deviceMessage = i18n.i18n.getFormatLocalizedString(str_, UIStrings.useDeviceToolbar, {PH1: deviceLinkEl});
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    let deviceMessage = i18n.i18n.getFormatLocalizedString(str_, UIStrings.useDeviceToolbar, {PH1: deviceLinkEl});
+    if (adaptForOhos) {
+      deviceMessage = i18n.i18n.getFormatLocalizedString(str_, UIStrings.useDeviceToolbar, {PH1: i18nString(UIStrings.simulateDifferentDevices)});
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     const deviceRecEl = document.createElement('span');
     deviceRecEl.classList.add('environment-rec');
@@ -1096,7 +1102,9 @@ export class LiveMetricsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
         Platform.DevToolsPath.UrlString;
 
     // clang-format off
-    const output = html`
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    let output = html`
       <div class="container">
         <div class="live-metrics-view">
           <main class="live-metrics">
@@ -1147,6 +1155,46 @@ export class LiveMetricsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
         </div>
       </div>
     `;
+    if (adaptForOhos) {
+      output = html`
+        <div class="container">
+          <div class="live-metrics-view">
+            <main class="live-metrics">
+              <h2 class="section-title">${liveMetricsTitle}</h2>
+              <div class="metric-cards"
+                on-render=${ComponentHelpers.Directives.nodeRenderedCallback(node => {
+                  this.#tooltipContainerEl = node;
+                })}
+              >
+                <div id="lcp">
+                  ${this.#renderLcpCard()}
+                </div>
+                <div id="cls">
+                  ${this.#renderClsCard()}
+                </div>
+                <div id="inp">
+                  ${this.#renderInpCard()}
+                </div>
+              </div>
+              ${this.#renderLogSection()}
+            </main>
+            <aside class="next-steps" aria-labelledby="next-steps-section-title">
+              <h2 id="next-steps-section-title" class="section-title">${i18nString(UIStrings.nextSteps)}</h2>
+              <div id="recording-settings" class="settings-card">
+                ${this.#renderRecordingSettings()}
+              </div>
+              <div id="record" class="record-action-card">
+                ${this.#renderRecordAction(this.#toggleRecordAction)}
+              </div>
+              <div id="record-page-load" class="record-action-card">
+                ${this.#renderRecordAction(this.#recordReloadAction)}
+              </div>
+            </aside>
+          </div>
+        </div>
+      `;
+    }
+    // #endif ARKWEB_DEVTOOLS
     LitHtml.render(output, this.#shadow, {host: this});
   };
   // clang-format on
