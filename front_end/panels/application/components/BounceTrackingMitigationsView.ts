@@ -120,6 +120,18 @@ export class BounceTrackingMitigationsView extends LegacyWrapper.LegacyWrapper.W
     }
 
     // clang-format off
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      return html`
+        <devtools-report-section>
+          ${this.#renderForceRunButton()}
+        </devtools-report-section>
+          ${this.#renderDeletedSitesOrNoSitesMessage()}
+        <devtools-report-divider>
+        </devtools-report-divider>
+      `;
+    } else {
     return html`
       <devtools-report-section>
         ${this.#renderForceRunButton()}
@@ -134,6 +146,8 @@ export class BounceTrackingMitigationsView extends LegacyWrapper.LegacyWrapper.W
         </x-link>
       </devtools-report-section>
     `;
+    }
+    // #endif ARKWEB_DEVTOOLS
     // clang-format on
   }
 

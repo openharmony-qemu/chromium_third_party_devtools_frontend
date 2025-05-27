@@ -130,26 +130,33 @@ async function loadEmulationModule(): Promise<typeof Sensors> {
   return loadedSensorsModule;
 }
 
-UI.ViewManager.registerViewExtension({
-  location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
-  commandPrompt: i18nLazyString(UIStrings.showSensors),
-  title: i18nLazyString(UIStrings.sensors),
-  id: 'sensors',
-  persistence: UI.ViewManager.ViewPersistence.CLOSEABLE,
-  order: 100,
-  async loadView() {
-    const Sensors = await loadEmulationModule();
-    return new Sensors.SensorsView.SensorsView();
-  },
-  tags: [
-    i18nLazyString(UIStrings.geolocation),
-    i18nLazyString(UIStrings.timezones),
-    i18nLazyString(UIStrings.locale),
-    i18nLazyString(UIStrings.locales),
-    i18nLazyString(UIStrings.accelerometer),
-    i18nLazyString(UIStrings.deviceOrientation),
-  ],
-});
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+if (adaptForOhos) {
+  // arkweb does't support network request blocking.
+} else {
+  UI.ViewManager.registerViewExtension({
+    location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
+    commandPrompt: i18nLazyString(UIStrings.showSensors),
+    title: i18nLazyString(UIStrings.sensors),
+    id: 'sensors',
+    persistence: UI.ViewManager.ViewPersistence.CLOSEABLE,
+    order: 100,
+    async loadView() {
+      const Sensors = await loadEmulationModule();
+      return new Sensors.SensorsView.SensorsView();
+    },
+    tags: [
+      i18nLazyString(UIStrings.geolocation),
+      i18nLazyString(UIStrings.timezones),
+      i18nLazyString(UIStrings.locale),
+      i18nLazyString(UIStrings.locales),
+      i18nLazyString(UIStrings.accelerometer),
+      i18nLazyString(UIStrings.deviceOrientation),
+    ],
+  });
+}
+// #endif ARKWEB_DEVTOOLS
 
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.SETTINGS_VIEW,

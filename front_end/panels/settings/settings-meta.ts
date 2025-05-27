@@ -12,6 +12,10 @@ import * as UI from '../../ui/legacy/legacy.js';
 
 import type * as Settings from './settings.js';
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 const UIStrings = {
   /**
    *@description Text for keyboard shortcuts
@@ -145,41 +149,47 @@ UI.ViewManager.registerViewExtension({
   iconName: 'keyboard',
 });
 
-UI.ActionRegistration.registerActionExtension({
-  category: UI.ActionRegistration.ActionCategory.SETTINGS,
-  actionId: 'settings.show',
-  title: i18nLazyString(UIStrings.settings),
-  async loadActionDelegate() {
-    const Settings = await loadSettingsModule();
-    return new Settings.SettingsScreen.ActionDelegate();
-  },
-  iconClass: UI.ActionRegistration.IconClass.LARGEICON_SETTINGS_GEAR,
-  bindings: [
-    {
-      shortcut: 'F1',
-      keybindSets: [
-        UI.ActionRegistration.KeybindSet.DEVTOOLS_DEFAULT,
-      ],
+// #ifdef ARKWEB_DEVTOOLS
+if (adaptForOhos) {
+  // arkweb does't support settings.
+} else {
+  UI.ActionRegistration.registerActionExtension({
+    category: UI.ActionRegistration.ActionCategory.SETTINGS,
+    actionId: 'settings.show',
+    title: i18nLazyString(UIStrings.settings),
+    async loadActionDelegate() {
+      const Settings = await loadSettingsModule();
+      return new Settings.SettingsScreen.ActionDelegate();
     },
-    {
-      shortcut: 'Shift+?',
-    },
-    {
-      platform: UI.ActionRegistration.Platforms.WINDOWS_LINUX,
-      shortcut: 'Ctrl+,',
-      keybindSets: [
-        UI.ActionRegistration.KeybindSet.VS_CODE,
-      ],
-    },
-    {
-      platform: UI.ActionRegistration.Platforms.MAC,
-      shortcut: 'Meta+,',
-      keybindSets: [
-        UI.ActionRegistration.KeybindSet.VS_CODE,
-      ],
-    },
-  ],
-});
+    iconClass: UI.ActionRegistration.IconClass.LARGEICON_SETTINGS_GEAR,
+    bindings: [
+      {
+        shortcut: 'F1',
+        keybindSets: [
+          UI.ActionRegistration.KeybindSet.DEVTOOLS_DEFAULT,
+        ],
+      },
+      {
+        shortcut: 'Shift+?',
+      },
+      {
+        platform: UI.ActionRegistration.Platforms.WINDOWS_LINUX,
+        shortcut: 'Ctrl+,',
+        keybindSets: [
+          UI.ActionRegistration.KeybindSet.VS_CODE,
+        ],
+      },
+      {
+        platform: UI.ActionRegistration.Platforms.MAC,
+        shortcut: 'Meta+,',
+        keybindSets: [
+          UI.ActionRegistration.KeybindSet.VS_CODE,
+        ],
+      },
+    ],
+  });
+}
+// #endif ARKWEB_DEVTOOLS
 
 UI.ActionRegistration.registerActionExtension({
   category: UI.ActionRegistration.ActionCategory.SETTINGS,
@@ -191,31 +201,37 @@ UI.ActionRegistration.registerActionExtension({
   },
 });
 
-UI.ActionRegistration.registerActionExtension({
-  category: UI.ActionRegistration.ActionCategory.SETTINGS,
-  actionId: 'settings.shortcuts',
-  title: i18nLazyString(UIStrings.showShortcuts),
-  async loadActionDelegate() {
-    const Settings = await loadSettingsModule();
-    return new Settings.SettingsScreen.ActionDelegate();
-  },
-  bindings: [
-    {
-      platform: UI.ActionRegistration.Platforms.WINDOWS_LINUX,
-      shortcut: 'Ctrl+K Ctrl+S',
-      keybindSets: [
-        UI.ActionRegistration.KeybindSet.VS_CODE,
-      ],
+// #ifdef ARKWEB_DEVTOOLS
+if (adaptForOhos) {
+  // arkweb does't support settings.
+} else {
+  UI.ActionRegistration.registerActionExtension({
+    category: UI.ActionRegistration.ActionCategory.SETTINGS,
+    actionId: 'settings.shortcuts',
+    title: i18nLazyString(UIStrings.showShortcuts),
+    async loadActionDelegate() {
+      const Settings = await loadSettingsModule();
+      return new Settings.SettingsScreen.ActionDelegate();
     },
-    {
-      platform: UI.ActionRegistration.Platforms.MAC,
-      shortcut: 'Meta+K Meta+S',
-      keybindSets: [
-        UI.ActionRegistration.KeybindSet.VS_CODE,
-      ],
-    },
-  ],
-});
+    bindings: [
+      {
+        platform: UI.ActionRegistration.Platforms.WINDOWS_LINUX,
+        shortcut: 'Ctrl+K Ctrl+S',
+        keybindSets: [
+          UI.ActionRegistration.KeybindSet.VS_CODE,
+        ],
+      },
+      {
+        platform: UI.ActionRegistration.Platforms.MAC,
+        shortcut: 'Meta+K Meta+S',
+        keybindSets: [
+          UI.ActionRegistration.KeybindSet.VS_CODE,
+        ],
+      },
+    ],
+  });
+}
+// #endif ARKWEB_DEVTOOLS
 
 UI.ViewManager.registerLocationResolver({
   name: UI.ViewManager.ViewLocationValues.SETTINGS_VIEW,
@@ -240,11 +256,17 @@ Common.Revealer.registerRevealer({
   },
 });
 
-UI.ContextMenu.registerItem({
-  location: UI.ContextMenu.ItemLocation.MAIN_MENU_FOOTER,
-  actionId: 'settings.shortcuts',
-  order: undefined,
-});
+// #ifdef ARKWEB_DEVTOOLS
+if (adaptForOhos) {
+  // arkweb does't support settings.
+} else {
+  UI.ContextMenu.registerItem({
+    location: UI.ContextMenu.ItemLocation.MAIN_MENU_FOOTER,
+    actionId: 'settings.shortcuts',
+    order: undefined,
+  });
+}
+// #endif ARKWEB_DEVTOOLS
 
 UI.ContextMenu.registerItem({
   location: UI.ContextMenu.ItemLocation.MAIN_MENU_HELP_DEFAULT,

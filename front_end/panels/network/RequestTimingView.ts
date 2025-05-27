@@ -532,10 +532,17 @@ export class RequestTimingView extends UI.Widget.VBox {
     const footer = tableElement.createChild('tr', 'network-timing-footer');
     const note = (footer.createChild('td') as HTMLTableCellElement);
     note.colSpan = 1;
-    const explanationLink = UI.XLink.XLink.create(
-        'https://developer.chrome.com/docs/devtools/network/reference/#timing-explanation',
-        i18nString(UIStrings.explanation), undefined, undefined, 'explanation');
-    note.appendChild(explanationLink);
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
+      const explanationLink = UI.XLink.XLink.create(
+          'https://developer.chrome.com/docs/devtools/network/reference/#timing-explanation',
+          i18nString(UIStrings.explanation), undefined, undefined, 'explanation');
+      note.appendChild(explanationLink);
+    }
+    // #endif ARKWEB_DEVTOOLS
     footer.createChild('td');
     UI.UIUtils.createTextChild(footer.createChild('td'), i18n.TimeUtilities.secondsToString(totalDuration, true));
 
@@ -558,11 +565,21 @@ export class RequestTimingView extends UI.Widget.VBox {
       const information = (informationRow.createChild('td') as HTMLTableCellElement);
       information.colSpan = 3;
 
-      const link = UI.XLink.XLink.create(
-          'https://web.dev/custom-metrics/#server-timing-api', i18nString(UIStrings.theServerTimingApi), undefined,
-          undefined, 'server-timing-api');
-      information.appendChild(
-          i18n.i18n.getFormatLocalizedString(str_, UIStrings.duringDevelopmentYouCanUseSToAdd, {PH1: link}));
+      // #ifdef ARKWEB_DEVTOOLS
+      const adaptForOhos = true;
+      if (adaptForOhos) {
+        const theServerTimingApi = i18nString(UIStrings.theServerTimingApi);
+          information.appendChild(
+          i18n.i18n.getFormatLocalizedString(str_, UIStrings.duringDevelopmentYouCanUseSToAdd,
+                                             {PH1: theServerTimingApi}));
+      } else {
+        const link = UI.XLink.XLink.create(
+            'https://web.dev/custom-metrics/#server-timing-api', i18nString(UIStrings.theServerTimingApi), undefined,
+            undefined, 'server-timing-api');
+        information.appendChild(
+            i18n.i18n.getFormatLocalizedString(str_, UIStrings.duringDevelopmentYouCanUseSToAdd, {PH1: link}));
+      }
+      // #endif ARKWEB_DEVTOOLS
 
       return tableElement;
     }

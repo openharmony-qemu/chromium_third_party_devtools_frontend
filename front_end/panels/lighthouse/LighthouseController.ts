@@ -704,8 +704,9 @@ export const RuntimeSettings: RuntimeSetting[] = [
         value: 'snapshot',
       },
     ],
-    learnMore: 'https://github.com/GoogleChrome/lighthouse/blob/HEAD/docs/user-flows.md' as
-        Platform.DevToolsPath.UrlString,
+    // #ifdef ARKWEB_DEVTOOLS
+    learnMore: undefined,
+    // #endif ARKWEB_DEVTOOLS
   },
   {
     // This setting is disabled, but we keep it around to show in the UI.
@@ -713,9 +714,9 @@ export const RuntimeSettings: RuntimeSetting[] = [
         'lighthouse.throttling', 'simulate', Common.Settings.SettingStorageType.SYNCED),
     title: i18nLazyString(UIStrings.throttlingMethod),
     // We will disable this when we have a Lantern trace viewer within DevTools.
-    learnMore:
-        'https://github.com/GoogleChrome/lighthouse/blob/master/docs/throttling.md#devtools-lighthouse-panel-throttling' as
-        Platform.DevToolsPath.UrlString,
+    // #ifdef ARKWEB_DEVTOOLS
+    learnMore: undefined,
+    // #endif ARKWEB_DEVTOOLS
     description: i18nLazyString(UIStrings.simulateASlowerPageLoadBasedOn),
     setFlags: (flags: Flags, value: string|boolean) => {
       if (typeof value === 'string') {

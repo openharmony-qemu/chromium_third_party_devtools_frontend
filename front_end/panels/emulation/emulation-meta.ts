@@ -81,7 +81,10 @@ UI.ActionRegistration.registerActionExtension({
     const Emulation = await loadEmulationModule();
     return new Emulation.DeviceModeWrapper.ActionDelegate();
   },
-  condition: Root.Runtime.conditions.canDock,
+  // #ifdef ARKWEB_DEVTOOLS
+  //condition: Root.Runtime.conditions.canDock,
+  condition: Root.Runtime.conditions.useOrignal,
+  // #endif ARKWEB_DEVTOOLS
   title: i18nLazyString(UIStrings.toggleDeviceToolbar),
   iconClass: UI.ActionRegistration.IconClass.LARGEICON_PHONE,
   bindings: [
@@ -185,7 +188,10 @@ Common.Settings.registerSettingExtension({
 
 UI.Toolbar.registerToolbarItem({
   actionId: 'emulation.toggle-device-mode',
-  condition: Root.Runtime.conditions.canDock,
+  // #ifdef ARKWEB_DEVTOOLS
+  //condition: Root.Runtime.conditions.canDock,
+  condition: Root.Runtime.conditions.useOrignal,
+  // #endif ARKWEB_DEVTOOLS
   location: UI.Toolbar.ToolbarItemLocation.MAIN_TOOLBAR_LEFT,
   order: 1,
   showLabel: undefined,

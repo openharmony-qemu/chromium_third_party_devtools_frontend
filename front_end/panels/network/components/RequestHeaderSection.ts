@@ -106,6 +106,27 @@ export class RequestHeaderSection extends HTMLElement {
     }
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      return html`
+        <div class="call-to-action">
+          <div class="call-to-action-body">
+            <div class="explanation" title=${cautionTitle}>
+              <devtools-icon class="inline-icon" .data=${{
+                  iconName: 'warning-filled',
+                  color: 'var(--icon-warning)',
+                  width: '16px',
+                  height: '16px',
+                }}>
+              </devtools-icon>
+              ${cautionText}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    // #endif ARKWEB_DEVTOOLS
     return html`
       <div class="call-to-action">
         <div class="call-to-action-body">
@@ -122,7 +143,7 @@ export class RequestHeaderSection extends HTMLElement {
         </div>
       </div>
     `;
-                // clang-format on
+    // clang-format on
   }
 }
 

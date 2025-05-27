@@ -26,6 +26,10 @@ import {
 } from './TabbedEditorContainer.js';
 import {Events as UISourceCodeFrameEvents, UISourceCodeFrame} from './UISourceCodeFrame.js';
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 const UIStrings = {
   /**
    *@description Text to open a file
@@ -143,7 +147,7 @@ export class SourcesView extends Common.ObjectWrapper.eventMixin<EventTypes, typ
   }
 
   private placeholderElement(): Element {
-    const shortcuts = [
+    let shortcuts = [
       {actionId: 'quick-open.show', description: i18nString(UIStrings.openFile)},
       {actionId: 'quick-open.show-command-menu', description: i18nString(UIStrings.runCommand)},
       {
@@ -152,6 +156,19 @@ export class SourcesView extends Common.ObjectWrapper.eventMixin<EventTypes, typ
         isWorkspace: true,
       },
     ];
+
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      shortcuts = [
+        {actionId: 'quick-open.show', description: i18nString(UIStrings.openFile)},
+        {
+          actionId: 'sources.add-folder-to-workspace',
+          description: i18nString(UIStrings.workspaceDropInAFolderToSyncSources),
+          isWorkspace: true,
+        },
+      ];
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     const list = document.createElement('div');
     UI.ARIAUtils.markAsList(list);

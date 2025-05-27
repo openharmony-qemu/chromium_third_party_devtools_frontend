@@ -206,11 +206,18 @@ export class StorageView extends UI.ThrottledWidget.ThrottledWidget {
     quota.element.setAttribute('jslog', `${VisualLogging.section('usage')}`);
     this.quotaRow = quota.appendSelectableRow();
     this.quotaRow.classList.add('quota-usage-row');
-    const learnMoreRow = quota.appendRow();
-    const learnMore = UI.XLink.XLink.create(
-        'https://developer.chrome.com/docs/devtools/progressive-web-apps#opaque-responses',
-        i18nString(UIStrings.learnMore), undefined, undefined, 'learn-more');
-    learnMoreRow.appendChild(learnMore);
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
+      const learnMoreRow = quota.appendRow();
+      const learnMore = UI.XLink.XLink.create(
+          'https://developer.chrome.com/docs/devtools/progressive-web-apps#opaque-responses',
+          i18nString(UIStrings.learnMore), undefined, undefined, 'learn-more');
+      learnMoreRow.appendChild(learnMore);
+    }
+    // #endif ARKWEB_DEVTOOLS
     this.quotaUsage = null;
     this.pieChart = new PerfUI.PieChart.PieChart();
     this.populatePieChart(0, []);

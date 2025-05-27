@@ -17,14 +17,22 @@ let deviceModeWrapperInstance: DeviceModeWrapper;
 export class DeviceModeWrapper extends UI.Widget.VBox {
   private readonly inspectedPagePlaceholder: InspectedPagePlaceholder;
   private deviceModeView: DeviceModeView|null;
-  private readonly toggleDeviceModeAction: UI.ActionRegistration.Action;
+  // #ifdef ARKWEB_DEVTOOLS
+  private readonly toggleDeviceModeAction: UI.ActionRegistration.Action | null;
+  // #endif ARKWEB_DEVTOOLS
   private showDeviceModeSetting: Common.Settings.Setting<boolean>;
 
   private constructor(inspectedPagePlaceholder: InspectedPagePlaceholder) {
     super();
     this.inspectedPagePlaceholder = inspectedPagePlaceholder;
     this.deviceModeView = null;
-    this.toggleDeviceModeAction = UI.ActionRegistry.ActionRegistry.instance().getAction('emulation.toggle-device-mode');
+    // #ifdef ARKWEB_DEVTOOLS
+    try {
+      this.toggleDeviceModeAction = UI.ActionRegistry.ActionRegistry.instance().getAction('emulation.toggle-device-mode');
+    } catch (error) {
+      this.toggleDeviceModeAction = null;
+    }
+    // #endif ARKWEB_DEVTOOLS
     const model = EmulationModel.DeviceModeModel.DeviceModeModel.instance();
     this.showDeviceModeSetting = model.enabledSetting();
     this.showDeviceModeSetting.setRequiresUserAction(Boolean(Root.Runtime.Runtime.queryParam('hasOtherClients')));
@@ -81,6 +89,11 @@ export class DeviceModeWrapper extends UI.Widget.VBox {
   }
 
   private update(force: boolean): void {
+    // #ifdef ARKWEB_DEVTOOLS
+    if (this.toggleDeviceModeAction === null) {
+      return;
+    }
+    // #endif ARKWEB_DEVTOOLS
     this.toggleDeviceModeAction.setToggled(this.showDeviceModeSetting.get());
     if (!force) {
       const showing = this.deviceModeView && this.deviceModeView.isShowing();

@@ -176,12 +176,20 @@ export class FilesNavigatorView extends NavigatorView {
     super('navigator-files');
     const placeholder = new UI.EmptyWidget.EmptyWidget('');
     this.setPlaceholder(placeholder);
-    placeholder.appendParagraph().appendChild(UI.Fragment.html`
-  <div>${i18nString(UIStrings.explainWorkspace)}</div><br />
-  ${
-        UI.XLink.XLink.create(
-            'https://goo.gle/devtools-workspace', i18nString(UIStrings.learnMore), undefined, undefined, 'learn-more')}
-  `);
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      placeholder.appendParagraph().appendChild(UI.Fragment.html`
+        <div>${i18nString(UIStrings.explainWorkspace)}</div>`);
+    } else {
+      placeholder.appendParagraph().appendChild(UI.Fragment.html`
+        <div>${i18nString(UIStrings.explainWorkspace)}</div><br />
+        ${
+          UI.XLink.XLink.create(
+          'https://goo.gle/devtools-workspace', i18nString(UIStrings.learnMore), undefined, undefined, 'learn-more')}
+      `);
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     const toolbar = new UI.Toolbar.Toolbar('navigator-toolbar');
     void toolbar.appendItemsAtLocation('files-navigator-toolbar').then(() => {
@@ -313,13 +321,21 @@ export class ContentScriptsNavigatorView extends NavigatorView {
     super('navigator-content-scripts');
     const placeholder = new UI.EmptyWidget.EmptyWidget('');
     this.setPlaceholder(placeholder);
-    placeholder.appendParagraph().appendChild(UI.Fragment.html`
-  <div>${i18nString(UIStrings.explainContentScripts)}</div><br />
-  ${
-        UI.XLink.XLink.create(
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      placeholder.appendParagraph().appendChild(UI.Fragment.html`
+        <div>${i18nString(UIStrings.explainContentScripts)}</div>`);
+    } else {
+      placeholder.appendParagraph().appendChild(UI.Fragment.html`
+        <div>${i18nString(UIStrings.explainContentScripts)}</div><br />
+        ${
+          UI.XLink.XLink.create(
             'https://developer.chrome.com/extensions/content_scripts', i18nString(UIStrings.learnMore), undefined,
             undefined, 'learn-more')}
-  `);
+      `);
+    }
+    // #endif ARKWEB_DEVTOOLS
   }
 
   override acceptProject(project: Workspace.Workspace.Project): boolean {
@@ -332,12 +348,20 @@ export class SnippetsNavigatorView extends NavigatorView {
     super('navigator-snippets');
     const placeholder = new UI.EmptyWidget.EmptyWidget('');
     this.setPlaceholder(placeholder);
-    placeholder.appendParagraph().appendChild(UI.Fragment.html`
-  <div>${i18nString(UIStrings.explainSnippets)}</div><br />
-  ${
-        UI.XLink.XLink.create(
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      placeholder.appendParagraph().appendChild(UI.Fragment.html`
+        <div>${i18nString(UIStrings.explainSnippets)}</div>`);
+    } else {
+      placeholder.appendParagraph().appendChild(UI.Fragment.html`
+        <div>${i18nString(UIStrings.explainSnippets)}</div><br />
+        ${
+          UI.XLink.XLink.create(
             'https://goo.gle/devtools-snippets', i18nString(UIStrings.learnMore), undefined, undefined, 'learn-more')}
-  `);
+      `);
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     const toolbar = new UI.Toolbar.Toolbar('navigator-toolbar');
     const newButton = new UI.Toolbar.ToolbarButton(

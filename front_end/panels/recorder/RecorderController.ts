@@ -1207,6 +1207,193 @@ export class RecorderController extends LitElement {
       })),
     ];
 
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      return html`
+          <div class="wrapper">
+            <div class="header" jslog=${VisualLogging.toolbar()}>
+              <devtools-button
+                @click=${this.#onCreateNewRecording}
+                .data=${
+                  {
+                    variant: Buttons.Button.Variant.TOOLBAR,
+                    iconName: 'plus',
+                    disabled:
+                      this.#replayState.isPlaying ||
+                      this.isRecording ||
+                      this.isToggling,
+                    title: Models.Tooltip.getTooltipForActions(
+                      i18nString(UIStrings.createRecording),
+                      Actions.RecorderActions.CREATE_RECORDING,
+                    ),
+                    jslogContext: Actions.RecorderActions.CREATE_RECORDING,
+                  } as Buttons.Button.ButtonData
+                }
+              ></devtools-button>
+              <div class="separator"></div>
+              <select
+                .disabled=${
+                  recordings.length === 0 ||
+                  this.#replayState.isPlaying ||
+                  this.isRecording ||
+                  this.isToggling
+                }
+                @click=${(e: Event) => e.stopPropagation()}
+                @change=${this.#onRecordingSelected}
+                jslog=${VisualLogging.dropDown('recordings').track({change: true})}
+              >
+                ${LitHtml.Directives.repeat(
+                  values,
+                  item => item.value,
+                  item => {
+                    return html`<option .selected=${item.selected} value=${item.value}>${item.name}</option>`;
+                  },
+                )}
+              </select>
+              <div class="separator"></div>
+              <devtools-button
+                @click=${this.#onImportRecording}
+                .data=${
+                  {
+                    variant: Buttons.Button.Variant.TOOLBAR,
+                    iconName: 'import',
+                    title: i18nString(UIStrings.importRecording),
+                    jslogContext: 'import-recording',
+                  } as Buttons.Button.ButtonData
+                }
+              ></devtools-button>
+              <devtools-button
+                id='origin'
+                @click=${this.#onExportRecording}
+                on-render=${ComponentHelpers.Directives.nodeRenderedCallback(
+                  node => {
+                    this.#exportMenuButton = node as Buttons.Button.Button;
+                  },
+                )}
+                .data=${
+                  {
+                    variant: Buttons.Button.Variant.TOOLBAR,
+                    iconName: 'download',
+                    title: i18nString(UIStrings.exportRecording),
+                    disabled: !this.currentRecording,
+                  } as Buttons.Button.ButtonData
+                }
+                jslog=${VisualLogging.dropDown('export-recording').track({click: true})}
+              ></devtools-button>
+              <devtools-menu
+                @menucloserequest=${this.#onExportMenuClosed}
+                @menuitemselected=${this.#onExportOptionSelected}
+                .origin=${this.#getExportMenuButton}
+                .showDivider=${false}
+                .showSelectedItem=${false}
+                .showConnector=${false}
+                .open=${this.exportMenuExpanded}
+              >
+                <devtools-menu-group .name=${i18nString(
+        UIStrings.export,
+      )}>
+                  ${LitHtml.Directives.repeat(
+                    this.#builtInConverters,
+                    converter => {
+                      return html`
+                      <devtools-menu-item
+                        .value=${converter.getId()}
+                        jslog=${VisualLogging.item(`converter-${Platform.StringUtilities.toKebabCase(converter.getId())}`).track({click: true})}>
+                        ${converter.getFormatName()}
+                      </devtools-menu-item>
+                    `;
+                    },
+                  )}
+                </devtools-menu-group>
+                <devtools-menu-group .name=${i18nString(
+        UIStrings.exportViaExtensions,
+      )}>
+                  ${LitHtml.Directives.repeat(
+                    this.extensionConverters,
+                    converter => {
+                      return html`
+                      <devtools-menu-item
+                       .value=${converter.getId()}
+                        jslog=${VisualLogging.item('converter-extension').track({click: true})}>
+                      ${converter.getFormatName()}
+                      </devtools-menu-item>
+                    `;
+                    },
+                  )}
+                  <devtools-menu-item .value=${GET_EXTENSIONS_MENU_ITEM}>
+                    ${i18nString(UIStrings.getExtensions)}
+                  </devtools-menu-item>
+                </devtools-menu-group>
+              </devtools-menu>
+              <devtools-button
+                @click=${this.#onDeleteRecording}
+                .data=${
+                  {
+                    variant: Buttons.Button.Variant.TOOLBAR,
+                    iconName: 'bin',
+                    disabled:
+                      !this.currentRecording ||
+                      this.#replayState.isPlaying ||
+                      this.isRecording ||
+                      this.isToggling,
+                    title: i18nString(UIStrings.deleteRecording),
+                    jslogContext: 'delete-recording',
+                  } as Buttons.Button.ButtonData
+                }
+              ></devtools-button>
+              <div class="separator"></div>
+              <devtools-button
+                @click=${() => this.recordingPlayer?.continue()}
+                .data=${
+                  {
+                    variant: Buttons.Button.Variant.PRIMARY_TOOLBAR,
+                    iconName: 'resume',
+                    disabled:
+                      !this.recordingPlayer ||
+                      !this.#replayState.isPausedOnBreakpoint,
+                    title: i18nString(UIStrings.continueReplay),
+                    jslogContext: 'continue-replay',
+                  } as Buttons.Button.ButtonData
+                }
+              ></devtools-button>
+              <devtools-button
+                @click=${() => this.recordingPlayer?.stepOver()}
+                .data=${
+                  {
+                    variant: Buttons.Button.Variant.TOOLBAR,
+                    iconName: 'step-over',
+                    disabled:
+                      !this.recordingPlayer ||
+                      !this.#replayState.isPausedOnBreakpoint,
+                    title: i18nString(UIStrings.stepOverReplay),
+                    jslogContext: 'step-over',
+                  } as Buttons.Button.ButtonData
+                }
+              ></devtools-button>
+              <div class="feedback">
+              </div>
+              <div class="separator"></div>
+              <devtools-shortcut-dialog
+                .data=${
+                  {
+                    shortcuts: this.#getShortcutsInfo(),
+                  } as Dialogs.ShortcutDialog.ShortcutDialogData
+                } jslog=${VisualLogging.action('show-shortcuts').track({click: true})}
+              ></devtools-shortcut-dialog>
+            </div>
+            ${
+              this.importError
+                ? html`<div class='error'>Import error: ${
+                    this.importError.message
+                  }</div>`
+                : ''
+            }
+            ${this.#renderCurrentPage()}
+          </div>
+        `;
+    }
+    // #endif ARKWEB_DEVTOOLS
     return html`
         <div class="wrapper">
           <div class="header" jslog=${VisualLogging.toolbar()}>

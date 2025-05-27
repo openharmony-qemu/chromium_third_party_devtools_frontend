@@ -538,16 +538,28 @@ export class WebauthnPaneImpl extends UI.Widget.VBox implements
   }
 
   #createNewAuthenticatorSection(): void {
-    const learnMoreLink = UI.XLink.XLink.create(
-        'https://developers.google.com/web/updates/2018/05/webauthn', i18nString(UIStrings.learnMore), undefined,
-        undefined, 'learn-more');
-    this.#learnMoreView = this.contentElement.createChild('div', 'learn-more');
-    this.#learnMoreView.appendChild(UI.Fragment.html`
-  <div>
-  ${i18nString(UIStrings.useWebauthnForPhishingresistant)}<br /><br />
-  ${learnMoreLink}
-  </div>
-  `);
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      this.#learnMoreView = this.contentElement.createChild('div', 'learn-more');
+      this.#learnMoreView.appendChild(UI.Fragment.html`
+        <div>
+          ${i18nString(UIStrings.useWebauthnForPhishingresistant)}<br /><br />
+        </div>
+      `);
+    } else {
+      const learnMoreLink = UI.XLink.XLink.create(
+          'https://developers.google.com/web/updates/2018/05/webauthn', i18nString(UIStrings.learnMore), undefined,
+          undefined, 'learn-more');
+      this.#learnMoreView = this.contentElement.createChild('div', 'learn-more');
+      this.#learnMoreView.appendChild(UI.Fragment.html`
+        <div>
+          ${i18nString(UIStrings.useWebauthnForPhishingresistant)}<br /><br />
+          ${learnMoreLink}
+        </div>
+      `);
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     this.#newAuthenticatorSection = this.contentElement.createChild('div', 'new-authenticator-container');
     const newAuthenticatorTitle =

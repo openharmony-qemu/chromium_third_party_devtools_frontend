@@ -264,6 +264,99 @@ export class CreateRecordingView extends HTMLElement {
       ],
     ]);
     // clang-format off
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      LitHtml.render(
+        html`
+          <div class="wrapper">
+            <div class="header-wrapper">
+              <h1>${i18nString(UIStrings.createRecording)}</h1>
+              <devtools-button
+                title=${i18nString(UIStrings.cancelRecording)}
+                jslog=${VisualLogging.close().track({click: true})}
+                .data=${
+                  {
+                    variant: Buttons.Button.Variant.ICON,
+                    size: Buttons.Button.Size.SMALL,
+                    iconName: 'cross',
+                  } as Buttons.Button.ButtonData
+                }
+                @click=${this.#dispatchRecordingCancelled}
+              ></devtools-button>
+            </div>
+            <label class="row-label" for="user-flow-name">${i18nString(
+              UIStrings.recordingName,
+            )}</label>
+            <input
+              value=${this.#defaultRecordingName}
+              @focus=${this.#onInputFocus}
+              @keydown=${this.#onKeyDown}
+              jslog=${VisualLogging.textField('user-flow-name').track({change: true})}
+              class="devtools-text-input"
+              id="user-flow-name"
+            />
+            <label class="row-label" for="selector-attribute">
+              <span>${i18nString(UIStrings.selectorAttribute)}</span>
+            </label>
+            <input
+              value=${ifDefined(this.#recorderSettings?.selectorAttribute)}
+              placeholder="data-testid"
+              @keydown=${this.#onKeyDown}
+              jslog=${VisualLogging.textField('selector-attribute').track({change: true})}
+              class="devtools-text-input"
+              id="selector-attribute"
+            />
+            <label class="row-label">
+              <span>${i18nString(UIStrings.selectorTypes)}</span>
+            </label>
+            <div class="checkbox-container">
+              ${Object.values(Models.Schema.SelectorType).map(selectorType => {
+                const checked =
+                  this.#recorderSettings?.getSelectorByType(selectorType);
+                return html`
+                    <label class="checkbox-label selector-type">
+                      <input
+                        @keydown=${this.#onKeyDown}
+                        .value=${selectorType}
+                        jslog=${VisualLogging.toggle().track({click: true}).context(`selector-${selectorType}`)}
+                        ?checked=${checked}
+                        type="checkbox"
+                      />
+                      ${selectorTypeToLabel.get(selectorType) || selectorType}
+                    </label>
+                  `;
+              })}
+            </div>
+  
+            ${
+              this.#error &&
+              html`
+            <div class="error" role="alert">
+              ${this.#error.message}
+            </div>
+          `
+            }
+          </div>
+          <div class="footer">
+            <div class="controls">
+              <devtools-control-button
+                @click=${this.startRecording}
+                .label=${i18nString(UIStrings.startRecording)}
+                .shape=${'circle'}
+                jslog=${VisualLogging.action(Actions.RecorderActions.START_RECORDING).track({click: true})}
+                title=${Models.Tooltip.getTooltipForActions(
+                  i18nString(UIStrings.startRecording),
+                  Actions.RecorderActions.START_RECORDING,
+                )}
+              ></devtools-control-button>
+            </div>
+          </div>
+        `,
+        this.#shadow,
+        { host: this },
+      );
+    } else {
     LitHtml.render(
       html`
         <div class="wrapper">
@@ -367,6 +460,8 @@ export class CreateRecordingView extends HTMLElement {
       this.#shadow,
       { host: this },
     );
+    }
+    // #endif ARKWEB_DEVTOOLS
     // clang-format on
   }
 }

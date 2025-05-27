@@ -401,4 +401,7 @@ export type Condition = (config?: HostConfig) => boolean;
 
 export const conditions = {
   canDock: () => Boolean(Runtime.queryParam('can_dock')),
+  // #ifdef ARKWEB_DEVTOOLS
+  useOrignal: () => Boolean(Runtime.queryParam('use_orignal')),
+  // #endif ARKWEB_DEVTOOLS
 };

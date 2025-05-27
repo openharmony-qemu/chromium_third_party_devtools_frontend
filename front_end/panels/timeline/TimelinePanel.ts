@@ -52,6 +52,8 @@ import * as ThemeSupport from '../../ui/legacy/theme_support/theme_support.js';
 import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 import * as MobileThrottling from '../mobile_throttling/mobile_throttling.js';
 
+import * as Bindings from '../../models/bindings/bindings.js';
+
 import {ActiveFilters} from './ActiveFilters.js';
 import * as AnnotationHelpers from './AnnotationHelpers.js';
 import {TraceLoadEvent} from './BenchmarkEvents.js';
@@ -1229,6 +1231,26 @@ export class TimelinePanel extends UI.Panel.Panel implements Client, TimelineMod
     } else {
       fileName = `Trace-${traceStart}.json` as Platform.DevToolsPath.RawPathString;
     }
+
+    // #ifdef ARKWEB_DEVTOOLS
+    const supportShowSaveFilePicker = false;
+    if (!supportShowSaveFilePicker) {
+      const stream = new Bindings.FileUtils.FileOutputStream();
+      if (!await stream.open(fileName)) {
+        console.error(`open ${fileName} failed`);
+        return;
+      }
+      const formattedTraceIter = traceJsonGenerator(traceEvents, metadata);
+      const traceAsString = Array.from(formattedTraceIter).join('');
+      const chunkSize = 100000;
+      for (let i = 0; i < traceAsString.length; i += chunkSize) {
+        const chunk = traceAsString.substr(i, chunkSize);
+        await stream.write(chunk);
+      }
+      void stream.close();
+      return;
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     try {
       // TODO(crbug.com/1456818): Extract this logic and add more tests.
