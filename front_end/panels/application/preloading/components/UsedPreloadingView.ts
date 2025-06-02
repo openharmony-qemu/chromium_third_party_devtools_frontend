@@ -168,22 +168,6 @@ export class UsedPreloadingView extends LegacyWrapper.LegacyWrapper.WrappableCom
   #renderInternal(): LitHtml.LitTemplate {
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
-    // #ifdef ARKWEB_DEVTOOLS
-    const adaptForOhos = true;
-    if (adaptForOhos) {
-      return html`
-        <devtools-report>
-          ${this.#speculativeLoadingStatusForThisPageSections()}
-  
-          <devtools-report-divider></devtools-report-divider>
-  
-          ${this.#speculationsInitiatedByThisPageSummarySections()}
-  
-          <devtools-report-divider></devtools-report-divider>
-        </devtools-report>
-      `;
-    }
-    // #endif ARKWEB_DEVTOOLS
     return html`
       <devtools-report>
         ${this.#speculativeLoadingStatusForThisPageSections()}

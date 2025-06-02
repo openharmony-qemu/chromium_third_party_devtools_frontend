@@ -85,33 +85,7 @@ export class StartView extends HTMLElement {
 
   #render = (): void => {
     // clang-format off
-    // #ifdef ARKWEB_DEVTOOLS
-    const adaptForOhos = true;
-    if (adaptForOhos) {
-      LitHtml.render(
-      html`
-        <div class="wrapper">
-          <devtools-panel-introduction-steps>
-            <span slot="title">${i18nString(UIStrings.header)}</span>
-            <span slot="step-1">${i18nString(UIStrings.step1)}</span>
-            <span slot="step-2">${i18nString(UIStrings.step2)}</span>
-            <span slot="step-3">${i18nString(UIStrings.step3)}</span>
-          </devtools-panel-introduction-steps>
-          <div class="fit-content">
-            <devtools-button .variant=${
-        Buttons.Button.Variant.PRIMARY
-      } @click=${this.#onClick}
-              .jslogContext=${Actions.RecorderActions.CREATE_RECORDING}>
-              ${i18nString(UIStrings.createRecording)}
-            </devtools-button>
-          </div>
-        </div>
-      `,
-      this.#shadow,
-      { host: this },
-    );
-    } else {
-      LitHtml.render(
+    LitHtml.render(
       html`
         <div class="wrapper">
           <devtools-panel-introduction-steps>
@@ -149,8 +123,6 @@ export class StartView extends HTMLElement {
       this.#shadow,
       { host: this },
     );
-    }
-    // #endif ARKWEB_DEVTOOLS
     // clang-format on
   };
 }

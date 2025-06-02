@@ -620,9 +620,7 @@ export class MetricCard extends HTMLElement {
     const helpLink = this.#getHelpLink();
 
     // clang-format off
-    // #ifdef ARKWEB_DEVTOOLS
-    const adaptForOhos = true;
-    let output = html`
+    const output = html`
       <div class="metric-card">
         <h3 class="title">
           ${this.#getTitle()}
@@ -676,56 +674,6 @@ export class MetricCard extends HTMLElement {
         <slot name="extra-info"></slot>
       </div>
     `;
-    if (adaptForOhos) {
-      output = html`
-        <div class="metric-card">
-          <h3 class="title">
-            ${this.#getTitle()}
-          </h3>
-          <div tabindex="0" class="metric-values-section"
-            @mouseenter=${() => this.#showTooltip(500)}
-            @mouseleave=${this.#hideTooltipOnMouseLeave}
-            @focusin=${this.#showTooltip}
-            @focusout=${this.#hideTooltipOnFocusOut}
-            aria-describedby="tooltip"
-          >
-            <div class="metric-source-block">
-              <div class="metric-source-value" id="local-value">${renderMetricValue(
-                this.#getMetricValueLogContext(true),
-                this.#getLocalValue(), this.#getThresholds(), this.#getFormatFn())}</div>
-              ${fieldEnabled ? html`<div class="metric-source-label">${i18nString(UIStrings.localValue)}</div>` : nothing}
-            </div>
-            ${fieldEnabled ? html`
-              <div class="metric-source-block">
-                <div class="metric-source-value" id="field-value">${renderMetricValue(
-                  this.#getMetricValueLogContext(false),
-                  this.#getFieldValue(), this.#getThresholds(), this.#getFormatFn())}</div>
-                <div class="metric-source-label">${i18nString(UIStrings.field75thPercentile)}</div>
-              </div>
-            `: nothing}
-            <div
-              id="tooltip"
-              class="tooltip"
-              role="tooltip"
-              aria-label=${i18nString(UIStrings.viewCardDetails)}
-              on-render=${ComponentHelpers.Directives.nodeRenderedCallback(node => {
-                this.#tooltipEl = node as HTMLElement;
-              })}
-            >
-              ${this.#renderDetailedCompareString()}
-              <hr class="divider">
-              ${this.#renderFieldHistogram()}
-              ${this.#renderPhaseTable()}
-            </div>
-          </div>
-          ${fieldEnabled ? html`<hr class="divider">` : nothing}
-          ${this.#renderCompareString()}
-          ${this.#renderEnvironmentRecommendations()}
-          <slot name="extra-info"></slot>
-        </div>
-      `;
-    }
-    // #endif ARKWEB_DEVTOOLS
     LitHtml.render(output, this.#shadow, {host: this});
   };
   // clang-format on

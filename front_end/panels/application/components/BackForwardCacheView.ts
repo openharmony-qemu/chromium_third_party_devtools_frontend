@@ -278,41 +278,6 @@ export class BackForwardCacheView extends LegacyWrapper.LegacyWrapper.WrappableC
     // Prevent running BFCache test on the DevTools window itself via DevTools on DevTools
     const isTestingForbidden = Common.ParsedURL.schemeIs(frame.url, 'devtools:');
     // clang-format off
-    // #ifdef ARKWEB_DEVTOOLS
-    const adaptForOhos = true;
-    if (adaptForOhos) {
-      return html`
-        ${this.#renderBackForwardCacheStatus(frame.backForwardCacheDetails.restoredFromCache)}
-        <div class="report-line">
-          <div class="report-key">
-            ${i18nString(UIStrings.url)}
-          </div>
-          <div class="report-value" title=${frame.url}>
-            ${frame.url}
-          </div>
-        </div>
-        ${this.#maybeRenderFrameTree(frame.backForwardCacheDetails.explanationsTree)}
-        <devtools-report-section>
-          <devtools-button
-            aria-label=${i18nString(UIStrings.runTest)}
-            .disabled=${isTestRunning || isTestingForbidden}
-            .spinner=${isTestRunning}
-            .variant=${Buttons.Button.Variant.PRIMARY}
-            @click=${this.#navigateAwayAndBack}
-            jslog=${VisualLogging.action('back-forward-cache.run-test').track({click: true})}>
-            ${isTestRunning ? html`
-              ${i18nString(UIStrings.runningTest)}`:`
-              ${i18nString(UIStrings.runTest)}
-            `}
-          </devtools-button>
-        </devtools-report-section>
-        <devtools-report-divider>
-        </devtools-report-divider>
-        ${this.#maybeRenderExplanations(frame.backForwardCacheDetails.explanations,
-            frame.backForwardCacheDetails.explanationsTree)}
-      `;
-    }
-    // #endif ARKWEB_DEVTOOLS
     return html`
       ${this.#renderBackForwardCacheStatus(frame.backForwardCacheDetails.restoredFromCache)}
       <div class="report-line">
@@ -624,23 +589,16 @@ export class BackForwardCacheView extends LegacyWrapper.LegacyWrapper.WrappableC
   }
 
   #maybeRenderDeepLinkToUnload(explanation: Protocol.Page.BackForwardCacheNotRestoredExplanation): LitHtml.LitTemplate {
-    // #ifdef ARKWEB_DEVTOOLS
-    const adaptForOhos = true;
-    if (adaptForOhos) {
-      // ohos doesn't support external links
-    } else {
-      if (explanation.reason === Protocol.Page.BackForwardCacheNotRestoredReason.UnloadHandlerExistsInMainFrame ||
-          explanation.reason === Protocol.Page.BackForwardCacheNotRestoredReason.UnloadHandlerExistsInSubFrame) {
-        return html`
-          <x-link href="https://web.dev/bfcache/#never-use-the-unload-event" class="link"
-          jslog=${VisualLogging.action('learn-more.never-use-unload').track({
-          click: true,
-        })}>
-            ${i18nString(UIStrings.neverUseUnload)}
-          </x-link>`;
-      }
+    if (explanation.reason === Protocol.Page.BackForwardCacheNotRestoredReason.UnloadHandlerExistsInMainFrame ||
+        explanation.reason === Protocol.Page.BackForwardCacheNotRestoredReason.UnloadHandlerExistsInSubFrame) {
+      return html`
+        <x-link href="https://web.dev/bfcache/#never-use-the-unload-event" class="link"
+        jslog=${VisualLogging.action('learn-more.never-use-unload').track({
+        click: true,
+      })}>
+          ${i18nString(UIStrings.neverUseUnload)}
+        </x-link>`;
     }
-    // #endif ARKWEB_DEVTOOLS
     return LitHtml.nothing;
   }
 

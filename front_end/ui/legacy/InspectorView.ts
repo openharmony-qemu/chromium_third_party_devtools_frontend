@@ -209,10 +209,6 @@ export class InspectorView extends VBox implements ViewLocationResolver {
     // the Device mode button is not added and so the allocated space is smaller.
     const allocatedSpace = Root.Runtime.conditions.canDock() ? '69px' : '41px';
     this.tabbedPane.leftToolbar().element.style.minWidth = allocatedSpace;
-    // #ifdef ARKWEB_DEVTOOLS
-    this.tabbedPane.leftToolbar().element.style.minWidth =
-        Root.Runtime.conditions.useOrignal() ? allocatedSpace : '41px';
-    // #endif ARKWEB_DEVTOOLS
     this.tabbedPane.registerRequiredCSS(inspectorViewTabbedPaneStyles);
     this.tabbedPane.addEventListener(
         TabbedPaneEvents.TabSelected,
@@ -541,14 +537,7 @@ export class InspectorView extends VBox implements ViewLocationResolver {
 }
 
 function getDisableLocaleInfoBarSetting(): Common.Settings.Setting<boolean> {
-  // #ifdef ARKWEB_DEVTOOLS
-  const disableLocaleInfoBarAsDefault = true;
-  if (disableLocaleInfoBarAsDefault) {
-    return Common.Settings.Settings.instance().createSetting('disable-locale-info-bar', true);
-  } else {
-    return Common.Settings.Settings.instance().createSetting('disable-locale-info-bar', false);
-  }
-  // #endif ARKWEB_DEVTOOLS
+  return Common.Settings.Settings.instance().createSetting('disable-locale-info-bar', false);
 }
 
 function shouldShowLocaleInfobar(): boolean {

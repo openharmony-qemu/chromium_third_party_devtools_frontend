@@ -431,18 +431,11 @@ export class ShowActionDelegate implements UI.ActionRegistration.ActionDelegate 
   }
 }
 
-// #ifdef ARKWEB_DEVTOOLS
-const adaptForOhos = true;
-if (adaptForOhos) {
-  // arkweb doesn't support command.
-} else {
-  registerProvider({
-    prefix: '>',
-    iconName: 'chevron-right',
-    iconWidth: '20px',
-    provider: () => Promise.resolve(new CommandMenuProvider()),
-    titlePrefix: () => i18nString(UIStrings.run),
-    titleSuggestion: () => i18nString(UIStrings.command),
-  });
-}
-// #endif ARKWEB_DEVTOOLS
+registerProvider({
+  prefix: '>',
+  iconName: 'chevron-right',
+  iconWidth: '20px',
+  provider: () => Promise.resolve(new CommandMenuProvider()),
+  titlePrefix: () => i18nString(UIStrings.run),
+  titleSuggestion: () => i18nString(UIStrings.command),
+});
