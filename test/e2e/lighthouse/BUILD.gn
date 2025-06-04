@@ -9,7 +9,6 @@ node_ts_library("lighthouse") {
     "devtools-settings_test.ts",
     "navigation_test.ts",
     "snapshot_test.ts",
-    "start-view_test.ts",
     "timespan_test.ts",
   ]
 
