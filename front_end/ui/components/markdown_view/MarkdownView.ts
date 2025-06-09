@@ -205,12 +205,6 @@ export class MarkdownLitRenderer {
       case 'space':
         return html``;
       case 'link':
-        // #ifdef ARKWEB_DEVTOOLS
-        const adaptForOhos = true;
-        if (adaptForOhos) {
-          return html`${this.unescape(token.text)}`;
-        }
-        // #endif ARKWEB_DEVTOOLS
         return html`<devtools-markdown-link
         class=${this.#customClassMapForToken('link')}
         .data=${{

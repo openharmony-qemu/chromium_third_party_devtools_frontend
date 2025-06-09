@@ -21,10 +21,6 @@ import {
   ThrottlingPresets,
 } from './ThrottlingPresets.js';
 
-// #ifdef ARKWEB_DEVTOOLS
-const adaptForOhos = true;
-// #endif ARKWEB_DEVTOOLS
-
 const UIStrings = {
   /**
    *@description Text with two placeholders separated by a colon
@@ -156,11 +152,6 @@ export class ThrottlingManager {
       options = [];
       for (let i = 0; i < groups.length; ++i) {
         const group = groups[i];
-        // #ifdef ARKWEB_DEVTOOLS
-        if (adaptForOhos && group.title === 'Custom') {
-          continue;
-        }
-        // #endif ARKWEB_DEVTOOLS
         const groupElement = selectElement.createChild('optgroup') as HTMLOptGroupElement;
         groupElement.label = group.title;
         for (const conditions of group.items) {
@@ -189,23 +180,14 @@ export class ThrottlingManager {
     }
 
     function optionSelected(): void {
-      // #ifdef ARKWEB_DEVTOOLS
-      if (adaptForOhos) {
+      if (selectElement.selectedIndex === selectElement.options.length - 1) {
+        selector.revealAndUpdate();
+      } else {
         const option = options[selectElement.selectedIndex];
         if (option) {
           selector.optionSelected(option);
         }
-      } else {
-        if (selectElement.selectedIndex === selectElement.options.length - 1) {
-          selector.revealAndUpdate();
-        } else {
-          const option = options[selectElement.selectedIndex];
-          if (option) {
-            selector.optionSelected(option);
-          }
-        }
       }
-      // #endif ARKWEB_DEVTOOLS
     }
 
     function select(index: number): void {

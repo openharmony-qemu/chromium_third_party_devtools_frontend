@@ -282,21 +282,11 @@ export class MainImpl {
   }
 
   #initializeExperiments(): void {
-    // #ifdef ARKWEB_DEVTOOLS
-    const adaptForOhos = true;
-    // #endif ARKWEB_DEVTOOLS
     Root.Runtime.experiments.register('capture-node-creation-stacks', 'Capture node creation stacks');
     Root.Runtime.experiments.register('live-heap-profile', 'Live heap profile', true);
-    // #ifdef ARKWEB_DEVTOOLS
-    if (adaptForOhos) {
-      Root.Runtime.experiments.register(
-        'protocol-monitor', 'Protocol Monitor');
-    } else {
-      Root.Runtime.experiments.register(
+    Root.Runtime.experiments.register(
         'protocol-monitor', 'Protocol Monitor', undefined,
         'https://developer.chrome.com/blog/new-in-devtools-92/#protocol-monitor');
-    }
-    // #endif ARKWEB_DEVTOOLS
     Root.Runtime.experiments.register('sampling-heap-profiler-timeline', 'Sampling heap profiler timeline', true);
     Root.Runtime.experiments.register(
         'show-option-tp-expose-internals-in-heap-snapshot', 'Show option to expose internals in heap snapshots');
@@ -320,48 +310,26 @@ export class MainImpl {
     Root.Runtime.experiments.register('use-source-map-scopes', 'Use scope information from source maps', true);
 
     // Advanced Perceptual Contrast Algorithm.
-    // #ifdef ARKWEB_DEVTOOLS
-    if (adaptForOhos) {
-      Root.Runtime.experiments.register(
+    Root.Runtime.experiments.register(
         'apca',
-        'Enable new Advanced Perceptual Contrast Algorithm (APCA) \
-        replacing previous contrast ratio and AA/AAA guidelines');
+        'Enable new Advanced Perceptual Contrast Algorithm (APCA) replacing previous contrast ratio and AA/AAA guidelines',
+        undefined, 'https://developer.chrome.com/blog/new-in-devtools-89/#apca');
 
     // Full Accessibility Tree
     Root.Runtime.experiments.register(
-        'full-accessibility-tree', 'Enable full accessibility tree view in the Elements panel');
+        'full-accessibility-tree', 'Enable full accessibility tree view in the Elements panel', undefined,
+        'https://developer.chrome.com/blog/new-in-devtools-90/#accesibility-tree',
+        'https://g.co/devtools/a11y-tree-feedback');
 
     // Font Editor
     Root.Runtime.experiments.register(
-        'font-editor', 'Enable new font editor within the Styles tab');
+        'font-editor', 'Enable new font editor within the Styles tab', undefined,
+        'https://developer.chrome.com/blog/new-in-devtools-89/#font');
 
     // Contrast issues reported via the Issues panel.
     Root.Runtime.experiments.register(
-        'contrast-issues', 'Enable automatic contrast issue reporting via the Issues panel');
-    } else {
-      Root.Runtime.experiments.register(
-          'apca',
-          'Enable new Advanced Perceptual Contrast Algorithm (APCA) \
-          replacing previous contrast ratio and AA/AAA guidelines',
-          undefined, 'https://developer.chrome.com/blog/new-in-devtools-89/#apca');
-  
-      // Full Accessibility Tree
-      Root.Runtime.experiments.register(
-          'full-accessibility-tree', 'Enable full accessibility tree view in the Elements panel', undefined,
-          'https://developer.chrome.com/blog/new-in-devtools-90/#accesibility-tree',
-          'https://g.co/devtools/a11y-tree-feedback');
-  
-      // Font Editor
-      Root.Runtime.experiments.register(
-          'font-editor', 'Enable new font editor within the Styles tab', undefined,
-          'https://developer.chrome.com/blog/new-in-devtools-89/#font');
-  
-      // Contrast issues reported via the Issues panel.
-      Root.Runtime.experiments.register(
-          'contrast-issues', 'Enable automatic contrast issue reporting via the Issues panel', undefined,
-          'https://developer.chrome.com/blog/new-in-devtools-90/#low-contrast');
-    }
-    // #endif ARKWEB_DEVTOOLS
+        'contrast-issues', 'Enable automatic contrast issue reporting via the Issues panel', undefined,
+        'https://developer.chrome.com/blog/new-in-devtools-90/#low-contrast');
 
     // New cookie features.
     Root.Runtime.experiments.register('experimental-cookie-features', 'Enable experimental cookie features');
@@ -925,16 +893,9 @@ export class MainMenuItem implements UI.Toolbar.Provider {
       right.setToggled(UI.DockController.DockController.instance().dockSide() === UI.DockController.DockState.RIGHT);
       left.setToggled(UI.DockController.DockController.instance().dockSide() === UI.DockController.DockState.LEFT);
       dockItemToolbar.appendToolbarItem(undock);
-       // #ifdef ARKWEB_DEVTOOLS
-      const onlySupportUndock = true;
-      if (onlySupportUndock) {
-        // ohos doesn't support dock side.
-      } else {
-        dockItemToolbar.appendToolbarItem(left);
-        dockItemToolbar.appendToolbarItem(bottom);
-        dockItemToolbar.appendToolbarItem(right);
-      }
-      // #endif ARKWEB_DEVTOOLS
+      dockItemToolbar.appendToolbarItem(left);
+      dockItemToolbar.appendToolbarItem(bottom);
+      dockItemToolbar.appendToolbarItem(right);
       dockItemElement.addEventListener('keydown', event => {
         let dir = 0;
         if (event.key === 'ArrowLeft') {
@@ -948,14 +909,6 @@ export class MainMenuItem implements UI.Toolbar.Provider {
         } else {
           return;
         }
-
-        // #ifdef ARKWEB_DEVTOOLS
-        const onlySupportUndock = true;
-        if (onlySupportUndock) {
-          // ohos doesn't support dock side.
-          dir = 0;
-        }
-        // #endif ARKWEB_DEVTOOLS
 
         const buttons = [undock, left, bottom, right];
         let index = buttons.findIndex(button => button.element.hasFocus());

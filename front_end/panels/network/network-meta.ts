@@ -170,25 +170,18 @@ UI.ViewManager.registerViewExtension({
   },
 });
 
-// #ifdef ARKWEB_DEVTOOLS
-const adaptForOhos = true;
-if (adaptForOhos) {
-  // arkweb does't support network request blocking.
-} else {
-  UI.ViewManager.registerViewExtension({
-    location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
-    id: 'network.blocked-urls',
-    commandPrompt: i18nLazyString(UIStrings.showNetworkRequestBlocking),
-    title: i18nLazyString(UIStrings.networkRequestBlocking),
-    persistence: UI.ViewManager.ViewPersistence.CLOSEABLE,
-    order: 60,
-    async loadView() {
-      const Network = await loadNetworkModule();
-      return new Network.BlockedURLsPane.BlockedURLsPane();
-    },
-  });
-}
-// #endif ARKWEB_DEVTOOLS
+UI.ViewManager.registerViewExtension({
+  location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
+  id: 'network.blocked-urls',
+  commandPrompt: i18nLazyString(UIStrings.showNetworkRequestBlocking),
+  title: i18nLazyString(UIStrings.networkRequestBlocking),
+  persistence: UI.ViewManager.ViewPersistence.CLOSEABLE,
+  order: 60,
+  async loadView() {
+    const Network = await loadNetworkModule();
+    return new Network.BlockedURLsPane.BlockedURLsPane();
+  },
+});
 
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,

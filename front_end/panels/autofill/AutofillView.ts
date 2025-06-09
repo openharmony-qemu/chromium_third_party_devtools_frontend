@@ -29,13 +29,6 @@ const UIStrings = {
    */
   toStartDebugging: 'To start debugging autofill, use Chrome\'s autofill menu to fill an address form.',
   /**
-   * @description Explanation for how to populate the autofill panel with data. Shown when there is
-   * no data available.
-   */
-  // #ifdef ARKWEB_DEVTOOLS
-  toStartDebuggingHW: 'To start debugging autofill, use autofill menu to fill an address form.',
-  // #endif ARKWEB_DEVTOOLS
-  /**
    * @description Column header for column containing form field values
    */
   value: 'Value',
@@ -173,37 +166,6 @@ export class AutofillView extends LegacyWrapper.LegacyWrapper.WrappableComponent
     if (!this.#address && !this.#filledFields.length) {
       // Disabled until https://crbug.com/1079231 is fixed.
       // clang-format off
-      // #ifdef ARKWEB_DEVTOOLS
-      const adaptForOhos = true;
-      if (adaptForOhos) {
-        LitHtml.render(html`
-          <main>
-            <div class="top-left-corner">
-              <label class="checkbox-label" title=${i18nString(UIStrings.showTestAddressesInAutofillMenu)}>
-                <input
-                  type="checkbox"
-                  ?checked=${this.#showTestAddressesInAutofillMenuSetting.get()}
-                  @change=${this.#onShowTestAddressesInAutofillMenuChanged.bind(this)}
-                  jslog=${VisualLogging.toggle(this.#showTestAddressesInAutofillMenuSetting.name).track({ change: true })}>
-                <span>${i18nString(UIStrings.showTestAddressesInAutofillMenu)}</span>
-              </label>
-              <label class="checkbox-label" title=${i18nString(UIStrings.autoShowTooltip)}>
-              <input
-                type="checkbox"
-                ?checked=${this.#autoOpenViewSetting.get()}
-                @change=${this.#onAutoOpenCheckboxChanged.bind(this)}
-                jslog=${VisualLogging.toggle(this.#autoOpenViewSetting.name).track({ change: true })}>
-              <span>${i18nString(UIStrings.autoShow)}</span>
-              </label>
-            </div>
-            <div class="placeholder-container" jslog=${VisualLogging.pane('autofill-empty')}>
-              <div class="placeholder">
-                <div>${i18nString(UIStrings.toStartDebuggingHW)}</div>
-              </div>
-            </div>
-          </main>
-        `, this.#shadow, {host: this});
-      } else {
       LitHtml.render(html`
         <main>
           <div class="top-left-corner">
@@ -233,53 +195,12 @@ export class AutofillView extends LegacyWrapper.LegacyWrapper.WrappableComponent
           </div>
         </main>
       `, this.#shadow, {host: this});
-      }
-      // #endif ARKWEB_DEVTOOLS
       // clang-format on
       return;
     }
 
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
-    // #ifdef ARKWEB_DEVTOOLS
-    const adaptForOhos = true;
-    if (adaptForOhos) {
-      LitHtml.render(html`
-        <main>
-          <div class="content-container" jslog=${VisualLogging.pane('autofill')}>
-            <div class="right-to-left" role="region" aria-label=${i18nString(UIStrings.addressPreview)}>
-              <div class="header">
-                <div class="label-container">
-                  <label class="checkbox-label" title=${i18nString(UIStrings.showTestAddressesInAutofillMenu)}>
-                    <input
-                      type="checkbox"
-                      ?checked=${this.#showTestAddressesInAutofillMenuSetting.get()}
-                      @change=${this.#onShowTestAddressesInAutofillMenuChanged.bind(this)}
-                      jslog=${VisualLogging.toggle(this.#showTestAddressesInAutofillMenuSetting.name).track({ change: true })}
-                    >
-                    <span>${i18nString(UIStrings.showTestAddressesInAutofillMenu)}</span>
-                  </label>
-                </div>
-                <div class="label-container">
-                  <label class="checkbox-label" title=${i18nString(UIStrings.autoShowTooltip)}>
-                    <input
-                      type="checkbox"
-                      ?checked=${this.#autoOpenViewSetting.get()}
-                      @change=${this.#onAutoOpenCheckboxChanged.bind(this)}
-                      jslog=${VisualLogging.toggle(this.#autoOpenViewSetting.name).track({ change: true })}
-                    >
-                    <span>${i18nString(UIStrings.autoShow)}</span>
-                  </label>
-                </div>
-                <x-link href=${AUTOFILL_FEEDBACK_URL} class="feedback link" jslog=${VisualLogging.link('feedback').track({click: true})}>${i18nString(UIStrings.sendFeedback)}</x-link>
-              </div>
-              ${this.#renderAddress()}
-            </div>
-            ${this.#renderFilledFields()}
-          </div>
-        </main>
-      `, this.#shadow, {host: this});
-    } else {
     LitHtml.render(html`
       <main>
         <div class="content-container" jslog=${VisualLogging.pane('autofill')}>
@@ -315,8 +236,6 @@ export class AutofillView extends LegacyWrapper.LegacyWrapper.WrappableComponent
         </div>
       </main>
     `, this.#shadow, {host: this});
-    }
-    // #endif ARKWEB_DEVTOOLS
     // clang-format on
   }
 

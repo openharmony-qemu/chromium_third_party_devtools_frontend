@@ -491,14 +491,8 @@ export class BackgroundServiceView extends UI.Widget.VBox {
       inlineButton.classList.add('background-service-record-inline-button');
       centered.createChild('p').appendChild(i18n.i18n.getFormatLocalizedString(
           str_, UIStrings.clickTheRecordButtonSOrHitSTo, {PH1: inlineButton, PH2: recordKey}));
-      // #ifdef ARKWEB_DEVTOOLS
-      const adaptForOhos = true;
-      if (adaptForOhos) {
-        // ohos doesn't support external links
-      } else {
-        centered.appendChild(this.createLearnMoreLink());
-      }
-      // #endif ARKWEB_DEVTOOLS
+
+      centered.appendChild(this.createLearnMoreLink());
     }
 
     this.preview.show(this.previewPanel.contentElement);

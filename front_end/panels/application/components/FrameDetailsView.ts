@@ -347,18 +347,6 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
     });
 
     // clang-format off
-    // #ifdef ARKWEB_DEVTOOLS
-    const adaptForOhos = true;
-    if (adaptForOhos) {
-      return html`
-      <devtools-report-section-header>${i18n.i18n.lockedString('Origin trials')}</devtools-report-section-header>
-      <div class="span-cols">
-          ${i18nString(UIStrings.originTrialsExplanation)}
-      </div>
-      ${this.#originTrialTreeView}
-      <devtools-report-divider></devtools-report-divider>
-      `;
-    } else {
     return html`
     <devtools-report-section-header>${i18n.i18n.lockedString('Origin trials')}</devtools-report-section-header>
     <div class="span-cols">
@@ -369,8 +357,6 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
     ${this.#originTrialTreeView}
     <devtools-report-divider></devtools-report-divider>
     `;
-    }
-    // #endif ARKWEB_DEVTOOLS
     // clang-format on
   }
 
@@ -745,21 +731,6 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
       return LitHtml.nothing;
     }
 
-    // #ifdef ARKWEB_DEVTOOLS
-    const adaptForOhos = true;
-    if (adaptForOhos) {
-      return html`
-        <devtools-report-section-header>${i18nString(UIStrings.apiAvailability)}</devtools-report-section-header>
-        <div class="span-cols">
-          ${i18nString(UIStrings.availabilityOfCertainApisDepends)}
-        </div>
-        ${this.#renderSharedArrayBufferAvailability()}
-        ${this.#renderMeasureMemoryAvailability()}
-        <devtools-report-divider></devtools-report-divider>
-      `;
-    }
-    // #endif ARKWEB_DEVTOOLS
-
     return html`
       <devtools-report-section-header>${i18nString(UIStrings.apiAvailability)}</devtools-report-section-header>
       <div class="span-cols">
@@ -828,18 +799,6 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
           measureMemoryAvailable ? i18nString(UIStrings.available) : i18nString(UIStrings.unavailable);
       const tooltipText = measureMemoryAvailable ? i18nString(UIStrings.thePerformanceAPI) :
                                                    i18nString(UIStrings.thePerformancemeasureuseragentspecificmemory);
-      // #ifdef ARKWEB_DEVTOOLS
-      const adaptForOhos = true;
-      if (adaptForOhos) {
-        return html`
-          <devtools-report-key>${i18nString(UIStrings.measureMemory)}</devtools-report-key>
-          <devtools-report-value>
-            <span title=${tooltipText}>${
-            availabilityText}</span>
-          </devtools-report-value>
-        `;
-      }
-      // #endif ARKWEB_DEVTOOLS
       return html`
         <devtools-report-key>${i18nString(UIStrings.measureMemory)}</devtools-report-key>
         <devtools-report-value>

@@ -14,10 +14,6 @@ import type * as InspectorMain from '../inspector_main/inspector_main.js';
 
 import type * as Main from './main.js';
 
-// #ifdef ARKWEB_DEVTOOLS
-const adaptForOhos = true;
-// #endif ARKWEB_DEVTOOLS
-
 const UIStrings = {
   /**
    *@description Text in Main
@@ -683,13 +679,11 @@ Common.Settings.registerSettingExtension({
   title: i18nLazyString(UIStrings.language),
   defaultValue: 'en-US',
   options: [
-  // #ifdef ARKWEB_DEVTOOLS
-    //{
-      //value: 'browserLanguage',
-      //title: i18nLazyString(UIStrings.browserLanguage),
-      //text: i18nLazyString(UIStrings.browserLanguage),
-    //},
-  // #endif ARKWEB_DEVTOOLS
+    {
+      value: 'browserLanguage',
+      title: i18nLazyString(UIStrings.browserLanguage),
+      text: i18nLazyString(UIStrings.browserLanguage),
+    },
     ...i18n.i18n.getAllSupportedDevToolsLocales().sort().map(locale => createOptionForLocale(locale)),
   ],
   reloadRequired: true,
@@ -709,9 +703,7 @@ Common.Settings.registerSettingExtension({
   category: Common.Settings.SettingCategory.GLOBAL,
   settingName: 'currentDockState',
   settingType: Common.Settings.SettingType.ENUM,
-  // DevTools stage 1 : use 'undocked' as default.
-  defaultValue: 'undocked',
-  // defaultValue: 'right',
+  defaultValue: 'right',
   options: [
     {
       value: 'right',
@@ -879,20 +871,14 @@ UI.Toolbar.registerToolbarItem({
   location: UI.Toolbar.ToolbarItemLocation.MAIN_TOOLBAR_RIGHT,
 });
 
-// #ifdef ARKWEB_DEVTOOLS
-if (adaptForOhos) {
-  // arkweb does't support settings.
-} else {
-  UI.Toolbar.registerToolbarItem({
-    async loadItem() {
-      const Main = await loadMainModule();
-      return Main.MainImpl.SettingsButtonProvider.instance();
-    },
-    order: 99,
-    location: UI.Toolbar.ToolbarItemLocation.MAIN_TOOLBAR_RIGHT,
-  });
-}
-// #endif ARKWEB_DEVTOOLS
+UI.Toolbar.registerToolbarItem({
+  async loadItem() {
+    const Main = await loadMainModule();
+    return Main.MainImpl.SettingsButtonProvider.instance();
+  },
+  order: 99,
+  location: UI.Toolbar.ToolbarItemLocation.MAIN_TOOLBAR_RIGHT,
+});
 
 UI.Toolbar.registerToolbarItem({
   async loadItem() {

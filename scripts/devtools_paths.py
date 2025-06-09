@@ -77,6 +77,10 @@ def hosted_mode_script_path():
 
 
 def esbuild_path():
+    # add by jie.zhang 20220627 for build debug
+    if sys.platform == 'win32':
+        return path.join(devtools_root_path(), 'third_party', 'esbuild', 'esbuild.exe')
+    # end add by jie.zhang 20220627 for build debug
     return path.join(devtools_root_path(), 'third_party', 'esbuild', 'esbuild')
 
 

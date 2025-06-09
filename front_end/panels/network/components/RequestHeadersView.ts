@@ -316,21 +316,6 @@ export class RequestHeadersView extends LegacyWrapper.LegacyWrapper.WrappableCom
 
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
-    // #ifdef ARKWEB_DEVTOOLS
-    const adaptForOhos = true;
-    if (adaptForOhos) {
-      return html`
-        <x-link
-            @click=${revealHeadersFile}
-            class="link devtools-link"
-            title=${UIStrings.revealHeaderOverrides}
-            jslog=${VisualLogging.link('reveal-header-overrides').track({click: true})}
-        >
-          ${fileIcon}${Persistence.NetworkPersistenceManager.HEADERS_FILENAME}
-        </x-link>
-      `;
-    }
-    // #endif ARKWEB_DEVTOOLS
     return html`
       <x-link
           href="https://goo.gle/devtools-override"
