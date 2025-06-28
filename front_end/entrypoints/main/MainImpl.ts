@@ -1035,8 +1035,15 @@ export class MainMenuItem implements UI.Toolbar.Provider {
       }, {jslogContext: id});
     }
 
-    const helpSubMenu = contextMenu.footerSection().appendSubMenuItem(i18nString(UIStrings.help), false, 'help');
-    helpSubMenu.appendItemsAtLocation('mainMenuHelp');
+    // #if BUILDFLAG(ARKWEB_DEVTOOLS)
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support this
+    } else {
+      const helpSubMenu = contextMenu.footerSection().appendSubMenuItem(i18nString(UIStrings.help), false, 'help');
+      helpSubMenu.appendItemsAtLocation('mainMenuHelp');
+    }
+    // #endif // ARKWEB_DEVTOOLS
   }
 }
 
