@@ -1213,6 +1213,10 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<EventTyp
       return false;
     }
 
+    if (parsedURL.protocol.startsWith('http') && parsedURL.hostname === 'chromewebstore.google.com') {
+      return false;
+    }
+
     if ((window.DevToolsAPI && window.DevToolsAPI.getOriginsForbiddenForExtensions &&
              window.DevToolsAPI.getOriginsForbiddenForExtensions() ||
          []).includes(parsedURL.origin)) {
