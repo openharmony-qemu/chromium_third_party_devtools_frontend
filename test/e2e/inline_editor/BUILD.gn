@@ -5,10 +5,7 @@
 import("../../../scripts/build/typescript/typescript.gni")
 
 node_ts_library("inline_editor") {
-  sources = [
-    "color-swatch_test.ts",
-    "font-editor_test.ts",
-  ]
+  sources = [ "color-swatch_test.ts" ]
 
   deps = [
     "../../shared",
