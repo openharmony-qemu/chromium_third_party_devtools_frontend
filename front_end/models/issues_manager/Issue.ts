@@ -31,7 +31,7 @@ const UIStrings = {
   /**
    *@description A description for a kind of issue we display in the issues tab.
    */
-  breakingChangeIssue: 'A breaking change issue: the page may stop working in an upcoming version of Chrome',
+  breakingChangeIssue: 'A breaking change issue: the page may stop working in an upcoming version of ArkWeb',
   /**
    *@description A description for a kind of issue we display in the issues tab.
    */

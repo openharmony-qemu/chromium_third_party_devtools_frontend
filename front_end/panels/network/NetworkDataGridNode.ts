@@ -263,35 +263,35 @@ const UIStrings = {
    *@description Tooltip text giving the reason why a specific HTTP transport protocol has been used
    */
   alternativeJobWonWithoutRace:
-      '`Chrome` used a `HTTP/3` connection induced by an \'`Alt-Svc`\' header without racing against establishing a connection using a different `HTTP` version.',
+      '`ArkWeb` used a `HTTP/3` connection induced by an \'`Alt-Svc`\' header without racing against establishing a connection using a different `HTTP` version.',
   /**
    *@description Tooltip text giving the reason why a specific HTTP transport protocol has been used
    */
   alternativeJobWonRace:
-      '`Chrome` used a `HTTP/3` connection induced by an \'`Alt-Svc`\' header because it won a race against establishing a connection using a different `HTTP` version.',
+      '`ArkWeb` used a `HTTP/3` connection induced by an \'`Alt-Svc`\' header because it won a race against establishing a connection using a different `HTTP` version.',
   /**
    *@description Tooltip text giving the reason why a specific HTTP transport protocol has been used
    */
-  mainJobWonRace: '`Chrome` used this protocol because it won a race against establishing a `HTTP/3` connection.',
+  mainJobWonRace: '`ArkWeb` used this protocol because it won a race against establishing a `HTTP/3` connection.',
   /**
    *@description Tooltip text giving the reason why a specific HTTP transport protocol has been used
    */
   mappingMissing:
-      '`Chrome` did not use an alternative `HTTP` version because no alternative protocol information was available when the request was issued, but an \'`Alt-Svc`\' header was present in the response.',
+      '`ArkWeb` did not use an alternative `HTTP` version because no alternative protocol information was available when the request was issued, but an \'`Alt-Svc`\' header was present in the response.',
   /**
    *@description Tooltip text giving the reason why a specific HTTP transport protocol has been used
    */
-  broken: '`Chrome` did not try to establish a `HTTP/3` connection because it was marked as broken.',
+  broken: '`ArkWeb` did not try to establish a `HTTP/3` connection because it was marked as broken.',
   /**
    *@description Tooltip text giving the reason why a specific HTTP transport protocol has been used
    */
   dnsAlpnH3JobWonWithoutRace:
-      '`Chrome` used a `HTTP/3` connection due to the `DNS record` indicating `HTTP/3` support. There was no race against establishing a connection using a different `HTTP` version.',
+      '`ArkWeb` used a `HTTP/3` connection due to the `DNS record` indicating `HTTP/3` support. There was no race against establishing a connection using a different `HTTP` version.',
   /**
    *@description Tooltip text giving the reason why a specific HTTP transport protocol has been used
    */
   dnsAlpnH3JobWonRace:
-      '`Chrome` used a `HTTP/3` connection due to the `DNS record` indicating `HTTP/3` support, which won a race against establishing a connection using a different `HTTP` version.',
+      '`ArkWeb` used a `HTTP/3` connection due to the `DNS record` indicating `HTTP/3` support, which won a race against establishing a connection using a different `HTTP` version.',
   /**
    *@description Tooltip to explain the resource's initial priority
    *@example {High} PH1

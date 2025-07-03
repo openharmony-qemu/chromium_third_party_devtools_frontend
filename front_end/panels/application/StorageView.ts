@@ -343,7 +343,9 @@ export class StorageView extends UI.ThrottledWidget.ThrottledWidget {
       this.reportView.setSubtitle(i18nString(UIStrings.sFailedToLoad, {PH1: unreachableMainOrigin}));
     } else {
       this.securityOrigin = mainOrigin;
-      this.reportView.setSubtitle(mainOrigin);
+      // ARKWEB_DEVTOOLS
+      //this.reportView.setSubtitle(mainOrigin);
+      this.reportView.setSubtitle(mainOrigin.replace('chrome', 'ArkWeb'));
     }
 
     if (oldOrigin !== this.securityOrigin) {
