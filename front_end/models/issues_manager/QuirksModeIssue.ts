@@ -18,6 +18,10 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('models/issues_manager/QuirksModeIssue.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
+// #if BUILDFLAG(ARKWEB_DEVTOOLS)
+const chromeScheme = "chrome";
+const arkwebScheme = "ArkWeb";
+// #endif  // ARKWEB_DEVTOOLS
 export class QuirksModeIssue extends Issue {
   #issueDetails: Protocol.Audits.QuirksModeIssueDetails;
 
@@ -29,6 +33,11 @@ export class QuirksModeIssue extends Issue {
   }
 
   primaryKey(): string {
+    // #if BUILDFLAG(ARKWEB_DEVTOOLS)
+    if (this.#issueDetails.url.startsWith(chromeScheme)) {
+      this.#issueDetails.url = this.#issueDetails.url.replace(chromeScheme, arkwebScheme);
+    }
+    // #endif  // ARKWEB_DEVTOOLS
     return `${this.code()}-(${this.#issueDetails.documentNodeId})-(${this.#issueDetails.url})`;
   }
 

@@ -56,7 +56,7 @@ const UIStrings = {
   /**
    * @description Description text for not restored reason JavaScriptExecution.
    */
-  JavaScriptExecution: 'Chrome detected an attempt to execute JavaScript while in the cache.',
+  JavaScriptExecution: 'ArkWeb detected an attempt to execute JavaScript while in the cache.',
   /**
    * @description Description text for not restored reason RendererProcessKilled.
    */
@@ -81,7 +81,7 @@ const UIStrings = {
   /**
    * @description Description text for not restored reason SessionRestored.
    */
-  sessionRestored: 'Chrome restarted and cleared the back/forward cache entries.',
+  sessionRestored: 'ArkWeb restarted and cleared the back/forward cache entries.',
   /**
    * @description Description text for not restored reason ServiceWorkerPostMessage.
    * Note: "MessageEvent" should not be translated.
@@ -128,12 +128,12 @@ const UIStrings = {
    * @description Description text for not restored reason NetworkRequestTimeout.
    */
   networkRequestTimeout:
-      'The page was evicted from the cache because a network connection was open too long. Chrome limits the amount of time that a page may receive data while cached.',
+      'The page was evicted from the cache because a network connection was open too long. ArkWeb limits the amount of time that a page may receive data while cached.',
   /**
    * @description Description text for not restored reason NetworkExceedsBufferLimit.
    */
   networkExceedsBufferLimit:
-      'The page was evicted from the cache because an active network connection received too much data. Chrome limits the amount of data that a page may receive while cached.',
+      'The page was evicted from the cache because an active network connection received too much data. ArkWeb limits the amount of data that a page may receive while cached.',
   /**
    * @description Description text for not restored reason NavigationCancelledWhileRestoring.
    */
@@ -470,7 +470,7 @@ const UIStrings = {
   /**
    *  @description Description text for not restored reason EmbedderChromePasswordManagerClientBindCredentialManager.
    */
-  embedderChromePasswordManagerClientBindCredentialManager: 'Chrome Password Manager was present upon navigating away.',
+  embedderChromePasswordManagerClientBindCredentialManager: 'ArkWeb Password Manager was present upon navigating away.',
 
   /**
    *  @description Description text for not restored reason EmbedderPermissionRequestManager.

@@ -269,7 +269,7 @@ const UIStrings = {
    *@example {https://developer.chrome.com/blog/improved-pwa-offline-detection} PH1
    */
   pageDoesNotWorkOfflineThePage:
-      'Page does not work offline. Starting in Chrome 93, the installability criteria are changing, and this site will not be installable. See {PH1} for more information.',
+      'Page does not work offline. Starting in ArkWeb 93, the installability criteria are changing, and this site will not be installable. See {PH1} for more information.',
   /**
    *@description Text to indicate the source of an image
    *@example {example.com} PH1
