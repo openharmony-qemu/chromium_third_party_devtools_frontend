@@ -617,6 +617,16 @@ export class RecordingView extends HTMLElement {
             .find(
                 converter => converter.getId() === this.#recorderSettings?.preferredCopyFormat,
             );
+    // ARKWEB_ARKWEB_EXTENSIONS start
+    let for_ohos = true;
+    if (for_ohos) {
+      converter = this.#extensionConverters.find(converter => {
+          const kebab_id = Platform.StringUtilities.toKebabCase(converter.getId());
+          return kebab_id === this.#recorderSettings?.preferredCopyFormat;
+        }
+      );
+    }
+    // ARKWEB_ARKWEB_EXTENSIONS end
     if (!converter) {
       converter = this.#builtInConverters[0];
     }
