@@ -137,7 +137,7 @@ export class TargetManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes
     this.#scopedObservers.delete(observer);
   }
 
-  modelAdded(target: Target, modelClass: ModelClass, model: SDKModel, inScope: boolean): void {
+  modelAdded(modelClass: ModelClass, model: SDKModel, inScope: boolean): void {
     for (const observer of this.#modelObservers.get(modelClass).values()) {
       if (!this.#scopedObservers.has(observer) || inScope) {
         observer.modelAdded(model);
@@ -145,7 +145,7 @@ export class TargetManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes
     }
   }
 
-  private modelRemoved(target: Target, modelClass: ModelClass, model: SDKModel, inScope: boolean): void {
+  private modelRemoved(modelClass: ModelClass, model: SDKModel, inScope: boolean): void {
     for (const observer of this.#modelObservers.get(modelClass).values()) {
       if (!this.#scopedObservers.has(observer) || inScope) {
         observer.modelRemoved(model);
@@ -228,7 +228,7 @@ export class TargetManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes
     }
 
     for (const [modelClass, model] of target.models().entries()) {
-      this.modelAdded(target, modelClass, model, inScope);
+      this.modelAdded(modelClass, model, inScope);
     }
 
     for (const key of this.#modelListeners.keysArray()) {
@@ -259,7 +259,7 @@ export class TargetManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes
     for (const modelClass of target.models().keys()) {
       const model = target.models().get(modelClass);
       assertNotNullOrUndefined(model);
-      this.modelRemoved(target, modelClass, model, inScope);
+      this.modelRemoved(modelClass, model, inScope);
     }
 
     // Iterate over a copy. #observers might be modified during iteration.
@@ -413,10 +413,6 @@ export class TargetManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes
     this.#scopeChangeListeners.add(listener);
   }
 
-  removeScopeChangeListener(listener: () => void): void {
-    this.#scopeChangeListeners.delete(listener);
-  }
-
   scopeTarget(): Target|null {
     return this.#scopeTarget;
   }
@@ -429,12 +425,12 @@ export const enum Events {
   SUSPEND_STATE_CHANGED = 'SuspendStateChanged',
 }
 
-export type EventTypes = {
-  [Events.AVAILABLE_TARGETS_CHANGED]: Protocol.Target.TargetInfo[],
-  [Events.INSPECTED_URL_CHANGED]: Target,
-  [Events.NAME_CHANGED]: Target,
-  [Events.SUSPEND_STATE_CHANGED]: void,
-};
+export interface EventTypes {
+  [Events.AVAILABLE_TARGETS_CHANGED]: Protocol.Target.TargetInfo[];
+  [Events.INSPECTED_URL_CHANGED]: Target;
+  [Events.NAME_CHANGED]: Target;
+  [Events.SUSPEND_STATE_CHANGED]: void;
+}
 
 export class Observer {
   targetAdded(_target: Target): void {

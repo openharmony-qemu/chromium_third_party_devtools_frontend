@@ -36,7 +36,7 @@ const UIStrings = {
    *@example {X25519} PH2
    */
   keyExchangeWithGroup: '{PH1} with {PH2}',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/security/SecurityModel.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined, str_);
@@ -84,11 +84,11 @@ export enum Events {
   /* eslint-enable @typescript-eslint/naming-convention */
 }
 
-export type EventTypes = {
-  [Events.VisibleSecurityStateChanged]: PageVisibleSecurityState,
-};
+export interface EventTypes {
+  [Events.VisibleSecurityStateChanged]: PageVisibleSecurityState;
+}
 
-export const SummaryMessages: {[x: string]: () => string} = {
+export const SummaryMessages: Record<string, () => string> = {
   [Protocol.Security.SecurityState.Unknown]: i18nLazyString(UIStrings.theSecurityOfThisPageIsUnknown),
   [Protocol.Security.SecurityState.Insecure]: i18nLazyString(UIStrings.thisPageIsNotSecure),
   [Protocol.Security.SecurityState.Neutral]: i18nLazyString(UIStrings.thisPageIsNotSecure),

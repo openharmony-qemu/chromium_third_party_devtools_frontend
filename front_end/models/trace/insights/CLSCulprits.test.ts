@@ -3,24 +3,14 @@
 // found in the LICENSE file.
 
 import {describeWithEnvironment} from '../../../testing/EnvironmentHelpers.js';
-import {getFirstOrError, getInsightOrError} from '../../../testing/InsightHelpers.js';
-import {TraceLoader} from '../../../testing/TraceLoader.js';
+import {getFirstOrError, getInsightOrError, processTrace} from '../../../testing/InsightHelpers.js';
 import * as Helpers from '../helpers/helpers.js';
 import * as Types from '../types/types.js';
 
 import {Models} from './insights.js';
 
-export async function processTrace(testContext: Mocha.Suite|Mocha.Context|null, traceFile: string) {
-  const {parsedTrace, insights} = await TraceLoader.traceEngine(testContext, traceFile);
-  if (!insights) {
-    throw new Error('No insights');
-  }
-
-  return {data: parsedTrace, insights};
-}
-
 // Root cause invalidation window.
-const INVALIDATION_WINDOW = Helpers.Timing.secondsToMicroseconds(Types.Timing.Seconds(0.5));
+const INVALIDATION_WINDOW = Helpers.Timing.secondsToMicro(Types.Timing.Seconds(0.5));
 
 describeWithEnvironment('CLSCulprits', function() {
   describe('non composited animations', function() {
@@ -54,7 +44,7 @@ describeWithEnvironment('CLSCulprits', function() {
           animation: top,
         },
       ];
-      assert.deepStrictEqual(animationFailures, expected);
+      assert.deepEqual(animationFailures, expected);
     });
     // Flaky test.
     it.skip('[crbug.com/370382177]: gets the correct non composited animations for shift', async function() {
@@ -82,7 +72,7 @@ describeWithEnvironment('CLSCulprits', function() {
           animation: simpleAnimation,
         },
       ];
-      assert.deepStrictEqual(shiftAnimations, expectedWithShift);
+      assert.deepEqual(shiftAnimations, expectedWithShift);
 
       const expectedAll: Models.CLSCulprits.NoncompositedAnimationFailure[] = [
         {
@@ -99,7 +89,7 @@ describeWithEnvironment('CLSCulprits', function() {
         },
       ];
       // animationFailures should include both root causes failures, and failures without associated shifts.
-      assert.deepStrictEqual(animationFailures, expectedAll);
+      assert.deepEqual(animationFailures, expectedAll);
     });
 
     it('returns no insights when there are no non-composited animations', async function() {
@@ -136,7 +126,7 @@ describeWithEnvironment('CLSCulprits', function() {
         const shift1 = Array.from(shifts)[0][0];
         const shiftIframes = shifts.get(shift1)?.iframeIds;
         assert.exists(shiftIframes);
-        assert.strictEqual(shiftIframes.length, 1);
+        assert.lengthOf(shiftIframes, 1);
 
         const iframe = shiftIframes[0];
 
@@ -173,7 +163,7 @@ describeWithEnvironment('CLSCulprits', function() {
 
         const shiftFonts = shift2[1].fontRequests;
         assert.exists(shiftFonts);
-        assert.strictEqual(shiftFonts.length, 1);
+        assert.lengthOf(shiftFonts, 1);
 
         const fontRequest = shiftFonts[0];
         const fontRequestEndTime = fontRequest.ts + fontRequest.dur;
@@ -199,17 +189,19 @@ describeWithEnvironment('CLSCulprits', function() {
         assert.strictEqual(shifts.size, 2);
 
         const unsizedImages = data.LayoutShifts.layoutImageUnsizedEvents;
-        assert.strictEqual(unsizedImages.length, 2);
+        assert.lengthOf(unsizedImages, 2);
 
         const layoutShiftEvents = Array.from(shifts.entries());
         const shift1 = layoutShiftEvents.at(0);
         assert.isOk(shift1);
         // Root cause should match the nodeId of the unsized images events.
-        assert.strictEqual(shift1[1].unsizedImages[0], unsizedImages[0].args.data.nodeId);
+        assert.strictEqual(shift1[1].unsizedImages[0].backendNodeId, unsizedImages[0].args.data.nodeId);
+        assert.isDefined(shift1[1].unsizedImages[0].paintImageEvent);
 
         const shift2 = layoutShiftEvents.at(1);
         assert.isOk(shift2);
-        assert.strictEqual(shift2[1].unsizedImages[0], unsizedImages[1].args.data.nodeId);
+        assert.strictEqual(shift2[1].unsizedImages[0].backendNodeId, unsizedImages[1].args.data.nodeId);
+        assert.isDefined(shift2[1].unsizedImages[0].paintImageEvent);
       });
     });
   });
@@ -222,7 +214,7 @@ describeWithEnvironment('CLSCulprits', function() {
 
       assert.exists(clusters);
       assert.exists(shifts);
-      assert.strictEqual(clusters.length, 2);
+      assert.lengthOf(clusters, 2);
       for (const cluster of clusters) {
         // Check that the cluster events exist in shifts map.
         for (const shiftEvent of cluster.events) {
@@ -238,7 +230,7 @@ describeWithEnvironment('CLSCulprits', function() {
 
       assert.exists(clusters);
       assert.exists(shifts);
-      assert.strictEqual(clusters.length, 3);
+      assert.lengthOf(clusters, 3);
       for (const cluster of clusters) {
         // Check that the cluster events exist in shifts map.
         for (const shiftEvent of cluster.events) {

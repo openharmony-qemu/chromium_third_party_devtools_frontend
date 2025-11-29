@@ -12,8 +12,6 @@ const {LinearMemoryInspectorController} = LinearMemoryInspector;
 const {ValueInterpreterDisplayUtils} = LinearMemoryInspectorComponents;
 
 class MockRemoteObject extends SDK.RemoteObject.LocalJSONObject {
-  private objSubtype?: string;
-
   constructor(array: ArrayBuffer) {
     super(array);
   }
@@ -27,7 +25,7 @@ class MockRemoteObject extends SDK.RemoteObject.LocalJSONObject {
   }
 }
 
-function createWrapper(array: Uint8Array) {
+function createWrapper(array: Uint8Array<ArrayBuffer>) {
   const mockRemoteObj = new MockRemoteObject(array.buffer);
   const mockRemoteArrayBuffer = new SDK.RemoteObject.RemoteArrayBuffer(mockRemoteObj);
   return new LinearMemoryInspectorController.RemoteArrayBufferWrapper(mockRemoteArrayBuffer);
@@ -119,9 +117,9 @@ describeWithEnvironment('LinearMemoryInspectorController', () => {
     const instance = LinearMemoryInspectorController.LinearMemoryInspectorController.instance();
     const expressionName = 'myCar';
     const result = await instance.evaluateExpression(callFrame, expressionName);
-    assert.strictEqual(result, undefined);
-    assert.isTrue(stub.calledOnceWithExactly(
-        `Tried to evaluate the expression '${expressionName}' but got an error: ${errorText}`));
+    assert.isUndefined(result);
+    sinon.assert.calledOnceWithExactly(
+        stub, `Tried to evaluate the expression '${expressionName}' but got an error: ${errorText}`);
   });
 
   it('returns undefined when exceptionDetails is set on the result of evaluateExpression', async () => {
@@ -140,9 +138,9 @@ describeWithEnvironment('LinearMemoryInspectorController', () => {
     const instance = LinearMemoryInspectorController.LinearMemoryInspectorController.instance();
     const expressionName = 'myCar.manufacturer';
     const result = await instance.evaluateExpression(callFrame, expressionName);
-    assert.strictEqual(result, undefined);
-    assert.isTrue(stub.calledOnceWithExactly(
-        `Tried to evaluate the expression '${expressionName}' but got an exception: ${exceptionText}`));
+    assert.isUndefined(result);
+    sinon.assert.calledOnceWithExactly(
+        stub, `Tried to evaluate the expression '${expressionName}' but got an exception: ${exceptionText}`);
   });
 
   it('returns RemoteObject when no exception happens in evaluateExpression', async () => {
@@ -171,7 +169,7 @@ describeWithEnvironment('LinearMemoryInspectorController', () => {
     assert.deepEqual(instance.getHighlightInfo(bufferId), highlightInfo);
 
     instance.removeHighlight(bufferId, highlightInfo);
-    assert.deepEqual(instance.getHighlightInfo(bufferId), undefined);
+    assert.isUndefined(instance.getHighlightInfo(bufferId));
   });
 
   it('does not change the stored highlight when the provided highlightInfo does not match', () => {

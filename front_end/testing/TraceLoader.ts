@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import * as SDK from '../core/sdk/sdk.js';
 import type * as Protocol from '../generated/protocol.js';
 import * as Trace from '../models/trace/trace.js';
 import * as Timeline from '../panels/timeline/timeline.js';
@@ -31,6 +32,7 @@ const fileContentsCache = new Map<string, Trace.Types.File.Contents>();
 const traceEngineCache = new Map<string, Map<string, {
                                    parsedTrace: Trace.Handlers.Types.ParsedTrace,
                                    insights: Trace.Insights.Types.TraceInsightSets | null,
+                                   metadata: Trace.Types.File.MetaData | null,
                                    model: Trace.TraceModel.Model,
                                  }>>();
 
@@ -50,13 +52,14 @@ export class TraceLoader {
    * which is 2seconds. So for most tests that include parsing a trace, we have to
    * increase the timeout. We use this function to ensure we set a consistent
    * timeout across all trace model tests.
-   * The context might be null when we only render a component example.
    **/
-  static setTestTimeout(context: Mocha.Context|Mocha.Suite|null): void {
-    if (!context || context.timeout() >= 10_000) {
-      return;
+  static setTestTimeout(context: Mocha.Context|Mocha.Suite): void {
+    // Some traces take a long time to process, especially on our CQ machines.
+    // The trace that takes the longest on my Mac M1 Pro is ~3s (yahoo-news.json.gz).
+    // In CQ, that same trace takes ~10s (linux), ~7.5s (mac), ~11.5s (windows).
+    if (context.timeout() > 0) {
+      context.timeout(Math.max(context.timeout(), 30000));
     }
-    context?.timeout(10_000);
   }
 
   /**
@@ -66,7 +69,9 @@ export class TraceLoader {
    **/
   static async fixtureContents(context: Mocha.Context|Mocha.Suite|null, name: string):
       Promise<Trace.Types.File.Contents> {
-    TraceLoader.setTestTimeout(context);
+    if (context) {
+      TraceLoader.setTestTimeout(context);
+    }
     const cached = fileContentsCache.get(name);
     if (cached) {
       return cached;
@@ -91,6 +96,20 @@ export class TraceLoader {
   }
 
   /**
+   * Load the metadata from a trace file (throws if not present).
+   **/
+  static async metadata(context: Mocha.Context|Mocha.Suite|null, name: string): Promise<Trace.Types.File.MetaData> {
+    const contents = await TraceLoader.fixtureContents(context, name);
+
+    const metadata = 'metadata' in contents ? contents.metadata : null;
+    if (!metadata) {
+      throw new Error('expected metadata but found none');
+    }
+
+    return metadata;
+  }
+
+  /**
    * Load an array of raw events from the trace file.
    * Will default to typing those events using the types from Trace Engine, but
    * can be overriden by passing the legacy EventPayload type as the generic.
@@ -104,10 +123,10 @@ export class TraceLoader {
   /**
    * Executes only the new trace engine on the fixture and returns the resulting parsed data.
    *
-   * @param context The Mocha test context. |allModelsFromFile| function easily
-   * takes up more than our default Mocha timeout, which is 2s. So we have to
+   * @param context The Mocha test context. Processing a trace can easily
+   * takes up longer than the default Mocha timeout, which is 2s. So we have to
    * increase this test's timeout. It might be null when we only render a
-   * component example.
+   * component example. See TraceLoader.setTestTimeout.
    *
    * @param file The name of the trace file to be loaded.
    * The trace file should be in ../panels/timeline/fixtures/traces folder.
@@ -125,6 +144,7 @@ export class TraceLoader {
       config: Trace.Types.Configuration.Configuration = Trace.Types.Configuration.defaults()): Promise<{
     parsedTrace: Trace.Handlers.Types.ParsedTrace,
     insights: Trace.Insights.Types.TraceInsightSets|null,
+    metadata: Trace.Types.File.MetaData|null,
   }> {
     // Force the TraceBounds to be reset to empty. This ensures that in
     // tests where we are using the new engine data we don't accidentally
@@ -146,16 +166,17 @@ export class TraceLoader {
       TraceLoader.initTraceBoundsManager(fromCache.parsedTrace);
       Timeline.ModificationsManager.ModificationsManager.reset();
       Timeline.ModificationsManager.ModificationsManager.initAndActivateModificationsManager(fromCache.model, 0);
-      return {parsedTrace: fromCache.parsedTrace, insights: fromCache.insights};
+      return {parsedTrace: fromCache.parsedTrace, insights: fromCache.insights, metadata: fromCache.metadata};
     }
 
     const fileContents = await TraceLoader.fixtureContents(context, name);
     const parsedTraceData =
         await TraceLoader.executeTraceEngineOnFileContents(fileContents, /* emulate fresh recording */ false, config);
 
-    const cacheByName = traceEngineCache.get(name) || new Map<string, {
+    const cacheByName = traceEngineCache.get(name) ?? new Map<string, {
                           parsedTrace: Trace.Handlers.Types.ParsedTrace,
                           insights: Trace.Insights.Types.TraceInsightSets | null,
+                          metadata: Trace.Types.File.MetaData | null,
                           model: Trace.TraceModel.Model,
                         }>();
     cacheByName.set(configCacheKey, parsedTraceData);
@@ -167,6 +188,7 @@ export class TraceLoader {
     return {
       parsedTrace: parsedTraceData.parsedTrace,
       insights: parsedTraceData.insights,
+      metadata: parsedTraceData.metadata,
     };
   }
 
@@ -194,7 +216,7 @@ export class TraceLoader {
   }> {
     const events = 'traceEvents' in contents ? contents.traceEvents : contents;
     const metadata = 'metadata' in contents ? contents.metadata : {};
-    return new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
       const model = Trace.TraceModel.Model.createWithAllHandlers(traceEngineConfig);
       model.addEventListener(Trace.TraceModel.ModelUpdateEvent.eventName, (event: Event) => {
         const {data} = event as Trace.TraceModel.ModelUpdateEvent;
@@ -218,7 +240,26 @@ export class TraceLoader {
         }
       });
 
-      void model.parse(events, {metadata, isFreshRecording: emulateFreshRecording}).catch(e => console.error(e));
+      void model
+          .parse(events, {
+            metadata,
+            isFreshRecording: emulateFreshRecording,
+            async resolveSourceMap(params) {
+              const {sourceUrl, sourceMapUrl, cachedRawSourceMap} = params;
+
+              if (cachedRawSourceMap) {
+                return new SDK.SourceMap.SourceMap(sourceUrl, sourceMapUrl, cachedRawSourceMap);
+              }
+
+              if (sourceMapUrl.startsWith('data:')) {
+                const rawSourceMap = await (await fetch(sourceMapUrl)).json();
+                return new SDK.SourceMap.SourceMap(sourceUrl, sourceMapUrl, rawSourceMap);
+              }
+
+              return null;
+            },
+          })
+          .catch(e => console.error(e));
     });
   }
 }
@@ -234,7 +275,7 @@ async function loadTraceFileFromURL(url: URL): Promise<Trace.Types.File.Contents
   }
 
   const contentType = response.headers.get('content-type');
-  const isGzipEncoded = contentType !== null && contentType.includes('gzip');
+  const isGzipEncoded = contentType?.includes('gzip');
   let buffer = await response.arrayBuffer();
   if (isGzipEncoded) {
     buffer = await decodeGzipBuffer(buffer);
@@ -271,4 +312,21 @@ function codec(buffer: ArrayBuffer, codecStream: CompressionStream|Decompression
 
 function decodeGzipBuffer(buffer: ArrayBuffer): Promise<ArrayBuffer> {
   return codec(buffer, new DecompressionStream('gzip'));
+}
+
+export async function fetchFixture(url: URL): Promise<string> {
+  const response = await fetch(url);
+  if (response.status !== 200) {
+    throw new Error(`Unable to load ${url}`);
+  }
+
+  const contentType = response.headers.get('content-type');
+  const isGzipEncoded = contentType?.includes('gzip');
+  let buffer = await response.arrayBuffer();
+  if (isGzipEncoded) {
+    buffer = await decodeGzipBuffer(buffer);
+  }
+  const decoder = new TextDecoder('utf-8');
+  const contents = decoder.decode(buffer);
+  return contents;
 }

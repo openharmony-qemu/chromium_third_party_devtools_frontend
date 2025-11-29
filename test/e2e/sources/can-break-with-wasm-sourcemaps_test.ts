@@ -5,7 +5,6 @@
 import {assert} from 'chai';
 
 import {getBrowserAndPages, step, waitFor, waitForFunction} from '../../shared/helper.js';
-
 import {
   addBreakpointForLine,
   checkBreakpointDidNotActivate,
@@ -23,10 +22,10 @@ describe('The Sources Tab', () => {
   const fileName = 'with-sourcemap.ll';
 
   it('can add breakpoint for a sourcemapped wasm module', async () => {
-    const {target, frontend} = getBrowserAndPages();
+    const {target} = getBrowserAndPages();
 
     await openSourceCodeEditorForFile(fileName, 'wasm/wasm-with-sourcemap.html');
-    await addBreakpointForLine(frontend, 5);
+    await addBreakpointForLine(5);
 
     const scriptLocation = await retrieveTopCallFrameScriptLocation('main();', target);
     assert.deepEqual(scriptLocation, `${fileName}:5`);
@@ -40,7 +39,7 @@ describe('The Sources Tab', () => {
     });
 
     await step('add a breakpoint to line No.5', async () => {
-      await addBreakpointForLine(frontend, 5);
+      await addBreakpointForLine(5);
     });
 
     await step('reload the page', async () => {
@@ -66,7 +65,7 @@ describe('The Sources Tab', () => {
     });
 
     await step('remove the breakpoint from the fifth line', async () => {
-      await removeBreakpointForLine(frontend, '5');
+      await removeBreakpointForLine('5');
     });
 
     await step('reload the page', async () => {
@@ -81,7 +80,7 @@ describe('The Sources Tab', () => {
     await checkBreakpointDidNotActivate();
 
     await step('add a breakpoint to line No.6', async () => {
-      await addBreakpointForLine(frontend, 6);
+      await addBreakpointForLine(6);
     });
 
     await step('reload the page', async () => {

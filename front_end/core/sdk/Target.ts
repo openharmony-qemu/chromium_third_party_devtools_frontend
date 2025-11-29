@@ -13,14 +13,26 @@ import type {TargetManager} from './TargetManager.js';
 export class Target extends ProtocolClient.InspectorBackend.TargetBase {
   readonly #targetManagerInternal: TargetManager;
   #nameInternal: string;
-  #inspectedURLInternal: Platform.DevToolsPath.UrlString;
-  #inspectedURLName: string;
+  #inspectedURLInternal: Platform.DevToolsPath.UrlString = Platform.DevToolsPath.EmptyUrlString;
+  #inspectedURLName = '';
   readonly #capabilitiesMask: number;
   #typeInternal: Type;
   readonly #parentTargetInternal: Target|null;
   #idInternal: Protocol.Target.TargetID|'main';
-  #modelByConstructor: Map<new(arg1: Target) => SDKModel, SDKModel>;
+  #modelByConstructor = new Map<new(arg1: Target) => SDKModel, SDKModel>();
   #isSuspended: boolean;
+  /**
+   * Generally when a target crashes we don't need to know, with one exception.
+   * If a target crashes during the recording of a performance trace, after the
+   * trace when we try to resume() it, it will fail because it has crashed. This
+   * causes the performance panel to freeze (see crbug.com/333989070). So we
+   * mark the target as crashed so we can exit without trying to resume it. In
+   * `ChildTargetManager` we will mark a target as "un-crashed" when we get the
+   * `targetInfoChanged` event. This helps ensure we can deal with cases where
+   * the page crashes, but a reload fixes it and the targets get restored (see
+   * crbug.com/387258086).
+   */
+  #hasCrashed = false;
   #targetInfoInternal: Protocol.Target.TargetInfo|undefined;
   #creatingModels?: boolean;
 
@@ -32,8 +44,6 @@ export class Target extends ProtocolClient.InspectorBackend.TargetBase {
     super(needsNodeJSPatching, parentTarget, sessionId, connection);
     this.#targetManagerInternal = targetManager;
     this.#nameInternal = name;
-    this.#inspectedURLInternal = Platform.DevToolsPath.EmptyUrlString;
-    this.#inspectedURLName = '';
     this.#capabilitiesMask = 0;
     switch (type) {
       case Type.FRAME:
@@ -75,7 +85,7 @@ export class Target extends ProtocolClient.InspectorBackend.TargetBase {
         this.#capabilitiesMask = Capability.JS | Capability.LOG | Capability.EVENT_BREAKPOINTS | Capability.NETWORK;
         break;
       case Type.NODE:
-        this.#capabilitiesMask = Capability.JS;
+        this.#capabilitiesMask = Capability.JS | Capability.NETWORK | Capability.TARGET;
         break;
       case Type.AUCTION_WORKLET:
         this.#capabilitiesMask = Capability.JS | Capability.EVENT_BREAKPOINTS;
@@ -86,12 +96,12 @@ export class Target extends ProtocolClient.InspectorBackend.TargetBase {
       case Type.TAB:
         this.#capabilitiesMask = Capability.TARGET | Capability.TRACING;
         break;
+      case Type.NODE_WORKER:
+        this.#capabilitiesMask = Capability.JS | Capability.NETWORK | Capability.TARGET;
     }
     this.#typeInternal = type;
     this.#parentTargetInternal = parentTarget;
     this.#idInternal = id;
-    /* } */
-    this.#modelByConstructor = new Map();
     this.#isSuspended = suspended;
     this.#targetInfoInternal = targetInfo;
   }
@@ -183,13 +193,13 @@ export class Target extends ProtocolClient.InspectorBackend.TargetBase {
     if (!this.#modelByConstructor.get(modelClass)) {
       const info = SDKModel.registeredModels.get(modelClass);
       if (info === undefined) {
-        throw 'Model class is not registered @' + new Error().stack;
+        throw new Error('Model class is not registered');
       }
       if ((this.#capabilitiesMask & info.capabilities) === info.capabilities) {
         const model = new modelClass(this);
         this.#modelByConstructor.set(modelClass, model);
         if (!this.#creatingModels) {
-          this.#targetManagerInternal.modelAdded(this, modelClass, model, this.#targetManagerInternal.isInScope(this));
+          this.#targetManagerInternal.modelAdded(modelClass, model, this.#targetManagerInternal.isInScope(this));
         }
       }
     }
@@ -214,11 +224,35 @@ export class Target extends ProtocolClient.InspectorBackend.TargetBase {
     }
   }
 
+  hasCrashed(): boolean {
+    return this.#hasCrashed;
+  }
+
+  setHasCrashed(isCrashed: boolean): void {
+    const wasCrashed = this.#hasCrashed;
+
+    this.#hasCrashed = isCrashed;
+    // If the target has now been restored, check to see if it needs resuming.
+    // This ensures that if a target crashes whilst suspended, it is resumed
+    // when it is recovered.
+    // If the target is not suspended, resume() is a no-op, so it's safe to call.
+    if (wasCrashed && !isCrashed) {
+      void this.resume();
+    }
+  }
+
   async suspend(reason?: string): Promise<void> {
     if (this.#isSuspended) {
       return;
     }
     this.#isSuspended = true;
+
+    // If the target has crashed, we will not attempt to suspend all the
+    // models, but we still mark it as suspended so we correctly track the
+    // state.
+    if (this.#hasCrashed) {
+      return;
+    }
 
     await Promise.all(Array.from(this.models().values(), m => m.preSuspendModel(reason)));
     await Promise.all(Array.from(this.models().values(), m => m.suspendModel(reason)));
@@ -229,6 +263,10 @@ export class Target extends ProtocolClient.InspectorBackend.TargetBase {
       return;
     }
     this.#isSuspended = false;
+
+    if (this.#hasCrashed) {
+      return;
+    }
 
     await Promise.all(Array.from(this.models().values(), m => m.resumeModel()));
     await Promise.all(Array.from(this.models().values(), m => m.postResumeModel()));
@@ -260,6 +298,7 @@ export enum Type {
   AUCTION_WORKLET = 'auction-worklet',
   WORKLET = 'worklet',
   TAB = 'tab',
+  NODE_WORKER = 'node-worker',
 }
 
 export const enum Capability {

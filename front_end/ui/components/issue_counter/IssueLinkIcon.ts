@@ -1,6 +1,7 @@
 // Copyright (c) 2021 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-lit-render-outside-of-view */
 
 import '../../../ui/components/icon_button/icon_button.js';
 
@@ -9,14 +10,14 @@ import * as i18n from '../../../core/i18n/i18n.js';
 import type * as Platform from '../../../core/platform/platform.js';
 import type * as Protocol from '../../../generated/protocol.js';
 import * as IssuesManager from '../../../models/issues_manager/issues_manager.js';
-import * as Coordinator from '../../../ui/components/render_coordinator/render_coordinator.js';
-import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import * as RenderCoordinator from '../../../ui/components/render_coordinator/render_coordinator.js';
+import * as Lit from '../../../ui/lit/lit.js';
 import * as VisualLogging from '../../../ui/visual_logging/visual_logging.js';
 
 import {getIssueKindIconData} from './IssueCounter.js';
 import IssueLinkIconStyles from './issueLinkIcon.css.js';
 
-const {html} = LitHtml;
+const {html} = Lit;
 
 const UIStrings = {
   /**
@@ -32,7 +33,7 @@ const UIStrings = {
    *@description Title for an link to show an issue that is unavailable because the issue couldn't be resolved
    */
   issueUnavailable: 'Issue unavailable at this time',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('ui/components/issue_counter/IssueLinkIcon.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
@@ -49,8 +50,6 @@ export const extractShortPath = (path: string): string => {
   // if path ends with '/', 2nd regex returns everything between the last two '/'
   return (/[^/]+$/.exec(path) || /[^/]+\/$/.exec(path) || [''])[0];
 };
-
-const coordinator = Coordinator.RenderCoordinator.RenderCoordinator.instance();
 
 export class IssueLinkIcon extends HTMLElement {
   readonly #shadow = this.attachShadow({mode: 'open'});
@@ -100,10 +99,6 @@ export class IssueLinkIcon extends HTMLElement {
     await this.#render();
   }
 
-  connectedCallback(): void {
-    this.#shadow.adoptedStyleSheets = [IssueLinkIconStyles];
-  }
-
   get data(): IssueLinkIconData {
     return {
       issue: this.#issue,
@@ -144,10 +139,11 @@ export class IssueLinkIcon extends HTMLElement {
   }
 
   #render(): Promise<void> {
-    return coordinator.write(() => {
+    return RenderCoordinator.write(() => {
       // clang-format off
-      LitHtml.render(html`
-      <button class=${LitHtml.Directives.classMap({link: Boolean(this.#issue)})}
+      Lit.render(html`
+      <style>${IssueLinkIconStyles}</style>
+      <button class=${Lit.Directives.classMap({link: Boolean(this.#issue)})}
               title=${this.#getTooltip()}
               jslog=${VisualLogging.link('issue').track({click: true})}
               @click=${this.handleClick}>

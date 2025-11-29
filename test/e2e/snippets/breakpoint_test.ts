@@ -4,8 +4,7 @@
 
 import {assert} from 'chai';
 
-import {click, getBrowserAndPages, waitFor} from '../../shared/helper.js';
-
+import {click, waitFor} from '../../shared/helper.js';
 import {
   addBreakpointForLine,
   createNewSnippet,
@@ -21,7 +20,6 @@ import {
 describe('Snippets subpane', () => {
   it('can stop on breakpoints', async () => {
     const snippetName = 'Script snippet #7';
-    const {frontend} = getBrowserAndPages();
 
     await openSourcesPanel();
     await openSnippetsSubPane();
@@ -29,7 +27,7 @@ describe('Snippets subpane', () => {
 
     assert.deepEqual(await getOpenSources(), [snippetName]);
 
-    await addBreakpointForLine(frontend, 2);
+    await addBreakpointForLine(2);
     let decorators = await getBreakpointDecorators();
     assert.deepEqual(decorators, [2]);
 

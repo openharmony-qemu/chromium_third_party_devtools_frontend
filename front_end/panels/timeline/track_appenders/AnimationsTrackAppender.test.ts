@@ -13,8 +13,9 @@ function initTrackAppender(
     flameChartData: PerfUI.FlameChart.FlameChartTimelineData, parsedTrace: Trace.Handlers.Types.ParsedTrace,
     entryData: Trace.Types.Events.Event[], entryTypeByLevel: Timeline.TimelineFlameChartDataProvider.EntryType[]):
     Timeline.AnimationsTrackAppender.AnimationsTrackAppender {
+  const entityMapper = new Timeline.Utils.EntityMapper.EntityMapper(parsedTrace);
   const compatibilityTracksAppender = new Timeline.CompatibilityTracksAppender.CompatibilityTracksAppender(
-      flameChartData, parsedTrace, entryData, entryTypeByLevel);
+      flameChartData, parsedTrace, entryData, entryTypeByLevel, entityMapper);
   return compatibilityTracksAppender.animationsTrackAppender();
 }
 
@@ -39,7 +40,7 @@ describeWithEnvironment('AnimationsTrackAppender', function() {
 
   describe('appendTrackAtLevel', function() {
     it('creates a flamechart group for the Animations track', function() {
-      assert.strictEqual(flameChartData.groups.length, 1);
+      assert.lengthOf(flameChartData.groups, 1);
       assert.strictEqual(flameChartData.groups[0].name, 'Animations');
     });
 
@@ -47,8 +48,7 @@ describeWithEnvironment('AnimationsTrackAppender', function() {
       const animationsRequests = parsedTrace.Animations.animations;
       for (let i = 0; i < animationsRequests.length; ++i) {
         const event = animationsRequests[i];
-        assert.strictEqual(
-            flameChartData.entryStartTimes[i], Trace.Helpers.Timing.microSecondsToMilliseconds(event.ts));
+        assert.strictEqual(flameChartData.entryStartTimes[i], Trace.Helpers.Timing.microToMilli(event.ts));
       }
     });
 
@@ -61,14 +61,14 @@ describeWithEnvironment('AnimationsTrackAppender', function() {
           continue;
         }
         const expectedTotalTimeForEvent = event.dur ?
-            Trace.Helpers.Timing.microSecondsToMilliseconds(event.dur) :
+            Trace.Helpers.Timing.microToMilli(event.dur) :
             Timeline.TimelineFlameChartDataProvider.InstantEventVisibleDurationMs;
         assert.strictEqual(flameChartData.entryTotalTimes[i], expectedTotalTimeForEvent);
       }
     });
   });
 
-  describe('colorForEvent and titleForEvent', function() {
+  describe('colorForEvent', function() {
     before(() => {
       // Rather than use the real colours here and burden the test with having to
       // inject loads of CSS, we fake out the colours. this is fine for our tests as

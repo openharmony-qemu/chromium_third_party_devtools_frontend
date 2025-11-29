@@ -1,6 +1,9 @@
 // Copyright 2014 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-imperative-dom-api */
+
+import '../../ui/legacy/legacy.js';
 
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
@@ -45,7 +48,7 @@ const UIStrings = {
    *@description Example for placeholder text
    */
   filterByRegex: 'Filter using regex (example: https?)',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/network/EventSourceMessagesView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class EventSourceMessagesView extends UI.Widget.VBox {
@@ -61,12 +64,13 @@ export class EventSourceMessagesView extends UI.Widget.VBox {
 
   constructor(request: SDK.NetworkRequest.NetworkRequest) {
     super();
+    this.registerRequiredCSS(eventSourceMessagesViewStyles);
 
     this.element.classList.add('event-source-messages-view');
     this.element.setAttribute('jslog', `${VisualLogging.pane('event-stream').track({resize: true})}`);
     this.request = request;
 
-    this.mainToolbar = new UI.Toolbar.Toolbar('');
+    this.mainToolbar = this.element.createChild('devtools-toolbar');
 
     this.clearAllButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.clearAll), 'clear');
     this.clearAllButton.addEventListener(UI.Toolbar.ToolbarButton.Events.CLICK, this.clearMessages, this);
@@ -83,8 +87,6 @@ export class EventSourceMessagesView extends UI.Widget.VBox {
     }
     this.mainToolbar.appendToolbarItem(this.filterTextInput);
 
-    this.element.appendChild(this.mainToolbar.element);
-
     const columns = ([
       {id: 'id', title: i18nString(UIStrings.id), sortable: true, weight: 8},
       {id: 'type', title: i18nString(UIStrings.type), sortable: true, weight: 8},
@@ -95,7 +97,6 @@ export class EventSourceMessagesView extends UI.Widget.VBox {
     this.dataGrid = new DataGrid.SortableDataGrid.SortableDataGrid({
       displayName: i18nString(UIStrings.eventSource),
       columns,
-      editCallback: undefined,
       deleteCallback: undefined,
       refreshCallback: undefined,
     });
@@ -111,8 +112,8 @@ export class EventSourceMessagesView extends UI.Widget.VBox {
   }
 
   override wasShown(): void {
+    super.wasShown();
     this.refresh();
-    this.registerCSSFiles([eventSourceMessagesViewStyles]);
     this.request.addEventListener(SDK.NetworkRequest.Events.EVENT_SOURCE_MESSAGE_ADDED, this.messageAdded, this);
   }
 
@@ -150,7 +151,7 @@ export class EventSourceMessagesView extends UI.Widget.VBox {
     if (text) {
       try {
         this.filterRegex = new RegExp(text, 'i');
-      } catch (e) {
+      } catch {
         // this regex will never match any input
         this.filterRegex = new RegExp('(?!)', 'i');
       }
@@ -218,9 +219,7 @@ function eventSourceMessageNodeComparator(
   return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
 }
 
-export const Comparators: {
-  [x: string]: (arg0: EventSourceMessageNode, arg1: EventSourceMessageNode) => number,
-} = {
+export const Comparators: Record<string, (arg0: EventSourceMessageNode, arg1: EventSourceMessageNode) => number> = {
   id: eventSourceMessageNodeComparator.bind(null, message => message.eventId),
   type: eventSourceMessageNodeComparator.bind(null, message => message.eventName),
   time: eventSourceMessageNodeComparator.bind(null, message => message.time),

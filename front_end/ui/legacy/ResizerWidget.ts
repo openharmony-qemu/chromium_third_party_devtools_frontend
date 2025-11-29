@@ -7,8 +7,8 @@ import * as Common from '../../core/common/common.js';
 import {elementDragStart} from './UIUtils.js';
 
 export class ResizerWidget extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
-  private isEnabledInternal: boolean;
-  private elementsInternal: Set<HTMLElement>;
+  private isEnabledInternal = true;
+  private elementsInternal = new Set<HTMLElement>();
   private readonly installDragOnMouseDownBound: (event: Event) => false | undefined;
   private cursorInternal: string;
   private startX?: number;
@@ -17,8 +17,6 @@ export class ResizerWidget extends Common.ObjectWrapper.ObjectWrapper<EventTypes
   constructor() {
     super();
 
-    this.isEnabledInternal = true;
-    this.elementsInternal = new Set();
     this.installDragOnMouseDownBound = this.installDragOnMouseDown.bind(this);
     this.cursorInternal = 'nwse-resize';
   }
@@ -155,12 +153,12 @@ export interface ResizeUpdatePositionEvent {
   shiftKey: boolean;
 }
 
-export type EventTypes = {
-  [Events.RESIZE_START]: ResizeStartXYEvent|ResizeStartPositionEvent,
-  [Events.RESIZE_UPDATE_XY]: ResizeUpdateXYEvent,
-  [Events.RESIZE_UPDATE_POSITION]: ResizeUpdatePositionEvent,
-  [Events.RESIZE_END]: void,
-};
+export interface EventTypes {
+  [Events.RESIZE_START]: ResizeStartXYEvent|ResizeStartPositionEvent;
+  [Events.RESIZE_UPDATE_XY]: ResizeUpdateXYEvent;
+  [Events.RESIZE_UPDATE_POSITION]: ResizeUpdatePositionEvent;
+  [Events.RESIZE_END]: void;
+}
 
 export class SimpleResizerWidget extends ResizerWidget {
   private isVerticalInternal: boolean;

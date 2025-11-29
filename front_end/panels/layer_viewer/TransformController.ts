@@ -1,6 +1,9 @@
 // Copyright 2014 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-imperative-dom-api */
+
+import '../../ui/legacy/legacy.js';
 
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
@@ -21,7 +24,7 @@ const UIStrings = {
    *@description Tooltip text that appears when hovering over the largeicon center button in the Transform Controller of the Layers panel
    */
   resetTransform: 'Reset transform (0)',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/layer_viewer/TransformController.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class TransformController extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
@@ -39,7 +42,7 @@ export class TransformController extends Common.ObjectWrapper.ObjectWrapper<Even
   private minScale: number;
   private maxScale: number;
   private readonly controlPanelToolbar: UI.Toolbar.Toolbar;
-  private readonly modeButtons: {[x: string]: UI.Toolbar.ToolbarToggle};
+  private readonly modeButtons: Record<string, UI.Toolbar.ToolbarToggle>;
   constructor(element: HTMLElement, disableRotate?: boolean) {
     super();
     this.scaleInternal = 1;
@@ -59,8 +62,9 @@ export class TransformController extends Common.ObjectWrapper.ObjectWrapper<Even
     this.minScale = 0;
     this.maxScale = Infinity;
 
-    this.controlPanelToolbar = new UI.Toolbar.Toolbar('transform-control-panel');
-    this.controlPanelToolbar.element.setAttribute('jslog', `${VisualLogging.toolbar()}`);
+    this.controlPanelToolbar = document.createElement('devtools-toolbar');
+    this.controlPanelToolbar.classList.add('transform-control-panel');
+    this.controlPanelToolbar.setAttribute('jslog', `${VisualLogging.toolbar()}`);
 
     this.modeButtons = {};
     if (!disableRotate) {
@@ -266,9 +270,9 @@ export const enum Events {
   TRANSFORM_CHANGED = 'TransformChanged',
 }
 
-export type EventTypes = {
-  [Events.TRANSFORM_CHANGED]: void,
-};
+export interface EventTypes {
+  [Events.TRANSFORM_CHANGED]: void;
+}
 
 export const enum Modes {
   PAN = 'Pan',

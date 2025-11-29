@@ -2,7 +2,42 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import '../../../ui/components/markdown_view/markdown_view.js';
+
+import type * as Common from '../../../core/common/common.js';
 import * as Platform from '../../../core/platform/platform.js';
+import * as SDK from '../../../core/sdk/sdk.js';
+import * as CrUXManager from '../../../models/crux-manager/crux-manager.js';
+import type * as Trace from '../../../models/trace/trace.js';
+import * as Marked from '../../../third_party/marked/marked.js';
+import * as Lit from '../../../ui/lit/lit.js';
+import * as MobileThrottling from '../../mobile_throttling/mobile_throttling.js';
+
+const {html} = Lit;
+const MAX_ORIGIN_LENGTH = 60;
+
+export function getThrottlingRecommendations(): {
+  cpuOption: SDK.CPUThrottlingManager.CPUThrottlingOption|null,
+  networkConditions: SDK.NetworkManager.Conditions|null,
+} {
+  let cpuOption: SDK.CPUThrottlingManager.CPUThrottlingOption =
+      SDK.CPUThrottlingManager.CalibratedMidTierMobileThrottlingOption;
+  if (cpuOption.rate() === 0) {
+    cpuOption = SDK.CPUThrottlingManager.MidTierThrottlingOption;
+  }
+
+  let networkConditions = null;
+  const response = CrUXManager.CrUXManager.instance().getSelectedFieldMetricData('round_trip_time');
+  if (response?.percentiles) {
+    const rtt = Number(response.percentiles.p75);
+    networkConditions = MobileThrottling.ThrottlingPresets.ThrottlingPresets.getRecommendedNetworkPreset(rtt);
+  }
+
+  return {
+    cpuOption,
+    networkConditions,
+  };
+}
 
 function createTrimmedUrlSearch(url: URL): string {
   const maxSearchValueLength = 8;
@@ -75,7 +110,7 @@ export function createUrlLabels(urls: URL[]): string[] {
  * If the last path component is larger than maxChars characters, the middle is elided.
  */
 export function shortenUrl(url: URL, maxChars = 20): string {
-  const parts = url.pathname.split('/');
+  const parts = url.pathname === '/' ? [url.host] : url.pathname.split('/');
   let shortenedUrl = parts.at(-1) ?? '';
 
   if (shortenedUrl.length > maxChars) {
@@ -90,4 +125,43 @@ export function shortenUrl(url: URL, maxChars = 20): string {
   }
 
   return shortenedUrl;
+}
+
+/**
+ * Returns a rendered MarkdownView component.
+ *
+ * This should only be used for markdown that is guaranteed to be valid,
+ * and not contain any user-generated content.
+ */
+export function md(markdown: Common.UIString.LocalizedString): Lit.TemplateResult {
+  const tokens = Marked.Marked.lexer(markdown);
+  const data = {tokens};
+  return html`<devtools-markdown-view .data=${data}></devtools-markdown-view>`;
+}
+
+/**
+ * Returns a string containing both the origin and its 3rd party entity.
+ *
+ * By default we construct by diving with a hyphen, but with an optional
+ * parenthesizeEntity to parenthesize the entity.
+ *
+ * @example 'uk-script.dotmetrics.net - DotMetrics'
+ * @example 'securepubads.g.doubleclick.net (Google/Doubleclick Ads)'
+ */
+export function formatOriginWithEntity(
+    url: URL, entity: Trace.Handlers.Helpers.Entity|null, parenthesizeEntity?: boolean): string {
+  const origin = url.origin.replace('https://', '');
+  if (!entity) {
+    return origin;
+  }
+  let originWithEntity;
+  // If we have an unrecognized entity, entity name would be the same as the origin.
+  if (entity.isUnrecognized) {
+    originWithEntity = `${origin}`;
+  } else {
+    originWithEntity = parenthesizeEntity ? `${origin} (${entity.name})` : `${origin} - ${entity.name}`;
+  }
+
+  originWithEntity = Platform.StringUtilities.trimEndWithMaxLength(originWithEntity, MAX_ORIGIN_LENGTH);
+  return originWithEntity;
 }

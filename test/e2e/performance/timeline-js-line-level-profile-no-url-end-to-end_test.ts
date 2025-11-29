@@ -4,12 +4,12 @@
 
 import {getBrowserAndPages} from '../../conductor/puppeteer-state.js';
 import {waitForMany} from '../../shared/helper.js';
-
 import {navigateToPerformanceTab, startRecording, stopRecording} from '../helpers/performance-helpers.js';
 import {openSourcesPanel} from '../helpers/sources-helpers.js';
 
 describe('The Performance panel', () => {
-  it('can collect a line-level CPU profile and show it in the text editor', async () => {
+  // Flaky
+  it.skip('[crbug.com/415306436] can collect a line-level CPU profile and show it in the text editor', async () => {
     const {target} = getBrowserAndPages();
     await navigateToPerformanceTab();
     await startRecording();

@@ -12,7 +12,6 @@ import * as CountersGraph from './CountersGraph.js';
 import * as EntriesFilter from './EntriesFilter.js';
 import * as EventsSerializer from './EventsSerializer.js';
 import * as EventsTimelineTreeView from './EventsTimelineTreeView.js';
-import * as ExtensionDataGatherer from './ExtensionDataGatherer.js';
 import * as ExtensionTrackAppender from './ExtensionTrackAppender.js';
 import * as FreshRecording from './FreshRecording.js';
 import * as GPUTrackAppender from './GPUTrackAppender.js';
@@ -22,8 +21,8 @@ import * as LayoutShiftsTrackAppender from './LayoutShiftsTrackAppender.js';
 import * as ModificationsManager from './ModificationsManager.js';
 import * as NetworkTrackAppender from './NetworkTrackAppender.js';
 import * as SaveFileFormatter from './SaveFileFormatter.js';
-import * as ServerTimingsTrackAppender from './ServerTimingsTrackAppender.js';
 import * as TargetForEvent from './TargetForEvent.js';
+import * as ThirdPartyTreeView from './ThirdPartyTreeView.js';
 import * as ThreadAppender from './ThreadAppender.js';
 import * as TimelineController from './TimelineController.js';
 import * as TimelineDetailsView from './TimelineDetailsView.js';
@@ -57,7 +56,6 @@ export {
   EntriesFilter,
   EventsSerializer,
   EventsTimelineTreeView,
-  ExtensionDataGatherer,
   ExtensionTrackAppender,
   FreshRecording,
   GPUTrackAppender,
@@ -67,8 +65,8 @@ export {
   ModificationsManager,
   NetworkTrackAppender,
   SaveFileFormatter,
-  ServerTimingsTrackAppender,
   TargetForEvent,
+  ThirdPartyTreeView,
   ThreadAppender,
   TimelineController,
   TimelineDetailsView,

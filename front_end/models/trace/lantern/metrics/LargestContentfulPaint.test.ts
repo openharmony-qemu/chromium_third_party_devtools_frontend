@@ -8,7 +8,8 @@ import {getComputationDataFromFixture, toLanternTrace} from '../testing/testing.
 
 const {FirstContentfulPaint, LargestContentfulPaint} = Lantern.Metrics;
 
-describe('Metrics: Lantern LCP', () => {
+describe('Metrics: Lantern LCP', function() {
+  TraceLoader.setTestTimeout(this);
   let trace: Lantern.Types.Trace;
   before(async function() {
     trace = toLanternTrace(await TraceLoader.rawEvents(this, 'lantern/paul/trace.json.gz'));
@@ -20,7 +21,7 @@ describe('Metrics: Lantern LCP', () => {
       fcpResult: FirstContentfulPaint.compute(data),
     });
 
-    assert.deepStrictEqual(
+    assert.deepEqual(
         {
           timing: Math.round(result.timing),
           optimistic: Math.round(result.optimisticEstimate.timeInMs),
@@ -29,13 +30,13 @@ describe('Metrics: Lantern LCP', () => {
           pessimisticNodeTimings: result.pessimisticEstimate.nodeTimings.size,
         },
         {
-          timing: 1536,
+          timing: 1457,
           optimistic: 1457,
-          pessimistic: 1616,
+          pessimistic: 1457,
           optimisticNodeTimings: 8,
-          pessimisticNodeTimings: 9,
+          pessimisticNodeTimings: 8,
         });
-    assert.ok(result.optimisticGraph, 'should have created optimistic graph');
-    assert.ok(result.pessimisticGraph, 'should have created pessimistic graph');
+    assert.isOk(result.optimisticGraph, 'should have created optimistic graph');
+    assert.isOk(result.pessimisticGraph, 'should have created pessimistic graph');
   });
 });

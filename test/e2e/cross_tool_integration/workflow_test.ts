@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import {click, closeAllCloseableTabs, goToResource, timeout, waitFor} from '../../shared/helper.js';
-
 import {navigateToConsoleTab, waitForConsoleInfoMessageAndClickOnLink} from '../helpers/console-helpers.js';
 import {
   clickOnContextMenuItemFromTab,
@@ -25,11 +24,6 @@ import {
 import {openPanelViaMoreTools} from '../helpers/settings-helpers.js';
 
 describe('A user can navigate across', function() {
-  // These tests move between panels, which takes time.
-  if (this.timeout() !== 0) {
-    this.timeout(10000);
-  }
-
   beforeEach(async function() {
     await goToResource('cross_tool/default.html');
     await closeAllCloseableTabs();
@@ -63,7 +57,7 @@ describe('A user can navigate across', function() {
     // changing at least twice), to ensure that there's at least a single tick within
     // `default.html` below.
     const statusIndicator = await waitFor('.timeline-status-dialog .progress .indicator');
-    const statusIndicatorValues = new Set<Number>();
+    const statusIndicatorValues = new Set<number>();
     do {
       const indicatorValue = await statusIndicator.evaluate(n => Number(n.getAttribute('aria-valuenow')));
       if (statusIndicatorValues.has(indicatorValue)) {
@@ -83,8 +77,6 @@ describe('A user can navigate across', function() {
 });
 
 describe('A user can move tabs', function() {
-  this.timeout(10000);
-
   it('Move Memory to drawer', async () => {
     await navigateToMemoryTab();
     await tabExistsInMainPanel(MEMORY_TAB_ID);

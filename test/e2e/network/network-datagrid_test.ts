@@ -47,12 +47,13 @@ async function getRequestRowInfo(frontend: BrowserAndPages['frontend'], name: st
 }
 
 describe('The Network Tab', function() {
-  if (this.timeout() !== 0.0) {
-    // These tests take some time on slow windows machines.
-    this.timeout(10000);
-  }
-  const formatByteSize = (value: number) => {
-    return `${value}\xA0B`;
+  // See byte formatting in front_end/core/i18n/ByteUtilities.ts
+  const formatKbSize = (value: number) => {
+    const kilobytes = value / 1000;
+    if (kilobytes < 100) {
+      return `${kilobytes.toFixed(1)}\xA0kB`;
+    }
+    return `${kilobytes}\xA0kB`;
   };
 
   beforeEach(async () => {
@@ -77,7 +78,7 @@ describe('The Network Tab', function() {
     const checkbox = await waitFor('[title^="Disable cache"]');
     const checked = await checkbox.evaluate(box => (box as HTMLInputElement).checked);
 
-    assert.strictEqual(checked, false, 'The disable cache checkbox should be unchecked');
+    assert.isFalse(checked, 'The disable cache checkbox should be unchecked');
   });
 
   it('shows Last-Modified', async () => {
@@ -129,7 +130,7 @@ describe('The Network Tab', function() {
     });
 
     assert.deepEqual(await getNetworkRequestSize(), [
-      `${formatByteSize(210)}${formatByteSize(25)}`,
+      `${formatKbSize(210)}${formatKbSize(25)}`,
     ]);
   });
 
@@ -147,8 +148,8 @@ describe('The Network Tab', function() {
     });
 
     assert.deepEqual(await getNetworkRequestSize(), [
-      `${formatByteSize(313)}${formatByteSize(128)}`,
-      `${formatByteSize(210)}${formatByteSize(25)}`,
+      `${formatKbSize(313)}${formatKbSize(128)}`,
+      `${formatKbSize(210)}${formatKbSize(25)}`,
     ]);
   });
 
@@ -204,8 +205,8 @@ describe('The Network Tab', function() {
     });
 
     assert.deepEqual(await getNetworkRequestSize(), [
-      `${formatByteSize(404)}${formatByteSize(219)}`,
-      `${formatByteSize(376)}${formatByteSize(28)}`,
+      `${formatKbSize(404)}${formatKbSize(219)}`,
+      `${formatKbSize(376)}${formatKbSize(28)}`,
     ]);
     assert.deepEqual(await getNetworkRequestMimeTypes(), [
       'document',
@@ -219,8 +220,8 @@ describe('The Network Tab', function() {
     await waitForSomeRequestsToAppear(2);
 
     assert.deepEqual(await getNetworkRequestSize(), [
-      `${formatByteSize(404)}${formatByteSize(219)}`,
-      `(memory cache)${formatByteSize(28)}`,
+      `${formatKbSize(404)}${formatKbSize(219)}`,
+      `(memory cache)${formatKbSize(28)}`,
     ]);
 
     assert.deepEqual(await getNetworkRequestMimeTypes(), [
@@ -297,15 +298,15 @@ describe('The Network Tab', function() {
     await target.reload({waitUntil: 'networkidle0'});
 
     await waitForSomeRequestsToAppear(3);
-    await waitForElementWithTextContent(`(Web Bundle)${formatByteSize(27)}`);
+    await waitForElementWithTextContent(`(Web Bundle)${formatKbSize(27)}`);
 
     const getNetworkRequestSize = () => frontend.evaluate(() => {
       return Array.from(document.querySelectorAll('.size-column')).slice(2, 4).map(node => node.textContent);
     });
 
     assert.sameMembers(await getNetworkRequestSize(), [
-      `${formatByteSize(653)}${formatByteSize(0)}`,
-      `(Web Bundle)${formatByteSize(27)}`,
+      `${formatKbSize(653)}${formatKbSize(0)}`,
+      `(Web Bundle)${formatKbSize(27)}`,
     ]);
   });
 
@@ -420,7 +421,7 @@ describe('The Network Tab', function() {
     await waitForSomeRequestsToAppear(3);
 
     const updatedRequestNames = await getAllRequestNames();
-    assert.deepStrictEqual(updatedRequestNames, ['xhr.html', 'image.svg', 'image.svg']);
+    assert.deepEqual(updatedRequestNames, ['xhr.html', 'image.svg', 'image.svg']);
   });
 
   it('displays focused background color when request is selected via keyboard navigation', async () => {
@@ -436,7 +437,7 @@ describe('The Network Tab', function() {
       return document.querySelector('.network-log-grid tbody tr.selected')?.getAttribute('style');
     });
 
-    assert.deepStrictEqual(await getSelectedRequestBgColor(), 'background-color: var(--color-grid-focus-selected);');
+    assert.deepEqual(await getSelectedRequestBgColor(), 'background-color: var(--color-grid-focus-selected);');
   });
 
   it('shows the request panel when clicked during a websocket message (https://crbug.com/1222382)', async () => {

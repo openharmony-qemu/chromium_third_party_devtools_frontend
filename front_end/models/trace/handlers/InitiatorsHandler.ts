@@ -5,6 +5,9 @@
 import * as Helpers from '../helpers/helpers.js';
 import * as Types from '../types/types.js';
 
+import {data as AsyncJSCallsHandlerData} from './AsyncJSCallsHandler.js';
+import {data as flowsHandlerData} from './FlowsHandler.js';
+
 const lastScheduleStyleRecalcByFrame = new Map<string, Types.Events.ScheduleStyleRecalculation>();
 
 // This tracks the last event that is considered to have invalidated the layout
@@ -20,10 +23,6 @@ const lastInvalidationEventForFrame = new Map<string, Types.Events.Event>();
 // is called.
 const lastUpdateLayoutTreeByFrame = new Map<string, Types.Events.UpdateLayoutTree>();
 
-// This tracks postmessage dispatch and handler events for creating initiator association
-const postMessageHandlerEvents: Types.Events.HandlePostMessage[] = [];
-const schedulePostMessageEventByTraceId: Map<string, Types.Events.SchedulePostMessage> = new Map();
-
 // These two maps store the same data but in different directions.
 // For a given event, tell me what its initiator was. An event can only have one initiator.
 const eventToInitiatorMap = new Map<Types.Events.Event, Types.Events.Event>();
@@ -31,25 +30,17 @@ const eventToInitiatorMap = new Map<Types.Events.Event, Types.Events.Event>();
 // multiple events, hence why the value for this map is an array.
 const initiatorToEventsMap = new Map<Types.Events.Event, Types.Events.Event[]>();
 
-const requestAnimationFrameEventsById: Map<number, Types.Events.RequestAnimationFrame> = new Map();
-const timerInstallEventsById: Map<number, Types.Events.TimerInstall> = new Map();
-const requestIdleCallbackEventsById: Map<number, Types.Events.RequestIdleCallback> = new Map();
-const webSocketCreateEventsById: Map<number, Types.Events.WebSocketCreate> = new Map();
-const schedulePostTaskCallbackEventsById: Map<number, Types.Events.SchedulePostTaskCallback> = new Map();
+const webSocketCreateEventsById = new Map<number, Types.Events.WebSocketCreate>();
+const schedulePostTaskCallbackEventsById = new Map<number, Types.Events.SchedulePostTaskCallback>();
 
 export function reset(): void {
   lastScheduleStyleRecalcByFrame.clear();
   lastInvalidationEventForFrame.clear();
   lastUpdateLayoutTreeByFrame.clear();
-  timerInstallEventsById.clear();
   eventToInitiatorMap.clear();
   initiatorToEventsMap.clear();
-  requestAnimationFrameEventsById.clear();
-  requestIdleCallbackEventsById.clear();
   webSocketCreateEventsById.clear();
   schedulePostTaskCallbackEventsById.clear();
-  schedulePostMessageEventByTraceId.clear();
-  postMessageHandlerEvents.length = 0;
 }
 
 function storeInitiator(data: {initiator: Types.Events.Event, event: Types.Events.Event}): void {
@@ -59,6 +50,16 @@ function storeInitiator(data: {initiator: Types.Events.Event, event: Types.Event
   initiatorToEventsMap.set(data.initiator, eventsForInitiator);
 }
 
+/**
+ * IMPORTANT: Before adding support for new initiator relationships in
+ * trace events consider using Perfetto's flow API on the events in
+ * question, so that they get automatically computed.
+ * @see {@link flowsHandlerData}
+ *
+ * The events manually computed here were added before we had support
+ * for flow events. As such they should be migrated to use the flow
+ * API so that no manual parsing is needed.
+ */
 export function handleEvent(event: Types.Events.Event): void {
   if (Types.Events.isScheduleStyleRecalculation(event)) {
     lastScheduleStyleRecalcByFrame.set(event.args.data.frame, event);
@@ -116,36 +117,6 @@ export function handleEvent(event: Types.Events.Event): void {
     }
     // Now clear the last invalidation for the frame: the last invalidation has been linked to a Layout event, so it cannot be the initiator for any future layouts.
     lastInvalidationEventForFrame.delete(event.args.beginData.frame);
-  } else if (Types.Events.isRequestAnimationFrame(event)) {
-    requestAnimationFrameEventsById.set(event.args.data.id, event);
-  } else if (Types.Events.isFireAnimationFrame(event)) {
-    // If we get a fire event, that means we should have had the
-    // RequestAnimationFrame event by now. If so, we can set that as the
-    // initiator for the fire event.
-    const matchingRequestEvent = requestAnimationFrameEventsById.get(event.args.data.id);
-    if (matchingRequestEvent) {
-      storeInitiator({
-        event,
-        initiator: matchingRequestEvent,
-      });
-    }
-  } else if (Types.Events.isTimerInstall(event)) {
-    timerInstallEventsById.set(event.args.data.timerId, event);
-  } else if (Types.Events.isTimerFire(event)) {
-    const matchingInstall = timerInstallEventsById.get(event.args.data.timerId);
-    if (matchingInstall) {
-      storeInitiator({event, initiator: matchingInstall});
-    }
-  } else if (Types.Events.isRequestIdleCallback(event)) {
-    requestIdleCallbackEventsById.set(event.args.data.id, event);
-  } else if (Types.Events.isFireIdleCallback(event)) {
-    const matchingRequestEvent = requestIdleCallbackEventsById.get(event.args.data.id);
-    if (matchingRequestEvent) {
-      storeInitiator({
-        event,
-        initiator: matchingRequestEvent,
-      });
-    }
   } else if (Types.Events.isWebSocketCreate(event)) {
     webSocketCreateEventsById.set(event.args.data.identifier, event);
   } else if (Types.Events.isWebSocketInfo(event) || Types.Events.isWebSocketTransfer(event)) {
@@ -164,34 +135,30 @@ export function handleEvent(event: Types.Events.Event): void {
       storeInitiator({event, initiator: matchingSchedule});
     }
   }
-  // Store schedulePostMessage Events by their traceIds.
-  // so they can be reconciled later with matching handlePostMessage events with same traceIds.
-  else if (Types.Events.isHandlePostMessage(event)) {
-    postMessageHandlerEvents.push(event);
-  } else if (Types.Events.isSchedulePostMessage(event)) {
-    const traceId = event.args.data?.traceId;
-    if (traceId) {
-      schedulePostMessageEventByTraceId.set(traceId, event);
+}
+
+function createRelationshipsFromFlows(): void {
+  const flows = flowsHandlerData().flows;
+  for (let i = 0; i < flows.length; i++) {
+    const flow = flows[i];
+    for (let j = 0; j < flow.length - 1; j++) {
+      storeInitiator({event: flow[j + 1], initiator: flow[j]});
     }
   }
 }
 
-function finalizeInitiatorRelationship(): void {
-  for (const handlerEvent of postMessageHandlerEvents) {
-    const traceId = handlerEvent.args.data?.traceId;
-    const matchingSchedulePostMesssageEvent = schedulePostMessageEventByTraceId.get(traceId);
-    if (matchingSchedulePostMesssageEvent) {
-      // Set schedulePostMesssage events as initiators for handler events.
-      storeInitiator({event: handlerEvent, initiator: matchingSchedulePostMesssageEvent});
+function createRelationshipsFromAsyncJSCalls(): void {
+  const asyncCallEntries = AsyncJSCallsHandlerData().schedulerToRunEntryPoints.entries();
+  for (const [asyncCaller, asyncCallees] of asyncCallEntries) {
+    for (const asyncCallee of asyncCallees) {
+      storeInitiator({event: asyncCallee, initiator: asyncCaller});
     }
   }
 }
 
 export async function finalize(): Promise<void> {
-  // During event processing, we may encounter initiators before the handler events themselves
-  // (e.g dispatch events on worker and handler events on the main thread)
-  // we don't want to miss out on events whose initiators haven't been processed yet
-  finalizeInitiatorRelationship();
+  createRelationshipsFromFlows();
+  createRelationshipsFromAsyncJSCalls();
 }
 
 export interface InitiatorsData {
@@ -204,4 +171,8 @@ export function data(): InitiatorsData {
     eventToInitiator: eventToInitiatorMap,
     initiatorToEvents: initiatorToEventsMap,
   };
+}
+
+export function deps(): ['Flows', 'AsyncJSCalls'] {
+  return ['Flows', 'AsyncJSCalls'];
 }

@@ -9,7 +9,7 @@ import * as PerfUI from '../../ui/legacy/components/perf_ui/perf_ui.js';
 import {buildGroupStyle, buildTrackHeader} from './AppenderUtils.js';
 import {
   type CompatibilityTracksAppender,
-  type HighlightedEntryInfo,
+  type PopoverInfo,
   type TrackAppender,
   type TrackAppenderName,
   VisualLoggingTrackName,
@@ -22,7 +22,7 @@ const UIStrings = {
    *@description Text in Timeline Flame Chart Data Provider of the Performance panel
    */
   interactions: 'Interactions',
-};
+} as const;
 
 const str_ = i18n.i18n.registerUIStrings('panels/timeline/InteractionsTrackAppender.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -148,12 +148,11 @@ export class InteractionsTrackAppender implements TrackAppender {
     return this.#colorGenerator.colorForID(idForColorGeneration);
   }
 
-  highlightedEntryInfo(event: Trace.Types.Events.Event): HighlightedEntryInfo {
+  setPopoverInfo(event: Trace.Types.Events.Event, info: PopoverInfo): void {
     if (Trace.Types.Events.isSyntheticInteraction(event)) {
       const breakdown = new Components.InteractionBreakdown.InteractionBreakdown();
       breakdown.entry = event;
-      return {title: '', formattedTime: '', additionalElement: breakdown};
+      info.additionalElements.push(breakdown);
     }
-    return {title: '', formattedTime: ''};
   }
 }

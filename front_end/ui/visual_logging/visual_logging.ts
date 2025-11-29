@@ -9,23 +9,34 @@ import * as LoggingEvents from './LoggingEvents.js';
 import * as NonDomState from './NonDomState.js';
 
 export type Loggable = LoggableModule.Loggable;
-export {setVeDebugLoggingEnabled, DebugLoggingFormat} from './Debugging.js';
-export {startLogging, stopLogging, addDocument} from './LoggingDriver.js';
-export {logImpressions} from './LoggingEvents.js';
+export {DebugLoggingFormat, setVeDebuggingEnabled, setVeDebugLoggingEnabled} from './Debugging.js';
+export {addDocument, startLogging, stopLogging} from './LoggingDriver.js';
+export {logImpressions, logSettingAccess} from './LoggingEvents.js';
 export const logClick = (loggable: Loggable, event: Event, options: {doubleClick?: boolean} = {}): void =>
     LoggingEvents.logClick(LoggingDriver.clickLogThrottler)(loggable, event, options);
 
 export const logResize = (l: Loggable, s: DOMRect): void => LoggingEvents.logResize(l, s);
 export const logKeyDown = async(l: Loggable|null, e: Event, context?: string): Promise<void> =>
-    LoggingEvents.logKeyDown(LoggingDriver.keyboardLogThrottler)(l, e, context);
+    await LoggingEvents.logKeyDown(LoggingDriver.keyboardLogThrottler)(l, e, context);
 export {registerParentProvider, setMappedParent} from './LoggingState.js';
 
-export function registerLoggable(loggable: Loggable, config: string, parent: Loggable|null): void {
+export function registerLoggable(loggable: Loggable, config: string, parent: Loggable|null, size: DOMRect): void {
   if (!LoggingDriver.isLogging()) {
     return;
   }
-  NonDomState.registerLoggable(loggable, LoggingConfig.parseJsLog(config), parent || undefined);
+  NonDomState.registerLoggable(loggable, LoggingConfig.parseJsLog(config), parent || undefined, size);
   void LoggingDriver.scheduleProcessing();
+}
+
+export async function isUnderInspection(origin?: string): Promise<boolean> {
+  if (!origin) {
+    return false;
+  }
+  const context = await LoggingEvents.contextAsNumber(origin);
+  if (!context) {
+    return false;
+  }
+  return [431010711, -1313957874, -1093325535].includes(context);
 }
 
 /**

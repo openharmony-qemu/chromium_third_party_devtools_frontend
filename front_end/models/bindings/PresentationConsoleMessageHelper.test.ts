@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import * as Common from '../../core/common/common.js';
-import type * as Platform from '../../core/platform/platform.js';
+import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
 import {createTarget} from '../../testing/EnvironmentHelpers.js';
@@ -13,6 +13,8 @@ import {MockExecutionContext} from '../../testing/MockExecutionContext.js';
 import * as Workspace from '../workspace/workspace.js';
 
 import * as Bindings from './bindings.js';
+
+const {urlString} = Platform.DevToolsPath;
 
 async function addMessage(
     helper: Bindings.PresentationConsoleMessageHelper.PresentationSourceFrameMessageHelper, target: SDK.Target.Target,
@@ -51,7 +53,7 @@ async function addScript(
   const parsedScriptSourceDonePromise = expectCall(scriptParsedSpy);
   const script = debuggerModel.parsedScriptSource(
       'scriptId' as Protocol.Runtime.ScriptId, url, 0, 0, 3, 3, executionContext.id, '', undefined, false, undefined,
-      false, false, 0, false, null, null, null, null, null);
+      false, false, 0, false, null, null, null, null, null, null);
 
   await parsedScriptSourceDonePromise;
   scriptParsedSpy.restore();
@@ -97,7 +99,7 @@ async function addStyleSheet(
 }
 
 describeWithMockConnection('PresentationConsoleMessageHelper', () => {
-  const url = 'http://example.test/test.css' as Platform.DevToolsPath.UrlString;
+  const url = urlString`http://example.test/test.css`;
   let helper: Bindings.PresentationConsoleMessageHelper.PresentationSourceFrameMessageHelper;
   let executionContext: SDK.RuntimeModel.ExecutionContext;
   let cssModel: SDK.CSSModel.CSSModel;

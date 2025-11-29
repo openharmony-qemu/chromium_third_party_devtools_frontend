@@ -15,7 +15,6 @@ import {
   waitFor,
   waitForFunction,
 } from '../../shared/helper.js';
-
 import {openSoftContextMenuAndClickOnItem} from '../helpers/context-menu-helpers.js';
 import {
   getTextFromHeadersRow,
@@ -88,8 +87,6 @@ async function editHeaderItem(newValue: string, previousValue: string): Promise<
 }
 
 describe('The Overrides Panel', function() {
-  this.timeout(10000);
-
   afterEach(async () => {
     await openSourcesPanel();
     await openOverridesSubPane();
@@ -113,11 +110,11 @@ describe('The Overrides Panel', function() {
 
     const responseHeaderSection = await waitFor(RESPONSE_HEADERS_SELECTOR);
     const row = await waitFor(HEADER_ROW_SELECTOR, responseHeaderSection);
-    assert.deepStrictEqual(await getTextFromHeadersRow(row), ['aaa:', 'bbb']);
+    assert.deepEqual(await getTextFromHeadersRow(row), ['aaa', 'bbb']);
   });
 
   // Skip until flake is fixed
-  it.skip('[crbug.com/1432925]: can override headers via network panel', async () => {
+  it.skip('[crbug.com/40264188]: can override headers via network panel', async () => {
     await navigateToNetworkTab('hello.html');
     await waitForSomeRequestsToAppear(1);
     await selectRequestByName('hello.html');
@@ -143,7 +140,7 @@ describe('The Overrides Panel', function() {
 
     const responseHeaderSection = await waitFor(RESPONSE_HEADERS_SELECTOR);
     const row = await waitFor('.row.header-overridden.header-editable', responseHeaderSection);
-    assert.deepStrictEqual(await getTextFromHeadersRow(row), ['foo:', 'bar']);
+    assert.deepEqual(await getTextFromHeadersRow(row), ['foo', 'bar']);
     await click('[title="Reveal header override definitions"]');
     assert.isTrue(await editorTabHasPurpleDot());
     assert.isTrue(await fileTreeEntryIsSelectedAndHasPurpleDot());

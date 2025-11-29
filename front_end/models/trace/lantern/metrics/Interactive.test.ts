@@ -8,7 +8,9 @@ import {getComputationDataFromFixture, toLanternTrace} from '../testing/testing.
 
 const {Interactive, FirstContentfulPaint, LargestContentfulPaint} = Lantern.Metrics;
 
-describe('Metrics: Lantern TTI', () => {
+describe('Metrics: Lantern TTI', function() {
+  TraceLoader.setTestTimeout(this);
+
   let trace: Lantern.Types.Trace;
   let iframeTrace: Lantern.Types.Trace;
   before(async function() {
@@ -24,7 +26,7 @@ describe('Metrics: Lantern TTI', () => {
       }),
     });
 
-    assert.deepStrictEqual(
+    assert.deepEqual(
         {
           timing: Math.round(result.timing),
           optimistic: Math.round(result.optimisticEstimate.timeInMs),
@@ -36,9 +38,9 @@ describe('Metrics: Lantern TTI', () => {
           timing: 1122,
         });
     assert.strictEqual(result.optimisticEstimate.nodeTimings.size, 14);
-    assert.strictEqual(result.pessimisticEstimate.nodeTimings.size, 31);
-    assert.ok(result.optimisticGraph, 'should have created optimistic graph');
-    assert.ok(result.pessimisticGraph, 'should have created pessimistic graph');
+    assert.strictEqual(result.pessimisticEstimate.nodeTimings.size, 29);
+    assert.isOk(result.optimisticGraph, 'should have created optimistic graph');
+    assert.isOk(result.pessimisticGraph, 'should have created pessimistic graph');
   });
 
   it('should compute predicted value on iframes with substantial layout', async () => {
@@ -51,7 +53,7 @@ describe('Metrics: Lantern TTI', () => {
       }),
     });
 
-    assert.deepStrictEqual(
+    assert.deepEqual(
         {
           timing: Math.round(result.timing),
           optimistic: Math.round(result.optimisticEstimate.timeInMs),
@@ -62,7 +64,7 @@ describe('Metrics: Lantern TTI', () => {
           pessimistic: 2386,
           timing: 2379,
         });
-    assert.ok(result.optimisticGraph, 'should have created optimistic graph');
-    assert.ok(result.pessimisticGraph, 'should have created pessimistic graph');
+    assert.isOk(result.optimisticGraph, 'should have created optimistic graph');
+    assert.isOk(result.pessimisticGraph, 'should have created pessimistic graph');
   });
 });

@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import type * as Protocol from '../../generated/protocol.js';
-import type * as Trace from '../../models/trace/trace.js';
+import * as Trace from '../../models/trace/trace.js';
 import {describeWithEnvironment} from '../../testing/EnvironmentHelpers.js';
 import {makeInstantEvent} from '../../testing/TraceHelpers.js';
 
@@ -50,9 +50,9 @@ describeWithEnvironment('TimelineLoader', () => {
     async loadingComplete(
         collectedEvents: Trace.Types.Events.Event[],
         exclusiveFilter: Trace.Extras.TraceFilter.TraceFilter|null,
-        isCpuProfile: boolean,
+        metadata: Trace.Types.File.MetaData,
     ) {
-      loadingCompleteSpy(collectedEvents, exclusiveFilter, isCpuProfile);
+      loadingCompleteSpy(collectedEvents, exclusiveFilter, metadata);
     },
     recordingProgress: function(usage: number): void {
       recordingProgressSpy(usage);
@@ -75,48 +75,48 @@ describeWithEnvironment('TimelineLoader', () => {
     const file = await loadWebDevTraceAsFile();
     const loader = await Timeline.TimelineLoader.TimelineLoader.loadFromFile(file, client);
     await loader.traceFinalizedForTest();
-    assert.isTrue(loadingStartedSpy.calledOnce);
+    sinon.assert.calledOnce(loadingStartedSpy);
     // Exact number is deterministic so we can assert, but the fact it was 29
     // calls doesn't really matter. We just want to check it got called "a
     // bunch of times".
-    assert.strictEqual(loadingProgressSpy.callCount, 29);
-    assert.isTrue(processingStartedSpy.calledOnce);
-    assert.isTrue(loadingCompleteSpy.calledOnce);
+    sinon.assert.callCount(loadingProgressSpy, 29);
+    sinon.assert.calledOnce(processingStartedSpy);
+    sinon.assert.calledOnce(loadingCompleteSpy);
 
     // Get the arguments of the first (and only) call to the loadingComplete
     // function. TS doesn't know what the types are (they are [any, any] by
     // default), so we tell it that they align with the types of the
     // loadingComplete parameters.
-    const [collectedEvents, exclusiveFilter, isCpuProfile] =
+    const [collectedEvents, exclusiveFilter, metadata] =
         loadingCompleteSpy.args[0] as Parameters<Timeline.TimelineController.Client['loadingComplete']>;
     assert.isNull(exclusiveFilter);  // We are not filtering out any events for this trace.
     // Ensure that we loaded something that looks about right!
     assert.lengthOf(collectedEvents, 8252);
-    assert.isFalse(isCpuProfile);
+    assert.notStrictEqual(metadata?.dataOrigin, Trace.Types.File.DataOrigin.CPU_PROFILE);
   });
 
   it('can load a saved CPUProfile file', async () => {
     const file = await loadBasicCpuProfileAsFile();
     const loader = await Timeline.TimelineLoader.TimelineLoader.loadFromFile(file, client);
     await loader.traceFinalizedForTest();
-    assert.isTrue(loadingStartedSpy.calledOnce);
+    sinon.assert.calledOnce(loadingStartedSpy);
     // For the CPU Profile we are testing, loadingProgress will be called three times, because the
     // file is not that big.
-    assert.strictEqual(loadingProgressSpy.callCount, 3);
-    assert.isTrue(processingStartedSpy.calledOnce);
-    assert.isTrue(loadingCompleteSpy.calledOnce);
+    sinon.assert.callCount(loadingProgressSpy, 3);
+    sinon.assert.calledOnce(processingStartedSpy);
+    sinon.assert.calledOnce(loadingCompleteSpy);
 
     // Get the arguments of the first (and only) call to the loadingComplete
     // function. TS doesn't know what the types are (they are [any, any] by
     // default), so we tell it that they align with the types of the
     // loadingComplete parameters.
-    const [collectedEvents, /* exclusiveFilter */, isCpuProfile] =
+    const [collectedEvents, /* exclusiveFilter */, metadata] =
         loadingCompleteSpy.args[0] as Parameters<Timeline.TimelineController.Client['loadingComplete']>;
     // We create fake trace event for CPU profile, includes one for
     // TracingStartedInPage, one for metadata, one for root, and one for CPU
     // profile
     assert.lengthOf(collectedEvents, 4);
-    assert.isTrue(isCpuProfile);
+    assert.strictEqual(metadata?.dataOrigin, Trace.Types.File.DataOrigin.CPU_PROFILE);
   });
 
   it('can load recorded trace events correctly', async () => {
@@ -126,45 +126,45 @@ describeWithEnvironment('TimelineLoader', () => {
     ];
     const loader = Timeline.TimelineLoader.TimelineLoader.loadFromEvents(testTraceEvents, client);
     await loader.traceFinalizedForTest();
-    assert.isTrue(loadingStartedSpy.calledOnce);
+    sinon.assert.calledOnce(loadingStartedSpy);
     // For the trace events we are testing, loadingProgress will be called only once, because the
     // fake trace events array is very short.
-    assert.isTrue(loadingProgressSpy.calledOnce);
-    assert.isTrue(processingStartedSpy.calledOnce);
-    assert.isTrue(loadingCompleteSpy.calledOnce);
+    sinon.assert.calledOnce(loadingProgressSpy);
+    sinon.assert.calledOnce(processingStartedSpy);
+    sinon.assert.calledOnce(loadingCompleteSpy);
 
     // Get the arguments of the first (and only) call to the loadingComplete
     // function. TS doesn't know what the types are (they are [any, any] by
     // default), so we tell it that they align with the types of the
     // loadingComplete parameters.
-    const [collectedEvents, exclusiveFilter, isCpuProfile] =
+    const [collectedEvents, exclusiveFilter, metadata] =
         loadingCompleteSpy.args[0] as Parameters<Timeline.TimelineController.Client['loadingComplete']>;
     assert.isNull(exclusiveFilter);
     // Ensure that we loaded something that looks about right!
     assert.lengthOf(collectedEvents, testTraceEvents.length);
-    assert.isFalse(isCpuProfile);
+    assert.notStrictEqual(metadata?.dataOrigin, Trace.Types.File.DataOrigin.CPU_PROFILE);
   });
 
   it('can load recorded CPUProfile correctly', async () => {
     const testProfile: Protocol.Profiler.Profile = {nodes: [], startTime: 0, endTime: 0};
     const loader = Timeline.TimelineLoader.TimelineLoader.loadFromCpuProfile(testProfile, client);
     await loader.traceFinalizedForTest();
-    assert.isTrue(loadingStartedSpy.calledOnce);
+    sinon.assert.calledOnce(loadingStartedSpy);
     // For the CPU Profile we are testing, loadingProgress will be called only once, because the
     // fake Profile is basically empty.
-    assert.strictEqual(loadingProgressSpy.callCount, 1);
-    assert.isTrue(processingStartedSpy.calledOnce);
-    assert.isTrue(loadingCompleteSpy.calledOnce);
+    sinon.assert.callCount(loadingProgressSpy, 1);
+    sinon.assert.calledOnce(processingStartedSpy);
+    sinon.assert.calledOnce(loadingCompleteSpy);
 
     // Get the arguments of the first (and only) call to the loadingComplete
     // function. TS doesn't know what the types are (they are [any, any] by
     // default), so we tell it that they align with the types of the
     // loadingComplete parameters.
-    const [collectedEvents, /* exclusiveFilter */, isCpuProfile] =
+    const [collectedEvents, /* exclusiveFilter */, metadata] =
         loadingCompleteSpy.args[0] as Parameters<Timeline.TimelineController.Client['loadingComplete']>;
     // We create fake trace event for CPU profile, includes one for TracingStartedInPage,
     // one for metadata, one for root, and one for CPU profile
     assert.lengthOf(collectedEvents, 4);
-    assert.isTrue(isCpuProfile);
+    assert.strictEqual(metadata?.dataOrigin, Trace.Types.File.DataOrigin.CPU_PROFILE);
   });
 });

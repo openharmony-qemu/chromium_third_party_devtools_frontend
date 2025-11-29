@@ -28,6 +28,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/* eslint-disable rulesdir/no-imperative-dom-api */
+
+import '../../ui/legacy/legacy.js';
+
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
@@ -69,7 +73,7 @@ const UIStrings = {
    * @description text shown when no counter events are found and the graph is empty
    */
   noEventsFound: 'No memory usage data found within selected events.',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/timeline/CountersGraph.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
@@ -92,7 +96,7 @@ export class CountersGraph extends UI.Widget.VBox {
   #onTraceBoundsChangeBound = this.#onTraceBoundsChange.bind(this);
 
   #noEventsFoundMessage = document.createElement('div');
-  #showNoEventsMessage: boolean = false;
+  #showNoEventsMessage = false;
 
   constructor(delegate: TimelineModeViewDelegate) {
     super();
@@ -105,8 +109,7 @@ export class CountersGraph extends UI.Widget.VBox {
     this.header = new UI.Widget.HBox();
     this.header.element.classList.add('timeline-memory-header');
     this.header.show(this.element);
-    this.toolbar = new UI.Toolbar.Toolbar('timeline-memory-toolbar');
-    this.header.element.appendChild(this.toolbar.element);
+    this.toolbar = this.header.element.createChild('devtools-toolbar', 'timeline-memory-toolbar');
 
     this.graphsContainer = new UI.Widget.VBox();
     this.graphsContainer.show(this.element);
@@ -210,8 +213,9 @@ export class CountersGraph extends UI.Widget.VBox {
     this.currentValuesBar.id = 'counter-values-bar';
   }
 
-  private createCounter(uiName: string, settingsKey: string, color: string, formatter?: ((arg0: number) => string)):
-      Counter {
+  private createCounter(
+      uiName: Common.UIString.LocalizedString, settingsKey: string, color: string,
+      formatter?: ((arg0: number) => string)): Counter {
     const counter = new Counter();
     this.counters.push(counter);
     this.counterUI.push(new CounterUI(this, uiName, settingsKey, color, counter, formatter));
@@ -252,7 +256,7 @@ export class CountersGraph extends UI.Widget.VBox {
 
   private onClick(event: Event): void {
     const x = (event as MouseEvent).x - this.canvasContainer.getBoundingClientRect().left;
-    let minDistance: number = Infinity;
+    let minDistance = Infinity;
     let bestTime;
     for (const counterUI of this.counterUI) {
       if (!counterUI.counter.times.length) {
@@ -423,8 +427,8 @@ export class CounterUI {
   private marker: HTMLElement;
 
   constructor(
-      countersPane: CountersGraph, title: string, settingsKey: string, graphColor: string, counter: Counter,
-      formatter?: (arg0: number) => string) {
+      countersPane: CountersGraph, title: Common.UIString.LocalizedString, settingsKey: string, graphColor: string,
+      counter: Counter, formatter?: (arg0: number) => string) {
     this.countersPane = countersPane;
     this.counter = counter;
     this.formatter = formatter || Platform.NumberUtilities.withThousandsSeparator;
@@ -432,17 +436,16 @@ export class CounterUI {
     this.setting = Common.Settings.Settings.instance().createSetting('timeline-counters-graph-' + settingsKey, true);
     this.setting.setTitle(title);
     this.filter = new UI.Toolbar.ToolbarSettingCheckbox(this.setting, title);
-    this.filter.inputElement.classList.add('-theme-preserve-input');
     const parsedColor = Common.Color.parse(graphColor);
     if (parsedColor) {
       const colorWithAlpha = parsedColor.setAlpha(0.5).asString(Common.Color.Format.RGBA);
-      const htmlElement = (this.filter.element as HTMLElement);
+      const htmlElement = (this.filter.element);
       if (colorWithAlpha) {
         htmlElement.style.backgroundColor = colorWithAlpha;
       }
       htmlElement.style.borderColor = 'transparent';
     }
-    this.filter.inputElement.addEventListener('click', this.toggleCounterGraph.bind(this));
+    this.filter.element.addEventListener('click', this.toggleCounterGraph.bind(this));
     countersPane.toolbar.appendToolbarItem(this.filter);
     this.range = this.filter.element.createChild('span', 'range');
 

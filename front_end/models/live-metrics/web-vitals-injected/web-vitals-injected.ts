@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import * as WebVitals from '../../../third_party/web-vitals/web-vitals.js';
+import type * as Trace from '../../trace/trace.js';
 
 import * as OnEachInteraction from './OnEachInteraction.js';
 import * as OnEachLayoutShift from './OnEachLayoutShift.js';
@@ -77,11 +78,11 @@ function sendEventToDevTools(event: Spec.WebVitalsEvent): void {
   window[Spec.EVENT_BINDING_NAME](payload);
 }
 
-const nodeList: Node[] = [];
+const nodeList: Array<WeakRef<Node>> = [];
 
 function establishNodeIndex(node: Node): number {
   const index = nodeList.length;
-  nodeList.push(node);
+  nodeList.push(new WeakRef(node));
   return index;
 }
 
@@ -95,7 +96,7 @@ function establishNodeIndex(node: Node): number {
  * for the specified index.
  */
 window.getNodeForIndex = (index: number): Node|undefined => {
-  return nodeList[index];
+  return nodeList[index].deref();
 };
 
 function limitScripts(loafs: Spec.PerformanceLongAnimationFrameTimingJSON[]):
@@ -121,8 +122,27 @@ function limitScripts(loafs: Spec.PerformanceLongAnimationFrameTimingJSON[]):
   });
 }
 
+function isPrerendered(): boolean {
+  if (document.prerendering) {
+    return true;
+  }
+
+  const firstNavStart = self.performance.getEntriesByType?.('navigation')[0]?.activationStart;
+  return firstNavStart !== undefined && firstNavStart > 0;
+}
+
+let startedHidden: boolean|null = null;
+
 function initialize(): void {
   sendEventToDevTools({name: 'reset'});
+
+  new PerformanceObserver(list => {
+    for (const entry of list.getEntries()) {
+      if (startedHidden === null && !isPrerendered()) {
+        startedHidden = entry.name === 'hidden';
+      }
+    }
+  }).observe({type: 'visibility-state', buffered: true});
 
   // We want to treat bfcache navigations like a standard navigations, so emit
   // a reset event when bfcache is restored.
@@ -131,18 +151,20 @@ function initialize(): void {
   // To ensure this event is fired before those values are emitted, register this
   // callback before any others.
   WebVitals.onBFCacheRestore(() => {
+    startedHidden = false;
     sendEventToDevTools({name: 'reset'});
   });
 
   onLCP(metric => {
-    const event: Spec.LCPChangeEvent = {
+    const event: Spec.LcpChangeEvent = {
       name: 'LCP',
-      value: metric.value,
+      value: metric.value as Trace.Types.Timing.Milli,
+      startedHidden: Boolean(startedHidden),
       phases: {
-        timeToFirstByte: metric.attribution.timeToFirstByte,
-        resourceLoadDelay: metric.attribution.resourceLoadDelay,
-        resourceLoadTime: metric.attribution.resourceLoadDuration,
-        elementRenderDelay: metric.attribution.elementRenderDelay,
+        timeToFirstByte: metric.attribution.timeToFirstByte as Trace.Types.Timing.Milli,
+        resourceLoadDelay: metric.attribution.resourceLoadDelay as Trace.Types.Timing.Milli,
+        resourceLoadTime: metric.attribution.resourceLoadDuration as Trace.Types.Timing.Milli,
+        elementRenderDelay: metric.attribution.elementRenderDelay as Trace.Types.Timing.Milli,
       },
     };
 
@@ -154,7 +176,7 @@ function initialize(): void {
   }, {reportAllChanges: true});
 
   onCLS(metric => {
-    const event: Spec.CLSChangeEvent = {
+    const event: Spec.ClsChangeEvent = {
       name: 'CLS',
       value: metric.value,
       clusterShiftIds: metric.entries.map(Spec.getUniqueLayoutShiftId),
@@ -163,13 +185,20 @@ function initialize(): void {
   }, {reportAllChanges: true});
 
   onINP(metric => {
-    const event: Spec.INPChangeEvent = {
+    // TODO(b/376777343): Remove this line when `interactionTargetElement` is removed from web-vitals.js
+    // The `metric` emitted in this callback is stored within web-vitals.js closures.
+    // This can lead to `interactionTargetElement` persisting in memory after it has been removed.
+    // We don't use `interactionTargetElement` here, and `onEachInteraction` will interaction
+    // elements separately so it is safe to remove here and prevent memory leaks.
+    metric.attribution.interactionTargetElement = undefined;
+
+    const event: Spec.InpChangeEvent = {
       name: 'INP',
-      value: metric.value,
+      value: metric.value as Trace.Types.Timing.Milli,
       phases: {
-        inputDelay: metric.attribution.inputDelay,
-        processingDuration: metric.attribution.processingDuration,
-        presentationDelay: metric.attribution.presentationDelay,
+        inputDelay: metric.attribution.inputDelay as Trace.Types.Timing.Milli,
+        processingDuration: metric.attribution.processingDuration as Trace.Types.Timing.Milli,
+        presentationDelay: metric.attribution.presentationDelay as Trace.Types.Timing.Milli,
       },
       startTime: metric.entries[0].startTime,
       entryGroupId: metric.entries[0].interactionId as Spec.InteractionEntryGroupId,
@@ -184,11 +213,11 @@ function initialize(): void {
     // this injected code.
     const event: Spec.InteractionEntryEvent = {
       name: 'InteractionEntry',
-      duration: interaction.value,
+      duration: interaction.value as Trace.Types.Timing.Milli,
       phases: {
-        inputDelay: interaction.attribution.inputDelay,
-        processingDuration: interaction.attribution.processingDuration,
-        presentationDelay: interaction.attribution.presentationDelay,
+        inputDelay: interaction.attribution.inputDelay as Trace.Types.Timing.Milli,
+        processingDuration: interaction.attribution.processingDuration as Trace.Types.Timing.Milli,
+        presentationDelay: interaction.attribution.presentationDelay as Trace.Types.Timing.Milli,
       },
       startTime: interaction.entries[0].startTime,
       entryGroupId: interaction.entries[0].interactionId as Spec.InteractionEntryGroupId,

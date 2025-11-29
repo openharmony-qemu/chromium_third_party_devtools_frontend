@@ -3,24 +3,24 @@
 // found in the LICENSE file.
 import '../../../../ui/components/icon_button/icon_button.js';
 
+/* eslint-disable rulesdir/no-lit-render-outside-of-view */
+
 import * as i18n from '../../../../core/i18n/i18n.js';
 import * as Trace from '../../../../models/trace/trace.js';
 import * as ThemeSupport from '../../../../ui/legacy/theme_support/theme_support.js';
-import * as LitHtml from '../../../../ui/lit-html/lit-html.js';
+import {html, render} from '../../../../ui/lit/lit.js';
 import * as VisualLogging from '../../../../ui/visual_logging/visual_logging.js';
+
+import entriesLinkOverlayStyles from './entriesLinkOverlay.css.js';
 
 const UIStrings = {
   /**
    *@description Accessible label used to explain to a user that they are viewing an arrow representing a link between two entries.
    */
-  diagram: 'Links bteween entries',
-};
+  diagram: 'Links between entries',
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/timeline/overlays/components/EntriesLinkOverlay.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
-
-import styles from './entriesLinkOverlay.css.js';
-
-const {html} = LitHtml;
 
 export class EntryLinkStartCreating extends Event {
   static readonly eventName = 'entrylinkstartcreating';
@@ -33,45 +33,45 @@ export class EntryLinkStartCreating extends Event {
 export class EntriesLinkOverlay extends HTMLElement {
   readonly #shadow = this.attachShadow({mode: 'open'});
   #coordinateFrom: {x: number, y: number};
-  #fromEntryDimentions: {width: number, height: number};
+  #fromEntryDimensions: {width: number, height: number};
   #coordinateTo: {x: number, y: number};
-  #toEntryDimentions: {width: number, height: number}|null = null;
+  #toEntryDimensions: {width: number, height: number}|null = null;
   #connectorLineContainer: SVGAElement|null = null;
   #connector: SVGLineElement|null = null;
   #entryFromWrapper: HTMLElement|null = null;
   #entryToWrapper: HTMLElement|null = null;
-  #entryFromConnector: SVGCircleElement|null = null;
-  #entryToConnector: SVGCircleElement|null = null;
-  #entryFromVisible: boolean = true;
-  #entryToVisible: boolean = true;
+  #entryFromCirleConnector: SVGCircleElement|null = null;
+  #entryToCircleConnector: SVGCircleElement|null = null;
+  #entryFromVisible = true;
+  #entryToVisible = true;
   #canvasRect: DOMRect|null = null;
 
   // These flags let us know if the entry we are drawing from/to are the
   // originals, or if they are the parent, which can happen if an entry is
   // collapsed. We care about this because if the entry is not the source, we
   // draw the border as dashed, not solid.
-  #fromEntryIsSource: boolean = true;
-  #toEntryIsSource: boolean = true;
-  #arrowHidden: boolean = false;
+  #fromEntryIsSource = true;
+  #toEntryIsSource = true;
+  #arrowHidden = false;
   #linkState: Trace.Types.File.EntriesLinkState;
 
   constructor(
-      initialFromEntryCoordinateAndDimentions: {x: number, y: number, width: number, height: number},
+      initialFromEntryCoordinateAndDimensions: {x: number, y: number, width: number, height: number},
       linkCreationNotStartedState: Trace.Types.File.EntriesLinkState) {
     super();
     this.#render();
-    this.#coordinateFrom = {x: initialFromEntryCoordinateAndDimentions.x, y: initialFromEntryCoordinateAndDimentions.y};
-    this.#fromEntryDimentions = {
-      width: initialFromEntryCoordinateAndDimentions.width,
-      height: initialFromEntryCoordinateAndDimentions.height,
+    this.#coordinateFrom = {x: initialFromEntryCoordinateAndDimensions.x, y: initialFromEntryCoordinateAndDimensions.y};
+    this.#fromEntryDimensions = {
+      width: initialFromEntryCoordinateAndDimensions.width,
+      height: initialFromEntryCoordinateAndDimensions.height,
     };
-    this.#coordinateTo = {x: initialFromEntryCoordinateAndDimentions.x, y: initialFromEntryCoordinateAndDimentions.y};
+    this.#coordinateTo = {x: initialFromEntryCoordinateAndDimensions.x, y: initialFromEntryCoordinateAndDimensions.y};
     this.#connectorLineContainer = this.#shadow.querySelector<SVGAElement>('.connectorContainer') ?? null;
     this.#connector = this.#connectorLineContainer?.querySelector('line') ?? null;
     this.#entryFromWrapper = this.#shadow.querySelector('.from-highlight-wrapper') ?? null;
     this.#entryToWrapper = this.#shadow.querySelector('.to-highlight-wrapper') ?? null;
-    this.#entryFromConnector = this.#connectorLineContainer?.querySelector('.entryFromConnector') ?? null;
-    this.#entryToConnector = this.#connectorLineContainer?.querySelector('.entryToConnector') ?? null;
+    this.#entryFromCirleConnector = this.#connectorLineContainer?.querySelector('.entryFromConnector') ?? null;
+    this.#entryToCircleConnector = this.#connectorLineContainer?.querySelector('.entryToConnector') ?? null;
     this.#linkState = linkCreationNotStartedState;
     this.#render();
   }
@@ -95,10 +95,6 @@ export class EntriesLinkOverlay extends HTMLElement {
     return this.#entryToWrapper;
   }
 
-  connectedCallback(): void {
-    this.#shadow.adoptedStyleSheets = [styles];
-  }
-
   /**
    * If one entry that is linked is in a collapsed track, we show the outlines
    * but hide only the arrow.
@@ -110,30 +106,31 @@ export class EntriesLinkOverlay extends HTMLElement {
     }
   }
 
-  set fromEntryCoordinateAndDimentions(fromEntryParams: {x: number, y: number, length: number, height: number}) {
+  set fromEntryCoordinateAndDimensions(fromEntryParams: {x: number, y: number, length: number, height: number}) {
     this.#coordinateFrom = {x: fromEntryParams.x, y: fromEntryParams.y};
-    this.#fromEntryDimentions = {width: fromEntryParams.length, height: fromEntryParams.height};
+    this.#fromEntryDimensions = {width: fromEntryParams.length, height: fromEntryParams.height};
     this.#updateCreateLinkBox();
-    this.#redrawConnectionArrow();
+    this.#redrawAllEntriesLinkParts();
   }
 
   set entriesVisibility(entriesVisibility: {fromEntryVisibility: boolean, toEntryVisibility: boolean}) {
     this.#entryFromVisible = entriesVisibility.fromEntryVisibility;
     this.#entryToVisible = entriesVisibility.toEntryVisibility;
+    this.#redrawAllEntriesLinkParts();
   }
 
   // The arrow might be pointing either to an entry or an empty space.
   // If the dimensions are not passed, it is pointing at an empty space.
-  set toEntryCoordinateAndDimentions(toEntryParams: {x: number, y: number, length?: number, height?: number}) {
+  set toEntryCoordinateAndDimensions(toEntryParams: {x: number, y: number, length?: number, height?: number}) {
     this.#coordinateTo = {x: toEntryParams.x, y: toEntryParams.y};
     if (toEntryParams.length && toEntryParams.height) {
-      this.#toEntryDimentions = {width: toEntryParams.length, height: toEntryParams.height};
+      this.#toEntryDimensions = {width: toEntryParams.length, height: toEntryParams.height};
     } else {
-      this.#toEntryDimentions = null;
+      this.#toEntryDimensions = null;
     }
 
     this.#updateCreateLinkBox();
-    this.#redrawConnectionArrow();
+    this.#redrawAllEntriesLinkParts();
   }
 
   set fromEntryIsSource(x: boolean) {
@@ -152,120 +149,142 @@ export class EntriesLinkOverlay extends HTMLElement {
     this.#render();
   }
 
-  #redrawConnectionArrow(): void {
-    if (!this.#connector || !this.#entryFromWrapper || !this.#entryToWrapper || !this.#entryFromConnector ||
-        !this.#entryToConnector) {
-      console.error('`connector` element is missing.');
+  /*
+    Redraw all parts of the EntriesLink overlay
+     _________
+    |__entry__|o\      <-- 'from 'entry wrapper and the circle connector next to it
+                 \
+                  \    <-- Arrow Connector
+                   \   ________________
+                    ➘ o|_____entry______|  <-- 'to' entry wrapper and the circle connector next to it
+  */
+  #redrawAllEntriesLinkParts(): void {
+    if (!this.#connector || !this.#entryFromWrapper || !this.#entryToWrapper || !this.#entryFromCirleConnector ||
+        !this.#entryToCircleConnector) {
+      console.error('one of the required Entries Link elements is missing.');
       return;
     }
 
     if (this.#linkState === Trace.Types.File.EntriesLinkState.CREATION_NOT_STARTED) {
-      this.#entryFromConnector.setAttribute('visibility', 'hidden');
-      this.#entryToConnector.setAttribute('visibility', 'hidden');
+      this.#entryFromCirleConnector.setAttribute('visibility', 'hidden');
+      this.#entryToCircleConnector.setAttribute('visibility', 'hidden');
+      this.#connector.style.display = 'none';
       return;
     }
 
-    // If the user is zoomed out, the connector circles can be as large as the
-    // event itself. So if the rectangle for this entry is too small, we
-    // don't draw the circles.
-    const minWidthToDrawConnectorCircles = 8;
-
-    // We do not draw the connectors if the entry is not visible, or if the
-    // entry we are connecting to isn't the actual source entry.
-    // We also don't draw them if an entry is completely hidden, in which case
-    // we aren't drawing the arrows, so it doesn't make sense to draw the
-    // connectors.
-    const drawFromEntryConnectorCircle = this.#entryFromVisible && !this.#arrowHidden && this.#fromEntryIsSource &&
-        this.#fromEntryDimentions.width >= minWidthToDrawConnectorCircles;
-
-    const widthOfToEntry = this.#toEntryDimentions?.width ?? 0;
-    const drawToEntryConnectorCircle = !this.#arrowHidden && this.#entryToVisible && this.#toEntryIsSource &&
-        widthOfToEntry >= minWidthToDrawConnectorCircles && !this.#arrowHidden;
-
-    this.#entryFromConnector.setAttribute('visibility', drawFromEntryConnectorCircle ? 'visible' : 'hidden');
-    this.#entryToConnector.setAttribute('visibility', drawToEntryConnectorCircle ? 'visible' : 'hidden');
-
-    // If the entry is visible, the entry arrow starts from the end on the X axis and middle of the Y axis.
-    // If not, draw it to the same y point without the entry height offset and the box around the entry.
-    // This way it will be attached to the track edge.
-    if (this.#entryFromVisible) {
-      const halfEntryHeight = this.#fromEntryDimentions.height / 2;
-      const endConnectionPointX = String(this.#coordinateFrom.x + this.#fromEntryDimentions.width);
-      const endConnectionPointY = String(this.#coordinateFrom.y + halfEntryHeight);
-
-      this.#connector.setAttribute('x1', endConnectionPointX);
-      this.#connector.setAttribute('y1', endConnectionPointY);
-
-      this.#entryFromConnector.setAttribute('cx', endConnectionPointX);
-      this.#entryFromConnector.setAttribute('cy', endConnectionPointY);
-      this.#entryFromWrapper.style.visibility = 'visible';
-    } else {
-      this.#connector.setAttribute('x1', (this.#coordinateFrom.x + this.#fromEntryDimentions.width).toString());
-      this.#connector.setAttribute('y1', this.#coordinateFrom.y.toString());
-      this.#entryFromWrapper.style.visibility = 'hidden';
-    }
-
-    // If the arrow is pointing to the entry, point it to the middle of the entry.
-    // Otherwise, the arrow is following the mouse so we assign it to the provided coordinates.
-    if (this.#toEntryDimentions && this.#entryToVisible) {
-      const connectionPointX = String(this.#coordinateTo.x);
-      const connectionPointY = String(this.#coordinateTo.y + this.#toEntryDimentions.height / 2);
-
-      this.#connector.setAttribute('x2', connectionPointX);
-      this.#connector.setAttribute('y2', connectionPointY);
-
-      this.#entryToConnector.setAttribute('cx', connectionPointX);
-      this.#entryToConnector.setAttribute('cy', connectionPointY);
-
-      this.#entryToWrapper.style.visibility = 'visible';
-    } else {
-      this.#entryToWrapper.style.visibility = 'hidden';
-      this.#connector.setAttribute('x2', this.#coordinateTo.x.toString());
-      this.#connector.setAttribute('y2', this.#coordinateTo.y.toString());
-    }
-
-    this.#connector.setAttribute('stroke-width', '2');
-
-    if (this.#toEntryDimentions && this.#entryFromVisible && !this.#entryToVisible) {
-      this.#connector.setAttribute('stroke', 'url(#fromVisibleLineGradient)');
-    } else if (this.#toEntryDimentions && this.#entryToVisible && !this.#entryFromVisible) {
-      this.#connector.setAttribute('stroke', 'url(#toVisibleLineGradient)');
-    } else {
-      const arrowColor = ThemeSupport.ThemeSupport.instance().getComputedValue('--color-text-primary');
-      this.#connector.setAttribute('stroke', arrowColor);
-    }
+    this.#setEntriesWrappersVisibility();
+    this.#setConnectorCirclesVisibility();
+    this.#setArrowConnectorStyle();
+    this.#positionConnectorLineAndCircles();
 
     this.#render();
   }
 
+  // Only draw the entry wrapper if that entry is visible
+  #setEntriesWrappersVisibility(): void {
+    if (!this.#entryFromWrapper || !this.#entryToWrapper) {
+      return;
+    }
+    this.#entryFromWrapper.style.visibility = this.#entryFromVisible ? 'visible' : 'hidden';
+    this.#entryToWrapper.style.visibility = this.#entryToVisible ? 'visible' : 'hidden';
+  }
+
+  // Draw the entry connector circles:
+  //  - The entry the arrow is connecting to is the connection source
+  //  - That entry currently is visible
+  //  - There is enough space for the connector circle
+  #setConnectorCirclesVisibility(): void {
+    if (!this.#toEntryDimensions || !this.#entryFromCirleConnector || !this.#entryToCircleConnector) {
+      return;
+    }
+    // If the user is zoomed out, the connector circles can be as large as the
+    // event itself. So if the rectangle for this entry is too small, we
+    // don't draw the circles.
+    const minWidthToDrawConnectorCircles = 8;
+    const drawFromEntryConnectorCircle = this.#entryFromVisible && !this.#arrowHidden && this.#fromEntryIsSource &&
+        this.#fromEntryDimensions.width >= minWidthToDrawConnectorCircles;
+    const drawToEntryConnectorCircle = !this.#arrowHidden && this.#entryToVisible && this.#toEntryIsSource &&
+        this.#toEntryDimensions?.width >= minWidthToDrawConnectorCircles && !this.#arrowHidden;
+
+    this.#entryFromCirleConnector.setAttribute('visibility', drawFromEntryConnectorCircle ? 'visible' : 'hidden');
+    this.#entryToCircleConnector.setAttribute('visibility', drawToEntryConnectorCircle ? 'visible' : 'hidden');
+  }
+
+  #setArrowConnectorStyle(): void {
+    if (!this.#connector) {
+      return;
+    }
+
+    // If neither entry is visible, do not display the connector
+    this.#connector.style.display = (this.#entryFromVisible || this.#entryToVisible) ? 'block' : 'none';
+    this.#connector.setAttribute('stroke-width', '2');
+
+    const arrowColor = ThemeSupport.ThemeSupport.instance().getComputedValue('--color-text-primary');
+
+    // Use a solid stroke if the 'to' entry's dimensions are unknown (during link creation) or if both entries are visible.
+    if (!this.#toEntryDimensions || (this.#entryFromVisible && this.#entryToVisible)) {
+      this.#connector.setAttribute('stroke', arrowColor);
+      return;
+    }
+
+    // If one entry is not visible and one is, fade the arrow.
+    if (this.#entryFromVisible && !this.#entryToVisible) {
+      this.#connector.setAttribute('stroke', 'url(#fromVisibleLineGradient)');
+    } else if (this.#entryToVisible && !this.#entryFromVisible) {
+      this.#connector.setAttribute('stroke', 'url(#toVisibleLineGradient)');
+    }
+  }
+
+  #positionConnectorLineAndCircles(): void {
+    if (!this.#connector || !this.#entryFromCirleConnector || !this.#entryToCircleConnector) {
+      return;
+    }
+
+    // If the entry is visible, the entry arrow starts from the middle of the right edge of the entry (end on the X axis and middle of the Y axis).
+    // If not, draw it to the y coordinate of the entry and the edge of the timeline so it is pointing in the direction of the entry.
+    const halfFromEntryHeight = this.#fromEntryDimensions.height / 2;
+    const fromX = this.#coordinateFrom.x + this.#fromEntryDimensions.width;
+    const fromY = this.#coordinateFrom.y + halfFromEntryHeight;
+
+    this.#connector.setAttribute('x1', fromX.toString());
+    this.#connector.setAttribute('y1', fromY.toString());
+
+    this.#entryFromCirleConnector.setAttribute('cx', fromX.toString());
+    this.#entryFromCirleConnector.setAttribute('cy', fromY.toString());
+
+    // If the arrow is pointing to the entry and that entry is visible, point it to the middle of the entry.
+    // If the entry is not visible, point the arrow to the edge of the screen towards the entry.
+    // Otherwise, the arrow is following the mouse so we assign it to the provided coordinates.
+    const toX = this.#coordinateTo.x;
+    const toY = this.#toEntryDimensions ? this.#coordinateTo.y + (this.#toEntryDimensions?.height ?? 0) / 2 :
+                                          this.#coordinateTo.y;
+
+    this.#connector.setAttribute('x2', toX.toString());
+    this.#connector.setAttribute('y2', toY.toString());
+
+    this.#entryToCircleConnector.setAttribute('cx', toX.toString());
+    this.#entryToCircleConnector.setAttribute('cy', toY.toString());
+  }
+
   /*
-   * When only one entry from the connection is visible, the connection
-   * line becomes a gradient from the visible entry to the edge of
-   * the screen towards the entry that is not visible.
+   * Calculates the gradient stop percentage when only one entry is visible.
+   * This percentage represents the portion of the line visible within the canvas,
+   * used to create a fade effect towards the off-screen entry.
+   * When one entry is off-screen, it is impossible to tell where exactly the line
+   * is going to. Therefore, to not needlessly take space, the faded line is very short.
    *
    * To achieve this, we need to calculate what percentage of the
-   * visible screen the connection is currently occupying and apply
+   * shole connection the short line is currently occupying and apply
    * that gradient to the visible connection part.
    */
   #partlyVisibleConnectionLinePercentage(): number {
     if (!this.#canvasRect) {
       return 100;
     }
+    const fadedLineLength = 25;
 
-    const lineLength = this.#coordinateTo.x - (this.#coordinateFrom.x + this.#fromEntryDimentions.width);
-    let visibleLineLength = 0;
-
-    // If the visible entry is the 'From' entry, find the length of the visible arrow by
-    // substracting the point where the arrow starts from the whole canvas length.
-    // If the 'to' entry is visible, the coordinate of the entry will be equal to
-    // the visible arrow length.
-    if (this.#entryFromVisible && !this.#entryToVisible) {
-      visibleLineLength = this.#canvasRect.width - (this.#coordinateFrom.x + this.#fromEntryDimentions.width);
-    } else if (!this.#entryFromVisible && this.#entryToVisible) {
-      visibleLineLength = this.#coordinateTo.x;
-    }
-
-    const visibleLineFromTotalPercentage = (visibleLineLength * 100) / lineLength;
+    const lineLength = this.#coordinateTo.x - (this.#coordinateFrom.x + this.#fromEntryDimensions.width);
+    const visibleLineFromTotalPercentage = (fadedLineLength * 100) / lineLength;
 
     return (visibleLineFromTotalPercentage < 100) ? visibleLineFromTotalPercentage : 100;
   }
@@ -284,7 +303,7 @@ export class EntriesLinkOverlay extends HTMLElement {
       return;
     }
 
-    createLinkIcon.style.left = `${this.#coordinateFrom.x + this.#fromEntryDimentions.width}px`;
+    createLinkIcon.style.left = `${this.#coordinateFrom.x + this.#fromEntryDimensions.width}px`;
     createLinkIcon.style.top = `${this.#coordinateFrom.y}px`;
   }
 
@@ -306,8 +325,9 @@ export class EntriesLinkOverlay extends HTMLElement {
   #render(): void {
     const arrowColor = ThemeSupport.ThemeSupport.instance().getComputedValue('--color-text-primary');
     // clang-format off
-    LitHtml.render(
+    render(
         html`
+          <style>${entriesLinkOverlayStyles}</style>
           <svg class="connectorContainer" width="100%" height="100%" role="region" aria-label=${i18nString(UIStrings.diagram)}>
             <defs>
               <linearGradient
@@ -343,7 +363,7 @@ export class EntriesLinkOverlay extends HTMLElement {
                 fill-opacity="1"
                 refX="4"
                 refY="2"
-                visibility=${this.#entryToVisible || !this.#toEntryDimentions ? 'visible' : 'hidden'}>
+                visibility=${this.#entryToVisible || !this.#toEntryDimensions ? 'visible' : 'hidden'}>
                 <path d="M0,0 V4 L4,2 Z" fill=${arrowColor} />
               </marker>
             </defs>

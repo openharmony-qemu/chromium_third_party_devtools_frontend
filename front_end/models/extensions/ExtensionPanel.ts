@@ -27,6 +27,9 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+/* eslint-disable rulesdir/no-imperative-dom-api */
+
+import '../../ui/legacy/legacy.js';
 
 import type * as Platform from '../../core/platform/platform.js';
 import * as _ProtocolClient from '../../core/protocol_client/protocol_client.js';  // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -48,7 +51,7 @@ export class ExtensionPanel extends UI.Panel.Panel implements UI.SearchableView.
     this.server = server;
     this.id = id;
     this.setHideOnDetach();
-    this.panelToolbar = new UI.Toolbar.Toolbar('hidden', this.element);
+    this.panelToolbar = this.element.createChild('devtools-toolbar', 'hidden');
 
     this.searchableViewInternal = new UI.SearchableView.SearchableView(this, null);
     this.searchableViewInternal.show(this.element);
@@ -58,7 +61,7 @@ export class ExtensionPanel extends UI.Panel.Panel implements UI.SearchableView.
   }
 
   addToolbarItem(item: UI.Toolbar.ToolbarItem): void {
-    this.panelToolbar.element.classList.remove('hidden');
+    this.panelToolbar.classList.remove('hidden');
     this.panelToolbar.appendToolbarItem(item);
   }
 
@@ -217,7 +220,7 @@ export class ExtensionSidebarPane extends UI.View.SimpleView {
         callback();
         return;
       }
-      const firstChild = result.tree && result.tree.firstChild();
+      const firstChild = result.tree?.firstChild();
       if (firstChild) {
         firstChild.expand();
       }

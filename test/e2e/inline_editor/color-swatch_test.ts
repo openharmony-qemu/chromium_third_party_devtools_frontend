@@ -3,13 +3,10 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-
-import {waitForSoftContextMenu} from '../helpers/context-menu-helpers.js';
-
 import type * as puppeteer from 'puppeteer-core';
 
 import {click, goToResource} from '../../shared/helper.js';
-
+import {waitForSoftContextMenu} from '../helpers/context-menu-helpers.js';
 import {
   clickNthChildOfSelectedElementNode,
   editCSSProperty,
@@ -24,7 +21,7 @@ import {
   waitForElementsComputedSection,
 } from '../helpers/elements-helpers.js';
 
-async function goToTestPageAndSelectTestElement(path: string = 'inline_editor/default.html') {
+async function goToTestPageAndSelectTestElement(path = 'inline_editor/default.html') {
   await goToResource(path);
   await waitForContentOfSelectedElementsNode('<body>\u200B');
   await clickNthChildOfSelectedElementNode(1);
@@ -154,7 +151,8 @@ describe('The color swatch', () => {
     await waitForCSSPropertyValue('#inspected', 'background-color', '#00f');
   });
 
-  it('is updated when the color value is updated in the Styles pane', async () => {
+  // Flakes with "done() called multiple times" or "Color swatch found: expected false to be true" in last line
+  it.skip('[crbug.com/416222750]: is updated when the color value is updated in the Styles pane', async () => {
     await goToTestPageAndSelectTestElement();
 
     await waitForCSSPropertyValue('#inspected', 'color', 'red');

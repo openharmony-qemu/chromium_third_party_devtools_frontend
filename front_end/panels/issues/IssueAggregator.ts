@@ -3,12 +3,12 @@
 // found in the LICENSE file.
 
 import * as Common from '../../core/common/common.js';
-import * as Protocol from '../../generated/protocol.js';
+import type * as Protocol from '../../generated/protocol.js';
 import * as IssuesManager from '../../models/issues_manager/issues_manager.js';
 
-type AggregationKeyTag = {
-  aggregationKeyTag: undefined,
-};
+interface AggregationKeyTag {
+  aggregationKeyTag: undefined;
+}
 
 /**
  * An opaque type for the key which we use to aggregate issues. The key must be
@@ -30,7 +30,8 @@ export class AggregatedIssue extends IssuesManager.Issue.Issue {
     hasRequest: boolean,
   }>();
   #affectedRawCookieLines = new Map<string, {rawCookieLine: string, hasRequest: boolean}>();
-  #affectedRequests = new Map<string, Protocol.Audits.AffectedRequest>();
+  #affectedRequests: Protocol.Audits.AffectedRequest[] = [];
+  #affectedRequestIds = new Set<Protocol.Network.RequestId>();
   #affectedLocations = new Map<string, Protocol.Audits.SourceCodeLocation>();
   #heavyAdIssues = new Set<IssuesManager.HeavyAdIssue.HeavyAdIssue>();
   #blockedByResponseDetails = new Map<string, Protocol.Audits.BlockedByResponseIssueDetails>();
@@ -43,10 +44,13 @@ export class AggregatedIssue extends IssuesManager.Issue.Issue {
   #cookieDeprecationMetadataIssues =
       new Set<IssuesManager.CookieDeprecationMetadataIssue.CookieDeprecationMetadataIssue>();
   #mixedContentIssues = new Set<IssuesManager.MixedContentIssue.MixedContentIssue>();
+  #partitioningBlobURLIssues = new Set<IssuesManager.PartitioningBlobURLIssue.PartitioningBlobURLIssue>();
   #sharedArrayBufferIssues = new Set<IssuesManager.SharedArrayBufferIssue.SharedArrayBufferIssue>();
   #quirksModeIssues = new Set<IssuesManager.QuirksModeIssue.QuirksModeIssue>();
   #attributionReportingIssues = new Set<IssuesManager.AttributionReportingIssue.AttributionReportingIssue>();
   #genericIssues = new Set<IssuesManager.GenericIssue.GenericIssue>();
+  #selectElementAccessibilityIssues =
+      new Set<IssuesManager.SelectElementAccessibilityIssue.SelectElementAccessibilityIssue>();
   #representative?: IssuesManager.Issue.Issue;
   #aggregatedIssuesCount = 0;
   #key: AggregationKey;
@@ -140,6 +144,11 @@ export class AggregatedIssue extends IssuesManager.Issue.Issue {
     return this.#genericIssues;
   }
 
+  getSelectElementAccessibilityIssues():
+      Iterable<IssuesManager.SelectElementAccessibilityIssue.SelectElementAccessibilityIssue> {
+    return this.#selectElementAccessibilityIssues;
+  }
+
   getDescription(): IssuesManager.MarkdownIssueDescription.MarkdownIssueDescription|null {
     if (this.#representative) {
       return this.#representative.getDescription();
@@ -156,6 +165,10 @@ export class AggregatedIssue extends IssuesManager.Issue.Issue {
 
   getAggregatedIssuesCount(): number {
     return this.#aggregatedIssuesCount;
+  }
+
+  getPartitioningBlobURLIssues(): Iterable<IssuesManager.PartitioningBlobURLIssue.PartitioningBlobURLIssue> {
+    return this.#partitioningBlobURLIssues;
   }
 
   /**
@@ -175,9 +188,13 @@ export class AggregatedIssue extends IssuesManager.Issue.Issue {
     this.#issueKind = IssuesManager.Issue.unionIssueKind(this.#issueKind, issue.getKind());
     let hasRequest = false;
     for (const request of issue.requests()) {
+      const {requestId} = request;
       hasRequest = true;
-      if (!this.#affectedRequests.has(request.requestId)) {
-        this.#affectedRequests.set(request.requestId, request);
+      if (requestId === undefined) {
+        this.#affectedRequests.push(request);
+      } else if (!this.#affectedRequestIds.has(requestId)) {
+        this.#affectedRequests.push(request);
+        this.#affectedRequestIds.add(requestId);
       }
     }
     for (const cookie of issue.cookies()) {
@@ -239,6 +256,12 @@ export class AggregatedIssue extends IssuesManager.Issue.Issue {
     if (issue instanceof IssuesManager.GenericIssue.GenericIssue) {
       this.#genericIssues.add(issue);
     }
+    if (issue instanceof IssuesManager.SelectElementAccessibilityIssue.SelectElementAccessibilityIssue) {
+      this.#selectElementAccessibilityIssues.add(issue);
+    }
+    if (issue instanceof IssuesManager.PartitioningBlobURLIssue.PartitioningBlobURLIssue) {
+      this.#partitioningBlobURLIssues.add(issue);
+    }
   }
 
   getKind(): IssuesManager.Issue.IssueKind {
@@ -281,12 +304,7 @@ export class IssueAggregator extends Common.ObjectWrapper.ObjectWrapper<EventTyp
   }
 
   #aggregateIssue(issue: IssuesManager.Issue.Issue): AggregatedIssue|undefined {
-    const excludeFromAggregate = [
-      Protocol.Audits.CookieWarningReason.WarnThirdPartyCookieHeuristic,
-      Protocol.Audits.CookieWarningReason.WarnDeprecationTrialMetadata,
-    ];
-
-    if (excludeFromAggregate.some(exclude => issue.code().includes(exclude))) {
+    if (IssuesManager.CookieIssue.CookieIssue.isThirdPartyCookiePhaseoutRelatedIssue(issue)) {
       return;
     }
 
@@ -354,7 +372,7 @@ export const enum Events {
   FULL_UPDATE_REQUIRED = 'FullUpdateRequired',
 }
 
-export type EventTypes = {
-  [Events.AGGREGATED_ISSUE_UPDATED]: AggregatedIssue,
-  [Events.FULL_UPDATE_REQUIRED]: void,
-};
+export interface EventTypes {
+  [Events.AGGREGATED_ISSUE_UPDATED]: AggregatedIssue;
+  [Events.FULL_UPDATE_REQUIRED]: void;
+}

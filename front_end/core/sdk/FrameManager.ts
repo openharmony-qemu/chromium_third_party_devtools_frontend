@@ -35,7 +35,7 @@ export class FrameManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes>
     creationStackTrace?: Protocol.Runtime.StackTrace,
     creationStackTraceTarget?: Target,
   }>();
-  #awaitedFrames: Map<string, {notInTarget?: Target, resolve: (frame: ResourceTreeFrame) => void}[]> = new Map();
+  #awaitedFrames = new Map<string, Array<{resolve: (frame: ResourceTreeFrame) => void, notInTarget?: Target}>>();
 
   constructor() {
     super();
@@ -207,7 +207,7 @@ export class FrameManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes>
     if (frame && (!notInTarget || notInTarget !== frame.resourceTreeModel().target())) {
       return frame;
     }
-    return new Promise<ResourceTreeFrame>(resolve => {
+    return await new Promise<ResourceTreeFrame>(resolve => {
       const waiting = this.#awaitedFrames.get(frameId);
       if (waiting) {
         waiting.push({notInTarget, resolve});
@@ -250,10 +250,10 @@ export const enum Events {
   OUTERMOST_FRAME_NAVIGATED = 'OutermostFrameNavigated',
 }
 
-export type EventTypes = {
-  [Events.FRAME_ADDED_TO_TARGET]: {frame: ResourceTreeFrame},
-  [Events.FRAME_NAVIGATED]: {frame: ResourceTreeFrame},
-  [Events.FRAME_REMOVED]: {frameId: Protocol.Page.FrameId},
-  [Events.RESOURCE_ADDED]: {resource: Resource},
-  [Events.OUTERMOST_FRAME_NAVIGATED]: {frame: ResourceTreeFrame},
-};
+export interface EventTypes {
+  [Events.FRAME_ADDED_TO_TARGET]: {frame: ResourceTreeFrame};
+  [Events.FRAME_NAVIGATED]: {frame: ResourceTreeFrame};
+  [Events.FRAME_REMOVED]: {frameId: Protocol.Page.FrameId};
+  [Events.RESOURCE_ADDED]: {resource: Resource};
+  [Events.OUTERMOST_FRAME_NAVIGATED]: {frame: ResourceTreeFrame};
+}

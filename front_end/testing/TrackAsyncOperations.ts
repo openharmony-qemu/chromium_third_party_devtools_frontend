@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-type AsyncActivity = {
-  pending: boolean,
-  cancelDelayed?: () => void,
-  id?: string,
-  runImmediate?: () => void,
-  stack?: string,
-  promise?: Promise<unknown>,
-};
+interface AsyncActivity {
+  pending: boolean;
+  cancelDelayed?: () => void;
+  id?: string;
+  runImmediate?: () => void;
+  stack?: string;
+  promise?: Promise<unknown>;
+}
 
 const asyncActivity: AsyncActivity[] = [];
 
@@ -17,8 +17,8 @@ export function startTrackingAsyncActivity() {
   // We are tracking all asynchronous activity but let it run normally during
   // the test.
   stub('requestAnimationFrame', trackingRequestAnimationFrame);
-  stub('setTimeout', trackingSetTimeout);
-  stub('setInterval', trackingSetInterval);
+  stub('setTimeout', trackingSetTimeout as unknown as typeof setTimeout);
+  stub('setInterval', trackingSetInterval as unknown as typeof setInterval);
   stub('requestIdleCallback', trackingRequestIdleCallback);
   stub('cancelAnimationFrame', id => cancelTrackingActivity('a' + id));
   stub('clearTimeout', id => cancelTrackingActivity('t' + id));
@@ -66,7 +66,7 @@ export async function checkForPendingActivity() {
         break;
       }
       --retries;
-    } catch (e) {
+    } catch {
       stillPending = asyncActivity.filter(a => a.pending);
       const newTotalCount = asyncActivity.length;
       // Something is still pending. It might get resolved by force completion
@@ -135,7 +135,7 @@ function trackingSetTimeout(arg: TimerHandler, time?: number, ...params: unknown
   const activity: AsyncActivity = {
     pending: true,
   };
-  let id = 0;
+  let id: ReturnType<typeof setTimeout>|undefined;
   activity.promise = new (original(Promise<void>))(resolve => {
     activity.runImmediate = () => {
       if (typeof (arg) === 'function') {
@@ -197,6 +197,7 @@ const BasePromise: Omit<PromiseConstructor, UntrackedPromiseMethod> = {
   reject: Promise.reject,
   resolve: Promise.resolve,
   withResolvers: Promise.withResolvers,
+  try: Promise.try,
 };
 
 // We can't subclass native Promise here as this will cause all derived promises
@@ -245,15 +246,15 @@ function getStack(error: Error): string {
   return (error.stack ?? 'No stack').split('\n').slice(2).join('\n');
 }
 
-// We can't use Sinon for stubbing as 1) we need to double wrap somtimes and 2)
+// We can't use Sinon for stubbing as 1) we need to double wrap sometimes and 2)
 // we need to access original values.
-type Stub<TKey extends keyof typeof window> = {
-  name: TKey,
-  original: (typeof window)[TKey],
-  stubWith: (typeof window)[TKey],
-};
+interface Stub<TKey extends keyof typeof window> {
+  name: TKey;
+  original: (typeof window)[TKey];
+  stubWith: (typeof window)[TKey];
+}
 
-const stubs: Stub<keyof typeof window>[] = [];
+const stubs: Array<Stub<keyof typeof window>> = [];
 
 function stub<T extends keyof typeof window>(name: T, stubWith: (typeof window)[T]) {
   const original = window[name];

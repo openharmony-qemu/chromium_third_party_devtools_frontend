@@ -1,6 +1,9 @@
 // Copyright 2020 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-imperative-dom-api */
+
+import '../../ui/legacy/legacy.js';
 
 import type * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
@@ -67,7 +70,7 @@ const UIStrings = {
    *@description The label for a root cause error associated with this error.
    */
   errorCauseLabel: 'Caused by:',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/media/PlayerMessagesView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
@@ -96,7 +99,6 @@ class MessageLevelSelector implements UI.SoftDropDown.Delegate<SelectableLevel> 
   private readonly itemMap: Map<number, SelectableLevel>;
   private hiddenLevels: string[];
   private bitFieldValue: MessageLevelBitfield;
-  private readonly savedBitFieldValue: MessageLevelBitfield;
   private readonly defaultTitleInternal: Common.UIString.LocalizedString;
   private readonly customTitle: Common.UIString.LocalizedString;
   private readonly allTitle: Common.UIString.LocalizedString;
@@ -110,7 +112,6 @@ class MessageLevelSelector implements UI.SoftDropDown.Delegate<SelectableLevel> 
     this.hiddenLevels = [];
 
     this.bitFieldValue = MessageLevelBitfield.DEFAULT;
-    this.savedBitFieldValue = MessageLevelBitfield.DEFAULT;
 
     this.defaultTitleInternal = i18nString(UIStrings.default);
     this.customTitle = i18nString(UIStrings.custom);
@@ -181,8 +182,8 @@ class MessageLevelSelector implements UI.SoftDropDown.Delegate<SelectableLevel> 
     this.hiddenLevels = [];
     for (const [key, item] of this.itemMap) {
       if (!item.overwrite) {
-        const elementForItem = this.elementsForItems.get(item as SelectableLevel);
-        if (elementForItem && elementForItem.firstChild) {
+        const elementForItem = this.elementsForItems.get(item);
+        if (elementForItem?.firstChild) {
           elementForItem.firstChild.remove();
         }
         if (elementForItem && key & this.bitFieldValue) {
@@ -221,10 +222,9 @@ class MessageLevelSelector implements UI.SoftDropDown.Delegate<SelectableLevel> 
 
   createElementForItem(item: SelectableLevel): Element {
     const element = document.createElement('div');
-    const shadowRoot = UI.UIUtils.createShadowRootWithCoreStyles(
-        element, {cssFile: [playerMessagesViewStyles], delegatesFocus: undefined});
+    const shadowRoot = UI.UIUtils.createShadowRootWithCoreStyles(element, {cssFile: playerMessagesViewStyles});
     const container = shadowRoot.createChild('div', 'media-messages-level-dropdown-element');
-    const checkBox = container.createChild('div', 'media-messages-level-dropdown-checkbox') as HTMLElement;
+    const checkBox = container.createChild('div', 'media-messages-level-dropdown-checkbox');
     const text = container.createChild('span', 'media-messages-level-dropdown-text');
     UI.UIUtils.createTextChild(text, item.title);
     this.elementsForItems.set(item, checkBox);
@@ -256,6 +256,7 @@ export class PlayerMessagesView extends UI.Widget.VBox {
 
   constructor() {
     super();
+    this.registerRequiredCSS(playerMessagesViewStyles);
 
     this.element.setAttribute('jslog', `${VisualLogging.pane('messages')}`);
 
@@ -266,7 +267,7 @@ export class PlayerMessagesView extends UI.Widget.VBox {
   }
 
   private buildToolbar(): void {
-    const toolbar = new UI.Toolbar.Toolbar('media-messages-toolbar', this.headerPanel);
+    const toolbar = this.headerPanel.createChild('devtools-toolbar', 'media-messages-toolbar');
     toolbar.appendText(i18nString(UIStrings.logLevel));
     toolbar.appendToolbarItem(this.createDropdown());
     toolbar.appendSeparator();
@@ -328,7 +329,7 @@ export class PlayerMessagesView extends UI.Widget.VBox {
     for (const message of messages) {
       if (userString === '') {
         message.classList.remove('media-messages-message-filtered');
-      } else if (message.textContent && message.textContent.includes(userString)) {
+      } else if (message.textContent?.includes(userString)) {
         message.classList.remove('media-messages-message-filtered');
       } else {
         message.classList.add('media-messages-message-filtered');
@@ -396,10 +397,5 @@ export class PlayerMessagesView extends UI.Widget.VBox {
   addError(error: Protocol.Media.PlayerError): void {
     const container = this.bodyPanel.createChild('div', 'media-messages-message-container media-message-error');
     container.appendChild(this.errorToDiv(error));
-  }
-
-  override wasShown(): void {
-    super.wasShown();
-    this.registerCSSFiles([playerMessagesViewStyles]);
   }
 }

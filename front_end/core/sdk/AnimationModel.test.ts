@@ -129,7 +129,7 @@ describeWithMockConnection('AnimationModel', () => {
            },
          });
          assert.strictEqual(animationImpl.name(), 'animation-name');
-         assert.strictEqual(animationImpl.paused(), false);
+         assert.isFalse(animationImpl.paused());
          assert.strictEqual(animationImpl.playState(), 'running');
          assert.strictEqual(animationImpl.playbackRate(), 1);
          assert.strictEqual(animationImpl.startTime(), 0);
@@ -160,7 +160,7 @@ describeWithMockConnection('AnimationModel', () => {
          });
 
          assert.strictEqual(animationImpl.name(), 'updated-name');
-         assert.strictEqual(animationImpl.paused(), true);
+         assert.isTrue(animationImpl.paused());
          assert.strictEqual(animationImpl.playState(), 'paused');
          assert.strictEqual(animationImpl.playbackRate(), 2);
          assert.strictEqual(animationImpl.startTime(), 100);
@@ -209,7 +209,7 @@ describeWithMockConnection('AnimationModel', () => {
            },
          });
          assert.strictEqual(animationImpl.name(), 'animation-name');
-         assert.strictEqual(animationImpl.paused(), false);
+         assert.isFalse(animationImpl.paused());
          assert.strictEqual(animationImpl.playState(), 'running');
          assert.strictEqual(animationImpl.playbackRate(), 1);
          assert.strictEqual(animationImpl.startTime(), 100);  // in pixels
@@ -245,7 +245,7 @@ describeWithMockConnection('AnimationModel', () => {
          });
 
          assert.strictEqual(animationImpl.name(), 'updated-name');
-         assert.strictEqual(animationImpl.paused(), true);
+         assert.isTrue(animationImpl.paused());
          assert.strictEqual(animationImpl.playState(), 'paused');
          assert.strictEqual(animationImpl.playbackRate(), 2);
          assert.strictEqual(animationImpl.startTime(), 0);           // in pixels
@@ -253,5 +253,29 @@ describeWithMockConnection('AnimationModel', () => {
          assert.strictEqual(animationImpl.iterationDuration(), 20);  // in pixels
          assert.strictEqual(animationImpl.delayOrStartTime(), 0);    // in pixels
        });
+  });
+
+  describe('ScreenshotCapture', () => {
+    let mockAnimationModel: SDK.AnimationModel.AnimationModel;
+    let mockScreenCaptureModel: SDK.ScreenCaptureModel.ScreenCaptureModel;
+    let startScreencastStub:
+        sinon.SinonStub<Parameters<typeof SDK.ScreenCaptureModel.ScreenCaptureModel.prototype.startScreencast>>;
+
+    beforeEach(() => {
+      startScreencastStub = sinon.stub();
+      mockAnimationModel = sinon.createStubInstance(SDK.AnimationModel.AnimationModel);
+      mockScreenCaptureModel = sinon.createStubInstance(SDK.ScreenCaptureModel.ScreenCaptureModel, {
+        startScreencast: startScreencastStub,
+      });
+    });
+
+    it('should call `screenCaptureModel.startScreencast` on `captureScreenshots` call', async () => {
+      const screenshotCapture = new SDK.AnimationModel.ScreenshotCapture(mockAnimationModel, mockScreenCaptureModel);
+
+      await screenshotCapture.captureScreenshots(100, []);
+      await screenshotCapture.captureScreenshots(100, []);
+
+      sinon.assert.calledOnce(startScreencastStub);
+    });
   });
 });

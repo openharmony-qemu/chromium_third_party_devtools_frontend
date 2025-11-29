@@ -4,26 +4,34 @@
 
 import type * as Protocol from '../../../generated/protocol.js';
 import * as Helpers from '../helpers/helpers.js';
+import {SamplesIntegrator} from '../helpers/SamplesIntegrator.js';
 import * as Types from '../types/types.js';
 
-import {TimelineJSProfileProcessor} from './TimelineJSProfile.js';
 import type {TraceFilter} from './TraceFilter.js';
 
 export class Node {
   totalTime: number;
   selfTime: number;
+  transferSize: number;
   id: string|symbol;
-  event: Types.Events.Event|null;
+  /** The first trace event encountered that necessitated the creation of this tree node. */
+  event: Types.Events.Event;
+  /** All of the trace events associated with this aggregate node.
+   * Minor: In the case of Event Log (EventsTimelineTreeView), the node is not aggregate and this will only hold 1 event, the same that's in this.event
+   */
+  events: Types.Events.Event[];
   parent!: Node|null;
   groupId: string;
   isGroupNodeInternal: boolean;
   depth: number;
 
-  constructor(id: string|symbol, event: Types.Events.Event|null) {
+  constructor(id: string|symbol, event: Types.Events.Event) {
     this.totalTime = 0;
     this.selfTime = 0;
+    this.transferSize = 0;
     this.id = id;
     this.event = event;
+    this.events = [event];
 
     this.groupId = '';
     this.isGroupNodeInternal = false;
@@ -35,18 +43,18 @@ export class Node {
   }
 
   hasChildren(): boolean {
-    throw 'Not implemented';
+    throw new Error('Not implemented');
   }
 
   setHasChildren(_value: boolean): void {
-    throw 'Not implemented';
+    throw new Error('Not implemented');
   }
   /**
    * Returns the direct descendants of this node.
    * @returns a map with ordered <nodeId, Node> tuples.
    */
   children(): ChildrenCache {
-    throw 'Not implemented';
+    throw new Error('Not implemented');
   }
 
   searchTree(matchFunction: (arg0: Types.Events.Event) => boolean, results?: Node[]): Node[] {
@@ -67,9 +75,9 @@ export class TopDownNode extends Node {
   childrenInternal: ChildrenCache|null;
   override parent: TopDownNode|null;
 
-  constructor(id: string|symbol, event: Types.Events.Event|null, parent: TopDownNode|null) {
+  constructor(id: string|symbol, event: Types.Events.Event, parent: TopDownNode|null) {
     super(id, event);
-    this.root = parent && parent.root;
+    this.root = parent?.root ?? null;
     this.hasChildrenInternal = false;
     this.childrenInternal = null;
     this.parent = parent;
@@ -90,8 +98,8 @@ export class TopDownNode extends Node {
   private buildChildren(): ChildrenCache {
     // Tracks the ancestor path of this node, includes the current node.
     const path: TopDownNode[] = [];
-    for (let node: TopDownNode = (this as TopDownNode); node.parent && !node.isGroupNode(); node = node.parent) {
-      path.push((node as TopDownNode));
+    for (let node: TopDownNode = this; node.parent && !node.isGroupNode(); node = node.parent) {
+      path.push((node));
     }
     path.reverse();
     const children: ChildrenCache = new Map();
@@ -119,8 +127,8 @@ export class TopDownNode extends Node {
           onStartEvent,
           onEndEvent,
           onInstantEvent: instantEventCallback,
-          startTime: Helpers.Timing.millisecondsToMicroseconds(startTime),
-          endTime: Helpers.Timing.millisecondsToMicroseconds(endTime),
+          startTime: Helpers.Timing.milliToMicro(startTime),
+          endTime: Helpers.Timing.milliToMicro(endTime),
           eventFilter: root.filter,
           ignoreAsyncEvents: false,
         },
@@ -180,9 +188,14 @@ export class TopDownNode extends Node {
         node = new TopDownNode(id, e, self);
         node.groupId = groupId;
         children.set(id, node);
+      } else {
+        node.events.push(e);
       }
       node.selfTime += duration;
       node.totalTime += duration;
+      if (Types.Events.isReceivedDataEvent(e)) {
+        node.transferSize += e.args.data.encodedDataLength;
+      }
       currentDirectChild = node;
     }
 
@@ -238,10 +251,8 @@ export class TopDownNode extends Node {
 
 export class TopDownRootNode extends TopDownNode {
   readonly filter: (e: Types.Events.Event) => boolean;
-  /** This is all events passed in to create the tree, and it's very likely that it included events outside of the passed startTime/endTime as that filtering is done in `Helpers.Trace.forEachEvent` */
-  readonly events: Types.Events.Event[];
-  readonly startTime: Types.Timing.MilliSeconds;
-  readonly endTime: Types.Timing.MilliSeconds;
+  readonly startTime: Types.Timing.Milli;
+  readonly endTime: Types.Timing.Milli;
   eventGroupIdCallback: ((arg0: Types.Events.Event) => string)|null|undefined;
   /** Default behavior is to aggregate similar trace events into one Node based on generateEventID(), eventGroupIdCallback(), etc. Set true to keep nodes 1:1 with events. */
   readonly doNotAggregate: boolean|undefined;
@@ -250,10 +261,17 @@ export class TopDownRootNode extends TopDownNode {
   override selfTime: number;
 
   constructor(
-      events: Types.Events.Event[], filters: TraceFilter[], startTime: Types.Timing.MilliSeconds,
-      endTime: Types.Timing.MilliSeconds, doNotAggregate?: boolean,
-      eventGroupIdCallback?: ((arg0: Types.Events.Event) => string)|null, includeInstantEvents?: boolean) {
-    super('', null, null);
+      events: Types.Events.Event[],
+      {filters, startTime, endTime, doNotAggregate, eventGroupIdCallback, includeInstantEvents}: {
+        filters: TraceFilter[],
+        startTime: Types.Timing.Milli,
+        endTime: Types.Timing.Milli,
+        doNotAggregate?: boolean,
+        eventGroupIdCallback?: ((arg0: Types.Events.Event) => string)|null,
+        includeInstantEvents?: boolean,
+      }) {
+    super('', events[0], null);
+    this.event = events[0];
     this.root = this;
     this.events = events;
     this.filter = (e: Types.Events.Event): boolean => filters.every(f => f.accept(e));
@@ -266,8 +284,8 @@ export class TopDownRootNode extends TopDownNode {
     this.totalTime = endTime - startTime;
     this.selfTime = this.totalTime;
   }
-
   override children(): ChildrenCache {
+    // FYI tree nodes are built lazily. https://codereview.chromium.org/2674283003
     return this.childrenInternal || this.grouppedTopNodes();
   }
 
@@ -281,16 +299,15 @@ export class TopDownRootNode extends TopDownNode {
     }
     const groupNodes = new Map<string, GroupNode>();
     for (const node of flatNodes.values()) {
-      if (!node.event) {
-        continue;
-      }
       const groupId = this.eventGroupIdCallback(node.event);
       let groupNode = groupNodes.get(groupId);
       if (!groupNode) {
-        groupNode = new GroupNode(groupId, this, node.event);
+        groupNode = new GroupNode(groupId, this, node.events);
         groupNodes.set(groupId, groupNode);
+      } else {
+        groupNode.events.push(...node.events);
       }
-      groupNode.addChild(node as BottomUpNode, node.selfTime, node.totalTime);
+      groupNode.addChild(node as BottomUpNode, node.selfTime, node.totalTime, node.transferSize);
     }
     this.childrenInternal = groupNodes;
     return groupNodes;
@@ -303,19 +320,43 @@ export class TopDownRootNode extends TopDownNode {
 
 export class BottomUpRootNode extends Node {
   private childrenInternal: ChildrenCache|null;
-  readonly events: Types.Events.Event[];
   private textFilter: TraceFilter;
   readonly filter: (e: Types.Events.Event) => boolean;
-  readonly startTime: Types.Timing.MilliSeconds;
-  readonly endTime: Types.Timing.MilliSeconds;
-  private eventGroupIdCallback: ((arg0: Types.Events.Event) => string)|null;
+  readonly startTime: Types.Timing.Milli;
+  readonly endTime: Types.Timing.Milli;
   override totalTime: number;
+  eventGroupIdCallback: ((arg0: Types.Events.Event) => string)|null|undefined;
+  private calculateTransferSize?: boolean;
+  private forceGroupIdCallback?: boolean;
 
-  constructor(
-      events: Types.Events.Event[], textFilter: TraceFilter, filters: TraceFilter[],
-      startTime: Types.Timing.MilliSeconds, endTime: Types.Timing.MilliSeconds,
-      eventGroupIdCallback: ((arg0: Types.Events.Event) => string)|null) {
-    super('', null);
+  constructor(events: Types.Events.Event[], {
+    textFilter,
+    filters,
+    startTime,
+    endTime,
+    eventGroupIdCallback,
+    calculateTransferSize,
+    forceGroupIdCallback,
+  }: {
+    textFilter: TraceFilter,
+    filters: readonly TraceFilter[],
+    startTime: Types.Timing.Milli,
+    endTime: Types.Timing.Milli,
+    eventGroupIdCallback?: ((arg0: Types.Events.Event) => string)|null,
+    calculateTransferSize?: boolean,
+    /**
+     * This forces using `eventGroupIdCallback` in combination with generateEventID
+     * to generate the ID of the node.
+     *
+     * This is used in the ThirdPartyTreeView and BottomUpTreeView, where we want to group all events
+     * related to a specific 3P entity together, regardless of the specific event name/type.
+     * There are cases where events under the same event name belong to different entities. But, because
+     * they get grouped first by event name/type, it throws off the 3P groupBy - grouping events of different
+     * 3P entities together.
+     */
+    forceGroupIdCallback?: boolean,
+  }) {
+    super('', events[0]);
     this.childrenInternal = null;
     this.events = events;
     this.textFilter = textFilter;
@@ -324,6 +365,8 @@ export class BottomUpRootNode extends Node {
     this.endTime = endTime;
     this.eventGroupIdCallback = eventGroupIdCallback;
     this.totalTime = endTime - startTime;
+    this.calculateTransferSize = calculateTransferSize;
+    this.forceGroupIdCallback = forceGroupIdCallback;
   }
 
   override hasChildren(): boolean {
@@ -334,20 +377,24 @@ export class BottomUpRootNode extends Node {
     for (const [id, child] of children) {
       // to provide better context to user only filter first (top) level.
       if (child.event && child.depth <= 1 && !this.textFilter.accept(child.event)) {
-        children.delete((id as string | symbol));
+        children.delete((id));
       }
     }
     return children;
   }
 
   override children(): ChildrenCache {
+    // FYI tree nodes are built lazily. https://codereview.chromium.org/2674283003
     if (!this.childrenInternal) {
       this.childrenInternal = this.filterChildren(this.grouppedTopNodes());
     }
     return this.childrenInternal;
   }
 
-  private ungrouppedTopNodes(): ChildrenCache {
+  // If no grouping is applied, the nodes returned here are what's initially shown in the bottom-up view.
+  // "No grouping" == no grouping in UI dropdown == no groupingFunction…
+  // … HOWEVER, nodes are still aggregated via `generateEventID`, which is ~= the event name.
+  private ungroupedTopNodes(): ChildrenCache {
     const root = this;
     const startTime = this.startTime;
     const endTime = this.endTime;
@@ -355,13 +402,49 @@ export class BottomUpRootNode extends Node {
     const selfTimeStack: number[] = [endTime - startTime];
     const firstNodeStack: boolean[] = [];
     const totalTimeById = new Map<string, number>();
+    // TODO(paulirish): rename to getGroupNodeId
+    const eventGroupIdCallback = this.eventGroupIdCallback;
+    const forceGroupIdCallback = this.forceGroupIdCallback;
+
+    // encodedDataLength is provided solely on instant events.
+    const sumTransferSizeOfInstantEvent = (e: Types.Events.Event): void => {
+      if (Types.Events.isReceivedDataEvent(e)) {
+        let id = generateEventID(e);
+        if (this.forceGroupIdCallback && this.eventGroupIdCallback) {
+          id = `${id}-${this.eventGroupIdCallback(e)}`;
+        }
+        let node = nodeById.get(id);
+        if (!node) {
+          node = new BottomUpNode(root, id, e, false, root);
+          nodeById.set(id, node);
+        } else {
+          node.events.push(e);
+        }
+
+        // ResourceReceivedData events tally up the transfer size over time, but the
+        // ResourceReceiveResponse / ResourceFinish events hold the final result.
+        if (e.name === 'ResourceReceivedData') {
+          node.transferSize += e.args.data.encodedDataLength;
+        } else if (e.args.data.encodedDataLength > 0) {
+          // For some reason, ResourceFinish can be zero even if data was sent.
+          // Ignore that case.
+          // Note: this will count the entire resource size if just the last bit of a
+          // request is in view. If it isn't in view, the transfer size is counted
+          // gradually, in proportion with the ResourceReceivedData events in the
+          // current view.
+          node.transferSize = e.args.data.encodedDataLength;
+        }
+      }
+    };
+
     Helpers.Trace.forEachEvent(
         this.events,
         {
           onStartEvent,
           onEndEvent,
-          startTime: Helpers.Timing.millisecondsToMicroseconds(this.startTime),
-          endTime: Helpers.Timing.millisecondsToMicroseconds(this.endTime),
+          onInstantEvent: this.calculateTransferSize ? sumTransferSizeOfInstantEvent : undefined,
+          startTime: Helpers.Timing.milliToMicro(this.startTime),
+          endTime: Helpers.Timing.milliToMicro(this.endTime),
           eventFilter: this.filter,
           ignoreAsyncEvents: false,
         },
@@ -374,7 +457,10 @@ export class BottomUpRootNode extends Node {
       const duration = actualEndTime - Math.max(currentStartTime, startTime);
       selfTimeStack[selfTimeStack.length - 1] -= duration;
       selfTimeStack.push(duration);
-      const id = generateEventID(e);
+      let id = generateEventID(e);
+      if (forceGroupIdCallback && eventGroupIdCallback) {
+        id = `${id}-${eventGroupIdCallback(e)}`;
+      }
       const noNodeOnStack = !totalTimeById.has(id);
       if (noNodeOnStack) {
         totalTimeById.set(id, duration);
@@ -383,11 +469,16 @@ export class BottomUpRootNode extends Node {
     }
 
     function onEndEvent(event: Types.Events.Event): void {
-      const id = generateEventID(event);
+      let id = generateEventID(event);
+      if (forceGroupIdCallback && eventGroupIdCallback) {
+        id = `${id}-${eventGroupIdCallback(event)}`;
+      }
       let node = nodeById.get(id);
       if (!node) {
         node = new BottomUpNode(root, id, event, false, root);
         nodeById.set(id, node);
+      } else {
+        node.events.push(event);
       }
       node.selfTime += selfTimeStack.pop() || 0;
       if (firstNodeStack.pop()) {
@@ -400,31 +491,31 @@ export class BottomUpRootNode extends Node {
     }
 
     this.selfTime = selfTimeStack.pop() || 0;
+    // Delete any nodes that have no selfTime (or transferSize, if it's being calculated)
     for (const pair of nodeById) {
-      if (pair[1].selfTime <= 0) {
-        nodeById.delete((pair[0] as string));
+      if (pair[1].selfTime <= 0 && (!this.calculateTransferSize || pair[1].transferSize <= 0)) {
+        nodeById.delete((pair[0]));
       }
     }
     return nodeById;
   }
 
   private grouppedTopNodes(): ChildrenCache {
-    const flatNodes = this.ungrouppedTopNodes();
+    const flatNodes = this.ungroupedTopNodes();
     if (!this.eventGroupIdCallback) {
       return flatNodes;
     }
     const groupNodes = new Map<string, GroupNode>();
     for (const node of flatNodes.values()) {
-      if (!node.event) {
-        continue;
-      }
       const groupId = this.eventGroupIdCallback(node.event);
       let groupNode = groupNodes.get(groupId);
       if (!groupNode) {
-        groupNode = new GroupNode(groupId, this, node.event);
+        groupNode = new GroupNode(groupId, this, node.events);
         groupNodes.set(groupId, groupNode);
+      } else {
+        groupNode.events.push(...node.events);
       }
-      groupNode.addChild(node as BottomUpNode, node.selfTime, node.selfTime);
+      groupNode.addChild(node as BottomUpNode, node.selfTime, node.selfTime, node.transferSize);
     }
     return groupNodes;
   }
@@ -433,18 +524,21 @@ export class BottomUpRootNode extends Node {
 export class GroupNode extends Node {
   private readonly childrenInternal: ChildrenCache;
   override isGroupNodeInternal: boolean;
+  override events: Types.Events.Event[];
 
-  constructor(id: string, parent: BottomUpRootNode|TopDownRootNode, event: Types.Events.Event) {
-    super(id, event);
+  constructor(id: string, parent: BottomUpRootNode|TopDownRootNode, events: Types.Events.Event[]) {
+    super(id, events[0]);
+    this.events = events;
     this.childrenInternal = new Map();
     this.parent = parent;
     this.isGroupNodeInternal = true;
   }
 
-  addChild(child: BottomUpNode, selfTime: number, totalTime: number): void {
+  addChild(child: BottomUpNode, selfTime: number, totalTime: number, transferSize: number): void {
     this.childrenInternal.set(child.id, child);
     this.selfTime += selfTime;
     this.totalTime += totalTime;
+    this.transferSize += transferSize;
     child.parent = this;
   }
 
@@ -498,8 +592,8 @@ export class BottomUpNode extends Node {
         {
           onStartEvent,
           onEndEvent,
-          startTime: Helpers.Timing.millisecondsToMicroseconds(startTime),
-          endTime: Helpers.Timing.millisecondsToMicroseconds(endTime),
+          startTime: Helpers.Timing.milliToMicro(startTime),
+          endTime: Helpers.Timing.milliToMicro(endTime),
           eventFilter: this.root.filter,
           ignoreAsyncEvents: false,
         },
@@ -539,6 +633,8 @@ export class BottomUpNode extends Node {
         const hasChildren = eventStack.length > self.depth;
         node = new BottomUpNode(self.root, childId, event, hasChildren, self);
         nodeById.set(childId, node);
+      } else {
+        node.events.push(e);
       }
       const actualEndTime = currentEndTime !== undefined ? Math.min(currentEndTime, endTime) : endTime;
       const totalTime = actualEndTime - Math.max(currentStartTime, lastTimeMarker);
@@ -571,17 +667,21 @@ export function eventStackFrame(event: Types.Events.Event): Protocol.Runtime.Cal
   return {...topFrame, scriptId: String(topFrame.scriptId) as Protocol.Runtime.ScriptId};
 }
 
+// TODO(paulirish): rename to generateNodeId
 export function generateEventID(event: Types.Events.Event): string {
   if (Types.Events.isProfileCall(event)) {
-    const name = TimelineJSProfileProcessor.isNativeRuntimeFrame(event.callFrame) ?
-        TimelineJSProfileProcessor.nativeGroup(event.callFrame.functionName) :
+    const name = SamplesIntegrator.isNativeRuntimeFrame(event.callFrame) ?
+        SamplesIntegrator.nativeGroup(event.callFrame.functionName) :
         event.callFrame.functionName;
     const location = event.callFrame.scriptId || event.callFrame.url || '';
     return `f:${name}@${location}`;
   }
 
-  if (Types.Events.isTimeStamp(event)) {
-    return `${event.name}:${event.args.data.message}`;
+  if (Types.Events.isConsoleTimeStamp(event) && event.args.data) {
+    return `${event.name}:${event.args.data.name}`;
+  }
+  if (Types.Events.isSyntheticNetworkRequest(event) || Types.Events.isReceivedDataEvent(event)) {
+    return `req:${event.args.data.requestId}`;
   }
 
   return event.name;

@@ -10,7 +10,9 @@
 }
 
 .list {
-  border: none;
+  &:has(div) {
+    border: none;
+  }
 }
 
 #custom-device-add-button {
@@ -50,10 +52,6 @@
   margin: 2px 5px 2px 2px;
   flex: none;
   pointer-events: none;
-}
-
-.devices-list-checkbox:focus {
-  outline: auto 5px -webkit-focus-ring-color;
 }
 
 .device-name {

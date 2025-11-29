@@ -85,7 +85,7 @@ const UIStrings = {
    */
   flexGridContainerPropertyRuleFix:
       'Try setting the {PROPERTY_NAME} on the container element or use {ALTERNATIVE_PROPERTY_NAME} instead.',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/elements/CSSRuleValidator.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
@@ -135,12 +135,12 @@ export abstract class CSSRuleValidator {
 
   abstract getHint(
       propertyName: string, computedStyles?: Map<string, string>, parentComputedStyles?: Map<string, string>,
-      nodeName?: string, fontFaces?: Array<SDK.CSSFontFace.CSSFontFace>): Hint|undefined;
+      nodeName?: string, fontFaces?: SDK.CSSFontFace.CSSFontFace[]): Hint|undefined;
 }
 
 export class AlignContentValidator extends CSSRuleValidator {
   constructor() {
-    super(['align-content']);
+    super(['align-content', 'place-content']);
   }
 
   override getMetricType(): Host.UserMetrics.CSSHintType {
@@ -200,7 +200,7 @@ export class FlexItemValidator extends CSSRuleValidator {
     return Host.UserMetrics.CSSHintType.FLEX_ITEM;
   }
 
-  getHint(propertyName: string, computedStyles?: Map<string, string>, parentComputedStyles?: Map<string, string>): Hint
+  getHint(propertyName: string, _computedStyles?: Map<string, string>, parentComputedStyles?: Map<string, string>): Hint
       |undefined {
     if (!parentComputedStyles) {
       return;
@@ -311,7 +311,7 @@ export class GridItemValidator extends CSSRuleValidator {
     return Host.UserMetrics.CSSHintType.GRID_ITEM;
   }
 
-  getHint(propertyName: string, computedStyles?: Map<string, string>, parentComputedStyles?: Map<string, string>): Hint
+  getHint(propertyName: string, _computedStyles?: Map<string, string>, parentComputedStyles?: Map<string, string>): Hint
       |undefined {
     if (!parentComputedStyles) {
       return;
@@ -339,8 +339,6 @@ export class GridItemValidator extends CSSRuleValidator {
 export class FlexOrGridItemValidator extends CSSRuleValidator {
   constructor() {
     super([
-      'place-self',
-      'align-self',
       'order',
     ]);
   }
@@ -349,7 +347,7 @@ export class FlexOrGridItemValidator extends CSSRuleValidator {
     return Host.UserMetrics.CSSHintType.FLEX_OR_GRID_ITEM;
   }
 
-  getHint(propertyName: string, computedStyles?: Map<string, string>, parentComputedStyles?: Map<string, string>): Hint
+  getHint(propertyName: string, _computedStyles?: Map<string, string>, parentComputedStyles?: Map<string, string>): Hint
       |undefined {
     if (!parentComputedStyles) {
       return;
@@ -377,11 +375,8 @@ export class FlexOrGridItemValidator extends CSSRuleValidator {
 
 export class FlexGridValidator extends CSSRuleValidator {
   constructor() {
-    super([
-      'justify-content',
-      'place-content',  // Shorthand	<'align-content'> <'justify-content'>?
-      'align-items',
-    ]);
+    // justify-content is specified to affect multicol, but we don't implement that yet.
+    super(['justify-content']);
   }
 
   override getMetricType(): Host.UserMetrics.CSSHintType {
@@ -401,8 +396,7 @@ export class FlexGridValidator extends CSSRuleValidator {
     if (parentComputedStyles && (isFlexContainer(parentComputedStyles) || isGridContainer(parentComputedStyles))) {
       const reasonContainerDisplayName = buildPropertyValue(parentComputedStyles.get('display') as string);
       const reasonPropertyName = buildPropertyName(propertyName);
-      const reasonAlternativePropertyName =
-          buildPropertyName(propertyName === 'justify-content' ? 'justify-self' : 'align-self');
+      const reasonAlternativePropertyName = buildPropertyName('justify-self');
       return new Hint(
           i18nString(UIStrings.flexGridContainerPropertyRuleReason, {
             CONTAINER_DISPLAY_NAME: reasonContainerDisplayName,
@@ -616,7 +610,7 @@ export class SizingValidator extends CSSRuleValidator {
   }
 
   getHint(
-      propertyName: string, computedStyles?: Map<string, string>, parentComputedStyles?: Map<string, string>,
+      propertyName: string, computedStyles?: Map<string, string>, _parentComputedStyles?: Map<string, string>,
       nodeName?: string): Hint|undefined {
     if (!computedStyles || !nodeName) {
       return;
@@ -660,8 +654,8 @@ export class FontVariationSettingsValidator extends CSSRuleValidator {
   }
 
   getHint(
-      propertyName: string, computedStyles?: Map<string, string>, parentComputedStyles?: Map<string, string>,
-      nodeName?: string, fontFaces?: Array<SDK.CSSFontFace.CSSFontFace>): Hint|undefined {
+      _propertyName: string, computedStyles?: Map<string, string>, _parentComputedStyles?: Map<string, string>,
+      _nodeName?: string, fontFaces?: SDK.CSSFontFace.CSSFontFace[]): Hint|undefined {
     if (!computedStyles) {
       return;
     }

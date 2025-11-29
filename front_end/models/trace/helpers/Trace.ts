@@ -11,21 +11,25 @@ import * as Types from '../types/types.js';
 import {SyntheticEventsManager} from './SyntheticEvents.js';
 import {eventTimingsMicroSeconds} from './Timing.js';
 
-type MatchedPairType<T extends Types.Events.PairableAsync> = Types.Events.SyntheticEventPair<T>;
-type MatchingPairableAsyncEvents = {
-  begin: Types.Events.PairableAsyncBegin|null,
-  end: Types.Events.PairableAsyncEnd|null,
-  instant?: Types.Events.PairableAsyncInstant[],
-};
+interface MatchingPairableAsyncEvents {
+  begin: Types.Events.PairableAsyncBegin|null;
+  end: Types.Events.PairableAsyncEnd|null;
+  instant?: Types.Events.PairableAsyncInstant[];
+}
 
 /**
- * Extracts the raw stack trace of known trace events. Most likely than
+ * Extracts the raw stack trace in known trace events. Most likely than
  * not you want to use `getZeroIndexedStackTraceForEvent`, which returns
  * the stack with zero based numbering. Since some trace events are
  * one based this function can yield unexpected results when used
  * indiscriminately.
+ *
+ * Note: this only returns the stack trace contained in the payload of
+ * an event, which only contains the synchronous portion of the call
+ * stack. If you want to obtain the whole stack trace you might need to
+ * use the @see Trace.Extras.StackTraceForEvent util.
  */
-export function stackTraceForEvent(event: Types.Events.Event): Types.Events.CallFrame[]|null {
+export function stackTraceInEvent(event: Types.Events.Event): Types.Events.CallFrame[]|null {
   if (event.args?.data?.stackTrace) {
     return event.args.data.stackTrace;
   }
@@ -35,11 +39,33 @@ export function stackTraceForEvent(event: Types.Events.Event): Types.Events.Call
   if (Types.Events.isUpdateLayoutTree(event)) {
     return event.args.beginData?.stackTrace || null;
   }
-  if (Types.Extensions.isSyntheticExtensionEntry(event)) {
-    return stackTraceForEvent(event.rawSourceEvent);
+  if (Types.Events.isLayout(event)) {
+    return event.args.beginData.stackTrace ?? null;
   }
-  if (Types.Events.isSyntheticUserTiming(event)) {
-    return stackTraceForEvent(event.rawSourceEvent);
+  if (Types.Events.isFunctionCall(event)) {
+    const data = event.args.data;
+    if (!data) {
+      return null;
+    }
+    const {columnNumber, lineNumber, url, scriptId, functionName} = data;
+    if (lineNumber === undefined || functionName === undefined || columnNumber === undefined ||
+        scriptId === undefined || url === undefined) {
+      return null;
+    }
+    return [{columnNumber, lineNumber, url, scriptId, functionName}];
+  }
+  if (Types.Events.isProfileCall(event)) {
+    // Of type Protocol.Runtime.CallFrame, handle accordingly.
+    const callFrame = event.callFrame;
+    if (!callFrame) {
+      return null;
+    }
+    const {columnNumber, lineNumber, url, scriptId, functionName} = callFrame;
+    if (lineNumber === undefined || functionName === undefined || columnNumber === undefined ||
+        scriptId === undefined || url === undefined) {
+      return null;
+    }
+    return [{columnNumber, lineNumber, url, scriptId, functionName}];
   }
   return null;
 }
@@ -80,11 +106,11 @@ export function addEventToProcessThread<T extends Types.Events.Event>(
   eventsInProcessThread.set(event.pid, eventsInThread);
 }
 
-export type TimeSpan = {
-  ts: Types.Timing.MicroSeconds,
-  dur?: Types.Timing.MicroSeconds,
-};
-export function eventTimeComparator(a: TimeSpan, b: TimeSpan): -1|0|1 {
+export interface TimeSpan {
+  ts: Types.Timing.Micro;
+  dur?: Types.Timing.Micro;
+}
+export function eventTimeComparator(a: Types.Events.Event, b: Types.Events.Event): -1|0|1 {
   const aBeginTime = a.ts;
   const bBeginTime = b.ts;
   if (aBeginTime < bBeginTime) {
@@ -103,14 +129,23 @@ export function eventTimeComparator(a: TimeSpan, b: TimeSpan): -1|0|1 {
   if (aEndTime < bEndTime) {
     return 1;
   }
+  // If times are equal, prioritize profile calls over trace events,
+  // since an exactly equal timestamp with a trace event is likely
+  // indicates that the SamplesIntegrator meant to parent the trace
+  // event with the profile call.
+  if (Types.Events.isProfileCall(a) && !Types.Events.isProfileCall(b)) {
+    return -1;
+  }
+  if (Types.Events.isProfileCall(b) && !Types.Events.isProfileCall(a)) {
+    return 1;
+  }
   return 0;
 }
 /**
  * Sorts all the events in place, in order, by their start time. If they have
  * the same start time, orders them by longest first.
  */
-export function sortTraceEventsInPlace(events: {ts: Types.Timing.MicroSeconds, dur?: Types.Timing.MicroSeconds}[]):
-    void {
+export function sortTraceEventsInPlace(events: Types.Events.Event[]): void {
   events.sort(eventTimeComparator);
 }
 
@@ -119,7 +154,7 @@ export function sortTraceEventsInPlace(events: {ts: Types.Timing.MicroSeconds, d
  * ordered input arrays.
  */
 export function mergeEventsInOrder<T1 extends Types.Events.Event, T2 extends Types.Events.Event>(
-    eventsArray1: readonly T1[], eventsArray2: readonly T2[]): (T1|T2)[] {
+    eventsArray1: readonly T1[], eventsArray2: readonly T2[]): Array<T1|T2> {
   const result = [];
   let i = 0;
   let j = 0;
@@ -167,16 +202,16 @@ export function getNavigationForTraceEvent(
   return navigations[eventNavigationIndex];
 }
 
-export function extractId(event: Types.Events.PairableAsync|MatchedPairType<Types.Events.PairableAsync>): string|
-    undefined {
+export function extractId(event: Types.Events.PairableAsync|
+                          Types.Events.SyntheticEventPair<Types.Events.PairableAsync>): string|undefined {
   return event.id ?? event.id2?.global ?? event.id2?.local;
 }
 
 export function activeURLForFrameAtTime(
-    frameId: string, time: Types.Timing.MicroSeconds,
+    frameId: string, time: Types.Timing.Micro,
     rendererProcessesByFrame: Map<
         string,
-        Map<Types.Events.ProcessID, {frame: Types.Events.TraceFrame, window: Types.Timing.TraceWindowMicroSeconds}[]>>):
+        Map<Types.Events.ProcessID, Array<{frame: Types.Events.TraceFrame, window: Types.Timing.TraceWindowMicro}>>>):
     string|null {
   const processData = rendererProcessesByFrame.get(frameId);
   if (!processData) {
@@ -205,7 +240,7 @@ export function activeURLForFrameAtTime(
  */
 export function makeProfileCall(
     node: CPUProfile.ProfileTreeModel.ProfileNode, profileId: Types.Events.ProfileID, sampleIndex: number,
-    ts: Types.Timing.MicroSeconds, pid: Types.Events.ProcessID,
+    ts: Types.Timing.Micro, pid: Types.Events.ProcessID,
     tid: Types.Events.ThreadID): Types.Events.SyntheticProfileCall {
   return {
     cat: '',
@@ -216,7 +251,7 @@ export function makeProfileCall(
     pid,
     tid,
     ts,
-    dur: Types.Timing.MicroSeconds(0),
+    dur: Types.Timing.Micro(0),
     callFrame: node.callFrame,
     sampleIndex,
     profileId,
@@ -232,7 +267,7 @@ export function makeProfileCall(
  */
 export function matchEvents(unpairedEvents: Types.Events.PairableAsync[]): Map<string, MatchingPairableAsyncEvents> {
   // map to store begin and end of the event
-  const matchedPairs: Map<string, MatchingPairableAsyncEvents> = new Map();
+  const matchedPairs = new Map<string, MatchingPairableAsyncEvents>();
 
   // looking for start and end
   for (const event of unpairedEvents) {
@@ -276,9 +311,9 @@ export function createSortedSyntheticEvents<T extends Types.Events.PairableAsync
       end: Types.Events.PairableAsyncEnd | null,
       instant?: Types.Events.PairableAsyncInstant[],
     }>,
-    syntheticEventCallback?: (syntheticEvent: MatchedPairType<T>) => void,
-    ): MatchedPairType<T>[] {
-  const syntheticEvents: MatchedPairType<T>[] = [];
+    syntheticEventCallback?: (syntheticEvent: Types.Events.SyntheticEventPair<T>) => void,
+    ): Array<Types.Events.SyntheticEventPair<T>> {
+  const syntheticEvents: Array<Types.Events.SyntheticEventPair<T>> = [];
   for (const [id, eventsTriplet] of matchedPairs.entries()) {
     const beginEvent = eventsTriplet.begin;
     const endEvent = eventsTriplet.end;
@@ -299,7 +334,7 @@ export function createSortedSyntheticEvents<T extends Types.Events.PairableAsync
       beginEvent: Types.Events.PairableAsyncBegin,
       endEvent: Types.Events.PairableAsyncEnd|null,
       instantEvents?: Types.Events.PairableAsyncInstant[],
-    }): data is MatchedPairType<T>['args']['data'] {
+    }): data is Types.Events.SyntheticEventPair<T>['args']['data'] {
       const instantEventsMatch = data.instantEvents ? data.instantEvents.some(e => id === getSyntheticId(e)) : false;
       const endEventMatch = data.endEvent ? id === getSyntheticId(data.endEvent) : false;
       return Boolean(id) && (instantEventsMatch || endEventMatch);
@@ -309,8 +344,8 @@ export function createSortedSyntheticEvents<T extends Types.Events.PairableAsync
     }
     const targetEvent = endEvent || beginEvent;
 
-    const event = SyntheticEventsManager.registerSyntheticEvent<MatchedPairType<T>>({
-      rawSourceEvent: beginEvent,
+    const event = SyntheticEventsManager.registerSyntheticEvent<Types.Events.SyntheticEventPair<T>>({
+      rawSourceEvent: triplet.beginEvent,
       cat: targetEvent.cat,
       ph: targetEvent.ph,
       pid: targetEvent.pid,
@@ -319,7 +354,7 @@ export function createSortedSyntheticEvents<T extends Types.Events.PairableAsync
       // Both events have the same name, so it doesn't matter which we pick to
       // use as the description
       name: beginEvent.name,
-      dur: Types.Timing.MicroSeconds(targetEvent.ts - beginEvent.ts),
+      dur: Types.Timing.Micro(targetEvent.ts - beginEvent.ts),
       ts: beginEvent.ts,
       args: {
         data: triplet,
@@ -340,8 +375,8 @@ export function createSortedSyntheticEvents<T extends Types.Events.PairableAsync
 }
 
 export function createMatchedSortedSyntheticEvents<T extends Types.Events.PairableAsync>(
-    unpairedAsyncEvents: T[],
-    syntheticEventCallback?: (syntheticEvent: MatchedPairType<T>) => void): MatchedPairType<T>[] {
+    unpairedAsyncEvents: T[], syntheticEventCallback?: (syntheticEvent: Types.Events.SyntheticEventPair<T>) => void):
+    Array<Types.Events.SyntheticEventPair<T>> {
   const matchedPairs = matchEvents(unpairedAsyncEvents);
   const syntheticEvents = createSortedSyntheticEvents<T>(matchedPairs, syntheticEventCallback);
   return syntheticEvents;
@@ -376,6 +411,13 @@ export function getZeroIndexedLineAndColumnForEvent(event: Types.Events.Event): 
         columnNumber: typeof columnNumber === 'number' ? columnNumber - 1 : undefined,
       };
     }
+    case Types.Events.Name.PROFILE_CALL: {
+      const callFrame = (event as Types.Events.SyntheticProfileCall).callFrame;
+      return {
+        lineNumber: typeof lineNumber === 'number' ? callFrame.lineNumber - 1 : undefined,
+        columnNumber: typeof columnNumber === 'number' ? callFrame.columnNumber - 1 : undefined,
+      };
+    }
     default: {
       return numbers;
     }
@@ -387,9 +429,14 @@ export function getZeroIndexedLineAndColumnForEvent(event: Types.Events.Event): 
  * that are 1 or 0 indexed.
  * This function knows which events return 1 indexed numbers and normalizes
  * them. The UI expects 0 indexed line numbers, so that is what we return.
+ *
+ * Note: this only returns the stack trace contained in the payload of
+ * an event, which only contains the synchronous portion of the call
+ * stack. If you want to obtain the whole stack trace you might need to
+ * use the @see Trace.Extras.StackTraceForEvent util.
  */
-export function getZeroIndexedStackTraceForEvent(event: Types.Events.Event): Types.Events.CallFrame[]|null {
-  const stack = stackTraceForEvent(event);
+export function getZeroIndexedStackTraceInEventPayload(event: Types.Events.Event): Types.Events.CallFrame[]|null {
+  const stack = stackTraceInEvent(event);
   if (!stack) {
     return null;
   }
@@ -397,6 +444,8 @@ export function getZeroIndexedStackTraceForEvent(event: Types.Events.Event): Typ
     switch (event.name) {
       case Types.Events.Name.SCHEDULE_STYLE_RECALCULATION:
       case Types.Events.Name.INVALIDATE_LAYOUT:
+      case Types.Events.Name.FUNCTION_CALL:
+      case Types.Events.Name.LAYOUT:
       case Types.Events.Name.UPDATE_LAYOUT_TREE: {
         return makeZeroBasedCallFrame(callFrame);
       }
@@ -476,7 +525,7 @@ export function frameIDForEvent(event: Types.Events.Event): string|null {
 const DevToolsTimelineEventCategory = 'disabled-by-default-devtools.timeline';
 export function isTopLevelEvent(event: Types.Events.Event): boolean {
   if (event.name === 'JSRoot' && event.cat === 'toplevel') {
-    // This is used in TimelineJSProfile to insert a fake event prior to the
+    // This is used in createFakeTraceFromCpuProfile to insert a fake event prior to the
     // CPU Profile in order to ensure the trace isn't truncated. So if we see
     // this, we want to treat it as a top level event.
     // TODO(crbug.com/341234884): do we need this?
@@ -485,7 +534,7 @@ export function isTopLevelEvent(event: Types.Events.Event): boolean {
   return event.cat.includes(DevToolsTimelineEventCategory) && event.name === Types.Events.Name.RUN_TASK;
 }
 
-function topLevelEventIndexEndingAfter(events: Types.Events.Event[], time: Types.Timing.MicroSeconds): number {
+function topLevelEventIndexEndingAfter(events: Types.Events.Event[], time: Types.Timing.Micro): number {
   let index = Platform.ArrayUtilities.upperBound(events, time, (time, event) => time - event.ts) - 1;
   while (index > 0 && !isTopLevelEvent(events[index])) {
     index--;
@@ -493,8 +542,8 @@ function topLevelEventIndexEndingAfter(events: Types.Events.Event[], time: Types
   return Math.max(index, 0);
 }
 export function findUpdateLayoutTreeEvents(
-    events: Types.Events.Event[], startTime: Types.Timing.MicroSeconds,
-    endTime?: Types.Timing.MicroSeconds): Types.Events.UpdateLayoutTree[] {
+    events: Types.Events.Event[], startTime: Types.Timing.Micro,
+    endTime?: Types.Timing.Micro): Types.Events.UpdateLayoutTree[] {
   const foundEvents: Types.Events.UpdateLayoutTree[] = [];
   const startEventIndex = topLevelEventIndexEndingAfter(events, startTime);
   for (let i = startEventIndex; i < events.length; i++) {
@@ -510,14 +559,14 @@ export function findUpdateLayoutTreeEvents(
   return foundEvents;
 }
 
-export function findNextEventAfterTimestamp<T extends Types.Events.Event>(
-    candidates: T[], ts: Types.Timing.MicroSeconds): T|null {
+export function findNextEventAfterTimestamp<T extends Types.Events.Event>(candidates: T[], ts: Types.Timing.Micro): T|
+    null {
   const index = Platform.ArrayUtilities.nearestIndexFromBeginning(candidates, candidate => ts < candidate.ts);
   return index === null ? null : candidates[index];
 }
 
 export function findPreviousEventBeforeTimestamp<T extends Types.Events.Event>(
-    candidates: T[], ts: Types.Timing.MicroSeconds): T|null {
+    candidates: T[], ts: Types.Timing.Micro): T|null {
   const index = Platform.ArrayUtilities.nearestIndexFromEnd(candidates, candidate => candidate.ts < ts);
   return index === null ? null : candidates[index];
 }
@@ -527,8 +576,8 @@ export interface ForEachEventConfig {
   onEndEvent: (event: Types.Events.Event) => void;
   onInstantEvent?: (event: Types.Events.Event) => void;
   eventFilter?: (event: Types.Events.Event) => boolean;
-  startTime?: Types.Timing.MicroSeconds;
-  endTime?: Types.Timing.MicroSeconds;
+  startTime?: Types.Timing.Micro;
+  endTime?: Types.Timing.Micro;
   /* If async events should be skipped. Defaults to true */
   ignoreAsyncEvents?: boolean;
 }
@@ -561,14 +610,14 @@ export interface ForEachEventConfig {
  * 9. End A
  *
  * By default, async events are skipped. This behaviour can be
- * overriden making use of the config.ignoreAsyncEvents parameter.
+ * overridden making use of the config.ignoreAsyncEvents parameter.
  */
 export function forEachEvent(
     events: Types.Events.Event[],
     config: ForEachEventConfig,
     ): void {
-  const globalStartTime = config.startTime ?? Types.Timing.MicroSeconds(0);
-  const globalEndTime = config.endTime || Types.Timing.MicroSeconds(Infinity);
+  const globalStartTime = config.startTime ?? Types.Timing.Micro(0);
+  const globalEndTime = config.endTime || Types.Timing.Micro(Infinity);
   const ignoreAsyncEvents = config.ignoreAsyncEvents === false ? false : true;
 
   const stack: Types.Events.Event[] = [];
@@ -635,7 +684,128 @@ export function eventHasCategory(event: Types.Events.Event, category: string): b
   return parsedCategoriesForEvent.has(category);
 }
 
-export function nodeIdForInvalidationEvent(event: Types.Events.InvalidationTrackingEvent): Protocol.DOM.BackendNodeId|
-    null {
-  return event.args.data.nodeId ?? null;
+/**
+ * This compares Types.Events.CallFrame with Protocol.Runtime.CallFrame and checks for equality.
+ */
+export function isMatchingCallFrame(
+    eventFrame: Types.Events.CallFrame, nodeFrame: Protocol.Runtime.CallFrame): boolean {
+  return eventFrame.columnNumber === nodeFrame.columnNumber && eventFrame.lineNumber === nodeFrame.lineNumber &&
+      String(eventFrame.scriptId) === nodeFrame.scriptId && eventFrame.url === nodeFrame.url &&
+      eventFrame.functionName === nodeFrame.functionName;
 }
+
+export function eventContainsTimestamp(event: Types.Events.Event, ts: Types.Timing.Micro): boolean {
+  return event.ts <= ts && event.ts + (event.dur || 0) >= ts;
+}
+
+export function extractSampleTraceId(event: Types.Events.Event): number|null {
+  if (!event.args) {
+    return null;
+  }
+  if ('beginData' in event.args) {
+    const beginData = event.args['beginData'] as {sampleTraceId?: number};
+    return beginData.sampleTraceId ?? null;
+  }
+  return event.args?.sampleTraceId ?? event.args?.data?.sampleTraceId ?? null;
+}
+
+// This exactly matches EntryStyles.visibleTypes. See the runtime verification in maybeInitSylesMap.
+// TODO(crbug.com/410884528)
+export const VISIBLE_TRACE_EVENT_TYPES = new Set<Types.Events.Name>([
+  Types.Events.Name.ABORT_POST_TASK_CALLBACK,
+  Types.Events.Name.ANIMATION,
+  Types.Events.Name.ASYNC_TASK,
+  Types.Events.Name.BACKGROUND_DESERIALIZE,
+  Types.Events.Name.CACHE_MODULE,
+  Types.Events.Name.CACHE_SCRIPT,
+  Types.Events.Name.CANCEL_ANIMATION_FRAME,
+  Types.Events.Name.CANCEL_IDLE_CALLBACK,
+  Types.Events.Name.COMMIT,
+  Types.Events.Name.COMPILE_CODE,
+  Types.Events.Name.COMPILE_MODULE,
+  Types.Events.Name.COMPILE,
+  Types.Events.Name.COMPOSITE_LAYERS,
+  Types.Events.Name.COMPUTE_INTERSECTION,
+  Types.Events.Name.CONSOLE_TIME,
+  Types.Events.Name.CPPGC_SWEEP,
+  Types.Events.Name.CRYPTO_DO_DECRYPT_REPLY,
+  Types.Events.Name.CRYPTO_DO_DECRYPT,
+  Types.Events.Name.CRYPTO_DO_DIGEST_REPLY,
+  Types.Events.Name.CRYPTO_DO_DIGEST,
+  Types.Events.Name.CRYPTO_DO_ENCRYPT_REPLY,
+  Types.Events.Name.CRYPTO_DO_ENCRYPT,
+  Types.Events.Name.CRYPTO_DO_SIGN_REPLY,
+  Types.Events.Name.CRYPTO_DO_SIGN,
+  Types.Events.Name.CRYPTO_DO_VERIFY_REPLY,
+  Types.Events.Name.CRYPTO_DO_VERIFY,
+  Types.Events.Name.DECODE_IMAGE,
+  Types.Events.Name.EMBEDDER_CALLBACK,
+  Types.Events.Name.EVALUATE_MODULE,
+  Types.Events.Name.EVALUATE_SCRIPT,
+  Types.Events.Name.EVENT_DISPATCH,
+  Types.Events.Name.EVENT_TIMING,
+  Types.Events.Name.FINALIZE_DESERIALIZATION,
+  Types.Events.Name.FIRE_ANIMATION_FRAME,
+  Types.Events.Name.FIRE_IDLE_CALLBACK,
+  Types.Events.Name.FUNCTION_CALL,
+  Types.Events.Name.GC_COLLECT_GARBARGE,
+  Types.Events.Name.GC,
+  Types.Events.Name.GPU_TASK,
+  Types.Events.Name.HANDLE_POST_MESSAGE,
+  Types.Events.Name.HIT_TEST,
+  Types.Events.Name.JS_SAMPLE,
+  Types.Events.Name.LAYERIZE,
+  Types.Events.Name.LAYOUT,
+  Types.Events.Name.MAJOR_GC,
+  Types.Events.Name.MINOR_GC,
+  Types.Events.Name.OPTIMIZE_CODE,
+  Types.Events.Name.PAINT_SETUP,
+  Types.Events.Name.PAINT,
+  Types.Events.Name.PARSE_AUTHOR_STYLE_SHEET,
+  Types.Events.Name.PARSE_HTML,
+  Types.Events.Name.PRE_PAINT,
+  Types.Events.Name.PROFILE_CALL,
+  Types.Events.Name.PROGRAM,
+  Types.Events.Name.RASTER_TASK,
+  Types.Events.Name.REQUEST_ANIMATION_FRAME,
+  Types.Events.Name.REQUEST_IDLE_CALLBACK,
+  Types.Events.Name.RESOURCE_FINISH,
+  Types.Events.Name.RESOURCE_RECEIVE_DATA,
+  Types.Events.Name.RESOURCE_RECEIVE_RESPONSE,
+  Types.Events.Name.RESOURCE_SEND_REQUEST,
+  Types.Events.Name.RESOURCE_WILL_SEND_REQUEST,
+  Types.Events.Name.RUN_MICROTASKS,
+  Types.Events.Name.RUN_POST_TASK_CALLBACK,
+  Types.Events.Name.RUN_TASK,
+  Types.Events.Name.SCHEDULE_POST_MESSAGE,
+  Types.Events.Name.SCHEDULE_POST_TASK_CALLBACK,
+  Types.Events.Name.SCHEDULE_STYLE_RECALCULATION,
+  Types.Events.Name.SCROLL_LAYER,
+  Types.Events.Name.START_PROFILING,
+  Types.Events.Name.STREAMING_COMPILE_SCRIPT_PARSING,
+  Types.Events.Name.STREAMING_COMPILE_SCRIPT_WAITING,
+  Types.Events.Name.STREAMING_COMPILE_SCRIPT,
+  Types.Events.Name.SYNTHETIC_LAYOUT_SHIFT_CLUSTER,
+  Types.Events.Name.SYNTHETIC_LAYOUT_SHIFT,
+  Types.Events.Name.TIME_STAMP,
+  Types.Events.Name.TIMER_FIRE,
+  Types.Events.Name.TIMER_INSTALL,
+  Types.Events.Name.TIMER_REMOVE,
+  Types.Events.Name.UPDATE_LAYER_TREE,
+  Types.Events.Name.UPDATE_LAYOUT_TREE,
+  Types.Events.Name.USER_TIMING,
+  Types.Events.Name.V8_CONSOLE_RUN_TASK,
+  Types.Events.Name.WASM_CACHED_MODULE,
+  Types.Events.Name.WASM_COMPILED_MODULE,
+  Types.Events.Name.WASM_MODULE_CACHE_HIT,
+  Types.Events.Name.WASM_MODULE_CACHE_INVALID,
+  Types.Events.Name.WASM_STREAM_FROM_RESPONSE_CALLBACK,
+  Types.Events.Name.WEB_SOCKET_CREATE,
+  Types.Events.Name.WEB_SOCKET_DESTROY,
+  Types.Events.Name.WEB_SOCKET_RECEIVE_HANDSHAKE_REQUEST,
+  Types.Events.Name.WEB_SOCKET_RECEIVE,
+  Types.Events.Name.WEB_SOCKET_SEND_HANDSHAKE_REQUEST,
+  Types.Events.Name.WEB_SOCKET_SEND,
+  Types.Events.Name.XHR_LOAD,
+  Types.Events.Name.XHR_READY_STATE_CHANGED,
+]);

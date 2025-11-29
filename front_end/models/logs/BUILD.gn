@@ -34,10 +34,10 @@ devtools_entrypoint("bundle") {
     "../../panels/application/*",
     "../../panels/console/*",
     "../../panels/explain/*",
-    "../../panels/freestyler/*",
     "../../panels/issues/*",
     "../../panels/network/*",
     "../../ui/components/request_link_icon/*",
+    "../ai_assistance/*",
     "../extensions/*",
   ]
 

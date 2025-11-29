@@ -7,7 +7,9 @@ import * as Helpers from '../helpers/helpers.js';
 import * as Types from '../types/types.js';
 
 import {data as auctionWorkletsData} from './AuctionWorkletsHandler.js';
+import * as HandlerHelpers from './helpers.js';
 import {data as metaHandlerData, type FrameProcessData} from './MetaHandler.js';
+import {data as networkRequestHandlerData} from './NetworkRequestsHandler.js';
 import {data as samplesHandlerData} from './SamplesHandler.js';
 import type {HandlerName} from './types.js';
 
@@ -25,6 +27,12 @@ import type {HandlerName} from './types.js';
 
 const processes = new Map<Types.Events.ProcessID, RendererProcess>();
 
+let entityMappings: HandlerHelpers.EntityMappings = {
+  eventsByEntity: new Map<HandlerHelpers.Entity, Types.Events.Event[]>(),
+  entityByEvent: new Map<Types.Events.Event, HandlerHelpers.Entity>(),
+  createdEntityCache: new Map<string, HandlerHelpers.Entity>(),
+};
+
 // We track the compositor tile worker thread name events so that at the end we
 // can return these keyed by the process ID. These are used in the frontend to
 // show the user the rasterization thread(s) on the main frame as tracks.
@@ -32,7 +40,7 @@ const compositorTileWorkers = Array<{
   pid: Types.Events.ProcessID,
   tid: Types.Events.ThreadID,
 }>();
-const entryToNode: Map<Types.Events.Event, Helpers.TreeHelpers.TraceEntryNode> = new Map();
+const entryToNode = new Map<Types.Events.Event, Helpers.TreeHelpers.TraceEntryNode>();
 let allTraceEntries: Types.Events.Event[] = [];
 
 const completeEventStack: (Types.Events.SyntheticComplete)[] = [];
@@ -49,6 +57,8 @@ const makeRendererThread = (): RendererThread => ({
   name: null,
   entries: [],
   profileCalls: [],
+  layoutEvents: [],
+  updateLayoutTreeEvents: [],
 });
 
 const getOrCreateRendererProcess =
@@ -67,6 +77,9 @@ export function handleUserConfig(userConfig: Types.Configuration.Configuration):
 export function reset(): void {
   processes.clear();
   entryToNode.clear();
+  entityMappings.eventsByEntity.clear();
+  entityMappings.entityByEvent.clear();
+  entityMappings.createdEntityCache.clear();
   allTraceEntries.length = 0;
   completeEventStack.length = 0;
   compositorTileWorkers.length = 0;
@@ -98,10 +111,24 @@ export function handleEvent(event: Types.Events.Event): void {
     thread.entries.push(event);
     allTraceEntries.push(event);
   }
+
+  if (Types.Events.isLayout(event)) {
+    const process = getOrCreateRendererProcess(processes, event.pid);
+    const thread = getOrCreateRendererThread(process, event.tid);
+    thread.layoutEvents.push(event);
+  }
+
+  if (Types.Events.isUpdateLayoutTree(event)) {
+    const process = getOrCreateRendererProcess(processes, event.pid);
+    const thread = getOrCreateRendererThread(process, event.tid);
+    thread.updateLayoutTreeEvents.push(event);
+  }
 }
 
 export async function finalize(): Promise<void> {
   const {mainFrameId, rendererProcessesByFrame, threadsInProcess} = metaHandlerData();
+  entityMappings = networkRequestHandlerData().entityMappings;
+
   assignMeta(processes, mainFrameId, rendererProcessesByFrame, threadsInProcess);
   sanitizeProcesses(processes);
   buildHierarchy(processes);
@@ -115,6 +142,11 @@ export function data(): RendererHandlerData {
     compositorTileWorkers: new Map(gatherCompositorThreads()),
     entryToNode: new Map(entryToNode),
     allTraceEntries: [...allTraceEntries],
+    entityMappings: {
+      entityByEvent: new Map(entityMappings.entityByEvent),
+      eventsByEntity: new Map(entityMappings.eventsByEntity),
+      createdEntityCache: new Map(entityMappings.createdEntityCache),
+    },
   };
 }
 
@@ -140,7 +172,7 @@ export function assignMeta(
     threadsInProcess: Map<Types.Events.ProcessID, Map<Types.Events.ThreadID, Types.Events.ThreadName>>): void {
   assignOrigin(processes, rendererProcessesByFrame);
   assignIsMainFrame(processes, mainFrameId, rendererProcessesByFrame);
-  assignThreadName(processes, rendererProcessesByFrame, threadsInProcess);
+  assignThreadName(processes, threadsInProcess);
 }
 
 /**
@@ -166,7 +198,7 @@ export function assignOrigin(
           try {
             new URL(processInfo.frame.url);
             process.url = processInfo.frame.url;
-          } catch (e) {
+          } catch {
             process.url = null;
           }
         }
@@ -201,7 +233,7 @@ export function assignIsMainFrame(
  * @see assignMeta
  */
 export function assignThreadName(
-    processes: Map<Types.Events.ProcessID, RendererProcess>, rendererProcessesByFrame: FrameProcessData,
+    processes: Map<Types.Events.ProcessID, RendererProcess>,
     threadsInProcess: Map<Types.Events.ProcessID, Map<Types.Events.ThreadID, Types.Events.ThreadName>>): void {
   for (const [pid, process] of processes) {
     for (const [tid, threadInfo] of threadsInProcess.get(pid) ?? []) {
@@ -214,7 +246,7 @@ export function assignThreadName(
 /**
  * Removes unneeded trace data opportunistically stored while handling events.
  * This currently does the following:
- *  - Deletes processes with an unkonwn origin.
+ *  - Deletes processes with an unknown origin.
  */
 export function sanitizeProcesses(processes: Map<Types.Events.ProcessID, RendererProcess>): void {
   const auctionWorklets = auctionWorkletsData().worklets;
@@ -322,6 +354,8 @@ export function buildHierarchy(
       // Update the entryToNode map with the entries from this thread
       for (const [entry, node] of treeData.entryToNode) {
         entryToNode.set(entry, node);
+        // Entity mapping is unrelated to the tree, but calling here as we need to call on every node anyway.
+        HandlerHelpers.addEventToEntityMapping(entry, entityMappings);
       }
     }
   }
@@ -343,7 +377,7 @@ export function makeCompleteEvent(event: Types.Events.Begin|Types.Events.End): T
     }
     // Update the begin event's duration using the timestamp of the end
     // event.
-    beginEvent.dur = Types.Timing.MicroSeconds(event.ts - beginEvent.ts);
+    beginEvent.dur = Types.Timing.Micro(event.ts - beginEvent.ts);
     return null;
   }
 
@@ -352,7 +386,7 @@ export function makeCompleteEvent(event: Types.Events.Begin|Types.Events.End): T
   const syntheticComplete: Types.Events.SyntheticComplete = {
     ...event,
     ph: Types.Events.Phase.COMPLETE,
-    dur: Types.Timing.MicroSeconds(0),
+    dur: Types.Timing.Micro(0),
   };
 
   completeEventStack.push(syntheticComplete);
@@ -360,7 +394,7 @@ export function makeCompleteEvent(event: Types.Events.Begin|Types.Events.End): T
 }
 
 export function deps(): HandlerName[] {
-  return ['Meta', 'Samples', 'AuctionWorklets'];
+  return ['Meta', 'Samples', 'AuctionWorklets', 'NetworkRequests'];
 }
 
 export interface RendererHandlerData {
@@ -376,6 +410,7 @@ export interface RendererHandlerData {
    * samples.
    */
   allTraceEntries: Types.Events.Event[];
+  entityMappings: HandlerHelpers.EntityMappings;
 }
 
 export interface RendererProcess {
@@ -394,5 +429,7 @@ export interface RendererThread {
    */
   entries: Types.Events.Event[];
   profileCalls: Types.Events.SyntheticProfileCall[];
+  layoutEvents: Types.Events.Layout[];
+  updateLayoutTreeEvents: Types.Events.UpdateLayoutTree[];
   tree?: Helpers.TreeHelpers.TraceEntryTree;
 }

@@ -12,28 +12,24 @@ import {
   getBrowserAndPages,
   getResourcesPath,
   renderCoordinatorQueueEmpty,
+  selectOption,
   waitFor,
   waitForAnimationFrame,
   waitForAria,
   waitForFunction,
-  waitForNone,
 } from '../../../test/shared/helper.js';
 
 import {
-  assertRecordingMatchesSnapshot,
   clickSelectButtonItem,
   createAndStartRecording,
   enableAndOpenRecorderPanel,
   getCurrentRecording,
+  processAndVerifyBaseRecording,
   stopRecording,
   toggleCodeView,
 } from './helpers.js';
 
 describe('Recorder', function() {
-  if (this.timeout() !== 0) {
-    this.timeout(5000);
-  }
-
   async function assertStepList(expectedStepList: string[]) {
     const {frontend} = getBrowserAndPages();
     const actualStepList = await frontend.$$eval(
@@ -57,7 +53,7 @@ describe('Recorder', function() {
   describe('UI', () => {
     beforeEach(async () => {
       await enableAndOpenRecorderPanel('recorder/recorder.html');
-      await createAndStartRecording('Test');
+      await createAndStartRecording();
     });
 
     describe('Record', () => {
@@ -145,7 +141,7 @@ describe('Recorder', function() {
         });
 
         const recording = await getCurrentRecording();
-        assertRecordingMatchesSnapshot(recording);
+        assert.strictEqual(recording.title, 'New Recording with Hello world');
       });
 
       describe('Selector picker', () => {
@@ -177,7 +173,7 @@ describe('Recorder', function() {
         }
 
         // Flaky test
-        it.skip('[crbug.com/1443421]: should select through the selector picker', async () => {
+        it.skip('[crbug.com/402695414] should select through the selector picker', async () => {
           const {target, frontend} = getBrowserAndPages();
           await frontend.bringToFront();
           await frontend.waitForSelector('pierce/.settings');
@@ -193,11 +189,28 @@ describe('Recorder', function() {
           await expandStep(frontend, 2);
           await pickSelectorsForQuery('#test-button', frontend, target);
           const recording = await getCurrentRecording();
-          assertRecordingMatchesSnapshot(recording);
+          assert.deepEqual(processAndVerifyBaseRecording(recording), {
+            steps: [{
+              type: 'click',
+              assertedEvents: [{
+                type: 'navigation',
+                url: 'https://localhost:<test-port>/test/e2e/resources/recorder/recorder2.html',
+                title: ''
+              }],
+              target: 'main',
+              selectors: [
+                'aria/Test button',
+                '#test-button',
+                'xpath///*[@id="test-button"]',
+                'pierce/#test-button',
+                'text/Test button',
+              ]
+            }]
+          });
         });
 
         // Flaky test
-        it.skip('[crbug.com/1443421]: should select through the selector picker twice', async () => {
+        it.skip('[crbug.com/383478771] should select through the selector picker twice', async () => {
           const {target, frontend} = getBrowserAndPages();
           await frontend.bringToFront();
           await frontend.waitForSelector('pierce/.settings');
@@ -214,7 +227,24 @@ describe('Recorder', function() {
           await pickSelectorsForQuery('#test-button', frontend, target);
 
           let recording = await getCurrentRecording();
-          assertRecordingMatchesSnapshot(recording);
+          assert.deepEqual(processAndVerifyBaseRecording(recording), {
+            steps: [{
+              type: 'click',
+              assertedEvents: [{
+                type: 'navigation',
+                url: 'https://localhost:<test-port>/test/e2e/resources/recorder/recorder2.html',
+                title: ''
+              }],
+              target: 'main',
+              selectors: [
+                'aria/Test button',
+                '#test-button',
+                'xpath///*[@id="test-button"]',
+                'pierce/#test-button',
+                'text/Test button',
+              ]
+            }]
+          });
 
           await pickSelectorsForQuery(
               'a[href="recorder.html"]',
@@ -223,11 +253,28 @@ describe('Recorder', function() {
           );
 
           recording = await getCurrentRecording();
-          assertRecordingMatchesSnapshot(recording);
+          assert.deepEqual(processAndVerifyBaseRecording(recording), {
+            steps: [{
+              type: 'click',
+              assertedEvents: [{
+                type: 'navigation',
+                url: 'https://localhost:<test-port>/test/e2e/resources/recorder/recorder2.html',
+                title: ''
+              }],
+              target: 'main',
+              selectors: [
+                'aria/Back to Page 1',
+                'a',
+                'xpath//html/body/a',
+                'pierce/a',
+                'text/Back to Page',
+              ]
+            }]
+          });
         });
 
         // Flaky test
-        it.skip('[crbug.com/1443421]: should select through the selector picker during recording', async () => {
+        it.skip('[crbug.com/402695414] should select through the selector picker during recording', async () => {
           const {target, frontend} = getBrowserAndPages();
           await frontend.bringToFront();
           await frontend.waitForSelector('pierce/.settings');
@@ -244,7 +291,27 @@ describe('Recorder', function() {
           await stopRecording();
 
           const recording = await getCurrentRecording();
-          assertRecordingMatchesSnapshot(recording);
+          assert.deepEqual(
+              processAndVerifyBaseRecording(recording),
+              {
+                steps: [{
+                  type: 'click',
+                  assertedEvents: [{
+                    type: 'navigation',
+                    url: 'https://localhost:<test-port>/test/e2e/resources/recorder/recorder2.html',
+                    title: ''
+                  }],
+                  target: 'main',
+                  selectors: [
+                    'aria/Test button',
+                    '#test-button',
+                    'xpath///*[@id="test-button"]',
+                    'pierce/#test-button',
+                    'text/Test button',
+                  ]
+                }]
+              },
+          );
         });
       });
     });
@@ -264,16 +331,54 @@ describe('Recorder', function() {
         await click('aria/Edit replay settings');
         await waitForAnimationFrame();
 
-        const selectMenu = await click(
-            '.editable-setting devtools-select-menu',
+        const selectMenu = await waitFor(
+            '.editable-setting select',
         );
-        await waitForAnimationFrame();
 
-        await click('devtools-menu-item:nth-child(3)', {root: selectMenu});
-        await waitForAnimationFrame();
+        void selectOption(await selectMenu.toElement('select'), '3G');
 
         const recording = await getCurrentRecording();
-        assertRecordingMatchesSnapshot(recording);
+
+        assert.deepEqual(processAndVerifyBaseRecording(recording, {expectCommon: false}), {
+          title: 'New Recording',
+          steps: [
+            {
+              type: 'emulateNetworkConditions',
+              download: 50000,
+              upload: 50000,
+              latency: 2000,
+            },
+            {
+              type: 'setViewport',
+              width: 1280,
+              height: 720,
+              deviceScaleFactor: 1,
+              isMobile: false,
+              hasTouch: false,
+              isLandscape: false
+            },
+            {
+              type: 'navigate',
+              url: 'https://localhost:<test-port>/test/e2e/resources/recorder/recorder.html',
+              assertedEvents: [{
+                type: 'navigation',
+                url: 'https://localhost:<test-port>/test/e2e/resources/recorder/recorder.html',
+                title: ''
+              }]
+            },
+            {
+              type: 'click',
+              target: 'main',
+              selectors: [
+                ['aria/Test Button'],
+                ['#test'],
+                ['xpath///*[@id="test"]'],
+                ['pierce/#test'],
+                ['text/Test Button'],
+              ]
+            }
+          ]
+        });
       });
 
       it('should change the user flow timeout', async () => {
@@ -305,16 +410,20 @@ describe('Recorder', function() {
 
     describe('Shortcuts', () => {
       it('should toggle code view with shortcut', async () => {
-        let noSplitView = await waitForNone('devtools-split-view');
-        assert.isTrue(noSplitView);
+        async function getSplitWidgetVisibility() {
+          const splitView = await waitFor('devtools-split-view');
+          return await splitView.evaluate(el => {
+            return el.getAttribute('sidebar-visibility');
+          });
+        }
+        assert.strictEqual(await getSplitWidgetVisibility(), 'hidden');
 
         await toggleCodeView();
-        const splitView = await waitFor('devtools-split-view');
-        assert.isOk(splitView);
+
+        assert.notStrictEqual(await getSplitWidgetVisibility(), 'hidden');
 
         await toggleCodeView();
-        noSplitView = await waitForNone('devtools-split-view');
-        assert.isTrue(noSplitView);
+        assert.strictEqual(await getSplitWidgetVisibility(), 'hidden');
       });
     });
   });
@@ -329,13 +438,14 @@ describe('Recorder', function() {
         const {frontend} = getBrowserAndPages();
         await frontend.bringToFront();
         const shortcutDialog = await waitFor('devtools-shortcut-dialog');
+        const buttonDialog = await waitFor('devtools-button-dialog', shortcutDialog);
 
-        await click('devtools-button', {root: shortcutDialog});
+        await click('devtools-button', {root: buttonDialog});
 
-        const dialog = await waitFor('devtools-dialog', shortcutDialog);
+        const dialog = await waitFor('devtools-dialog', buttonDialog);
         assert.isOk(dialog);
 
-        const shortcuts = await $$('.keybinds-list-item', dialog);
+        const shortcuts = await $$('.keybinds-list-item', buttonDialog);
         assert.lengthOf(shortcuts, 4);
       });
     });
@@ -344,7 +454,7 @@ describe('Recorder', function() {
   describe('Recording list', () => {
     beforeEach(async () => {
       await enableAndOpenRecorderPanel('recorder/recorder.html');
-      await createAndStartRecording('Test');
+      await createAndStartRecording();
     });
 
     it('can delete a recording from the list', async () => {
@@ -355,7 +465,7 @@ describe('Recorder', function() {
       await frontend.select('pierce/select', 'AllRecordingsPage');
       await click('pierce/.delete-recording-button');
 
-      await frontend.waitForSelector('pierce/devtools-start-view');
+      await frontend.waitForSelector('pierce/.empty-state');
     });
   });
 });

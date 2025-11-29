@@ -41,19 +41,13 @@ export class SyntheticEventsManager {
   static registerSyntheticEvent<T extends Types.Events.SyntheticBased>(syntheticEvent: Omit<T, '_tag'>): T {
     try {
       return SyntheticEventsManager.getActiveManager().registerSyntheticEvent(syntheticEvent);
-    } catch (e) {
+    } catch {
       // If no active manager has been initialized, we assume the trace engine is
       // not running as part of the Performance panel. In this case we don't
       // register synthetic events because we don't need to support timeline
       // modifications serialization.
       return syntheticEvent as T;
     }
-  }
-
-  static registerServerTiming(syntheticEvent: Omit<Types.Events.SyntheticServerTiming, '_tag'>):
-      Types.Events.SyntheticServerTiming {
-    // TODO(crbug.com/340811171): Implement
-    return syntheticEvent as Types.Events.SyntheticServerTiming;
   }
 
   private constructor(rawEvents: readonly Types.Events.Event[]) {

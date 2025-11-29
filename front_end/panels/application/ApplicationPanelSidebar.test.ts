@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import type * as Common from '../../core/common/common.js';
-import type * as Platform from '../../core/platform/platform.js';
+import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
 import {createTarget, stubNoopSettings} from '../../testing/EnvironmentHelpers.js';
@@ -12,16 +12,16 @@ import {
   setMockConnectionResponseHandler,
 } from '../../testing/MockConnection.js';
 import {createResource, getMainFrame} from '../../testing/ResourceTreeHelpers.js';
-import * as Coordinator from '../../ui/components/render_coordinator/render_coordinator.js';
+import * as RenderCoordinator from '../../ui/components/render_coordinator/render_coordinator.js';
 import * as UI from '../../ui/legacy/legacy.js';
 
 import * as Application from './application.js';
 
-const coordinator = Coordinator.RenderCoordinator.RenderCoordinator.instance();
+const {urlString} = Platform.DevToolsPath;
 
 class SharedStorageTreeElementListener {
   #sidebar: Application.ApplicationPanelSidebar.ApplicationPanelSidebar;
-  #originsAdded: Array<String> = new Array<String>();
+  #originsAdded: string[] = [];
 
   constructor(sidebar: Application.ApplicationPanelSidebar.ApplicationPanelSidebar) {
     this.#sidebar = sidebar;
@@ -56,8 +56,10 @@ describeWithMockConnection('ApplicationPanelSidebar', () => {
   let target: SDK.Target.Target;
 
   const TEST_ORIGIN_A = 'http://www.example.com/';
+  const TEST_SITE_A = 'http://example.com';
   const TEST_ORIGIN_B = 'http://www.example.org/';
   const TEST_ORIGIN_C = 'http://www.example.net/';
+  const TEST_SITE_C = 'http://example.net';
 
   const TEST_EXTENSION_NAME = 'Test Extension';
 
@@ -66,45 +68,57 @@ describeWithMockConnection('ApplicationPanelSidebar', () => {
   const EVENTS = [
     {
       accessTime: 0,
-      type: Protocol.Storage.SharedStorageAccessType.DocumentAppend,
+      method: Protocol.Storage.SharedStorageAccessMethod.Append,
       mainFrameId: ID,
       ownerOrigin: TEST_ORIGIN_A,
+      ownerSite: TEST_SITE_A,
       params: {key: 'key0', value: 'value0'} as Protocol.Storage.SharedStorageAccessParams,
+      scope: Protocol.Storage.SharedStorageAccessScope.Window,
     },
     {
       accessTime: 10,
-      type: Protocol.Storage.SharedStorageAccessType.WorkletGet,
+      method: Protocol.Storage.SharedStorageAccessMethod.Get,
       mainFrameId: ID,
       ownerOrigin: TEST_ORIGIN_A,
+      ownerSite: TEST_SITE_A,
       params: {key: 'key0'} as Protocol.Storage.SharedStorageAccessParams,
+      scope: Protocol.Storage.SharedStorageAccessScope.SharedStorageWorklet,
     },
     {
       accessTime: 15,
-      type: Protocol.Storage.SharedStorageAccessType.WorkletLength,
+      method: Protocol.Storage.SharedStorageAccessMethod.Length,
       mainFrameId: ID,
       ownerOrigin: TEST_ORIGIN_A,
+      ownerSite: TEST_SITE_A,
       params: {} as Protocol.Storage.SharedStorageAccessParams,
+      scope: Protocol.Storage.SharedStorageAccessScope.SharedStorageWorklet,
     },
     {
       accessTime: 20,
-      type: Protocol.Storage.SharedStorageAccessType.DocumentClear,
+      method: Protocol.Storage.SharedStorageAccessMethod.Clear,
       mainFrameId: ID,
       ownerOrigin: TEST_ORIGIN_C,
+      ownerSite: TEST_SITE_C,
       params: {} as Protocol.Storage.SharedStorageAccessParams,
+      scope: Protocol.Storage.SharedStorageAccessScope.Window,
     },
     {
       accessTime: 100,
-      type: Protocol.Storage.SharedStorageAccessType.WorkletSet,
+      method: Protocol.Storage.SharedStorageAccessMethod.Set,
       mainFrameId: ID,
       ownerOrigin: TEST_ORIGIN_C,
+      ownerSite: TEST_SITE_C,
       params: {key: 'key0', value: 'value1', ignoreIfPresent: true} as Protocol.Storage.SharedStorageAccessParams,
+      scope: Protocol.Storage.SharedStorageAccessScope.SharedStorageWorklet,
     },
     {
       accessTime: 150,
-      type: Protocol.Storage.SharedStorageAccessType.WorkletRemainingBudget,
+      method: Protocol.Storage.SharedStorageAccessMethod.RemainingBudget,
       mainFrameId: ID,
       ownerOrigin: TEST_ORIGIN_C,
+      ownerSite: TEST_SITE_C,
       params: {} as Protocol.Storage.SharedStorageAccessParams,
+      scope: Protocol.Storage.SharedStorageAccessScope.SharedStorageWorklet,
     },
   ];
 
@@ -120,7 +134,7 @@ describeWithMockConnection('ApplicationPanelSidebar', () => {
   });
 
   // Flaking on multiple bots on CQ.
-  it.skip('[crbug.com/1472237] shows cookies for all frames', async () => {
+  it.skip('[crbug.com/40278557] shows cookies for all frames', async () => {
     Application.ResourcesPanel.ResourcesPanel.instance({forceNew: true});
     const sidebar = await Application.ResourcesPanel.ResourcesPanel.showAndGetSidebar();
     const resourceTreeModel = target.model(SDK.ResourceTreeModel.ResourceTreeModel);
@@ -145,13 +159,13 @@ describeWithMockConnection('ApplicationPanelSidebar', () => {
     resourceTreeModel.dispatchEventToListeners(SDK.ResourceTreeModel.Events.CachedResourcesLoaded, resourceTreeModel);
 
     assert.strictEqual(sidebar.cookieListTreeElement.childCount(), 2);
-    assert.deepStrictEqual(
+    assert.deepEqual(
         sidebar.cookieListTreeElement.children().map(e => e.title),
         ['http://www.example.com', 'http://www.example.org']);
   });
 
   // Flaking on windows + subsequence test failing
-  it.skip('[crbug.com/1472651] shows shared storages and events for origins using shared storage', async () => {
+  it.skip('[crbug.com/40278680] shows shared storages and events for origins using shared storage', async () => {
     const securityOriginManager = target.model(SDK.SecurityOriginManager.SecurityOriginManager);
     assert.exists(securityOriginManager);
     sinon.stub(securityOriginManager, 'securityOrigins').returns([
@@ -177,10 +191,10 @@ describeWithMockConnection('ApplicationPanelSidebar', () => {
     resourceTreeModel.dispatchEventToListeners(SDK.ResourceTreeModel.Events.CachedResourcesLoaded, resourceTreeModel);
     await addedPromise;
 
-    assert.isTrue(setTrackingSpy.calledOnceWithExactly({enable: true}));
+    sinon.assert.calledOnceWithExactly(setTrackingSpy, {enable: true});
 
     assert.strictEqual(sidebar.sharedStorageListTreeElement.childCount(), 3);
-    assert.deepStrictEqual(sidebar.sharedStorageListTreeElement.children().map(e => e.title), [
+    assert.deepEqual(sidebar.sharedStorageListTreeElement.children().map(e => e.title), [
       TEST_ORIGIN_A,
       TEST_ORIGIN_B,
       TEST_ORIGIN_C,
@@ -219,21 +233,20 @@ describeWithMockConnection('ApplicationPanelSidebar', () => {
           Application.ExtensionStorageModel.Events.EXTENSION_STORAGE_ADDED, fakeModelSession);
 
       if (useTreeView) {
-        assert.strictEqual(sidebar.extensionStorageListTreeElement!.childCount(), 1);
-        assert.strictEqual(sidebar.extensionStorageListTreeElement!.children()[0].title, TEST_EXTENSION_NAME);
-        assert.deepStrictEqual(
-            sidebar.extensionStorageListTreeElement!.children()[0].children().map(e => e.title), ['Session', 'Local']);
+        assert.strictEqual(sidebar.extensionStorageListTreeElement.childCount(), 1);
+        assert.strictEqual(sidebar.extensionStorageListTreeElement.children()[0].title, TEST_EXTENSION_NAME);
+        assert.deepEqual(
+            sidebar.extensionStorageListTreeElement.children()[0].children().map(e => e.title), ['Session', 'Local']);
       } else {
-        assert.strictEqual(sidebar.extensionStorageListTreeElement!.childCount(), 2);
-        assert.deepStrictEqual(
-            sidebar.extensionStorageListTreeElement!.children().map(e => e.title), ['Session', 'Local']);
+        assert.strictEqual(sidebar.extensionStorageListTreeElement.childCount(), 2);
+        assert.deepEqual(sidebar.extensionStorageListTreeElement.children().map(e => e.title), ['Session', 'Local']);
       }
 
       extensionStorageModel.dispatchEventToListeners(
           Application.ExtensionStorageModel.Events.EXTENSION_STORAGE_REMOVED, fakeModelLocal);
       extensionStorageModel.dispatchEventToListeners(
           Application.ExtensionStorageModel.Events.EXTENSION_STORAGE_REMOVED, fakeModelSession);
-      assert.strictEqual(sidebar.extensionStorageListTreeElement!.childCount(), 0);
+      assert.strictEqual(sidebar.extensionStorageListTreeElement.childCount(), 0);
     }
   });
 
@@ -263,26 +276,26 @@ describeWithMockConnection('ApplicationPanelSidebar', () => {
 
     // Add a fake extension storage to the main target. The UI should be updated.
     addFakeExtensionStorage(target);
-    assert.strictEqual(sidebar.extensionStorageListTreeElement!.children()[0].childCount(), 1);
+    assert.strictEqual(sidebar.extensionStorageListTreeElement.children()[0].childCount(), 1);
 
     // Add a fake extension storage using a non-main target (e.g, an iframe).
     // Make sure we don't add a second entry to the UI.
     const removeFrameStorage =
         addFakeExtensionStorage(createTarget({type: SDK.Target.Type.FRAME, parentTarget: target}));
-    assert.strictEqual(sidebar.extensionStorageListTreeElement!.children()[0].childCount(), 1);
+    assert.strictEqual(sidebar.extensionStorageListTreeElement.children()[0].childCount(), 1);
 
     // Removing the frame also shouldn't do anything, since the main frame
     // still exists.
     removeFrameStorage();
-    assert.strictEqual(sidebar.extensionStorageListTreeElement!.children()[0].childCount(), 1);
+    assert.strictEqual(sidebar.extensionStorageListTreeElement.children()[0].childCount(), 1);
   });
 
   async function getExpectedCall(expectedCall: string): Promise<sinon.SinonSpy> {
     Application.ResourcesPanel.ResourcesPanel.instance({forceNew: true});
     const sidebar = await Application.ResourcesPanel.ResourcesPanel.showAndGetSidebar();
     const components = expectedCall.split('.');
-    assert.strictEqual(components.length, 2);
-    // @ts-ignore
+    assert.lengthOf(components, 2);
+    // @ts-expect-error
     const object = sidebar[components[0]];
     assert.exists(object);
     return sinon.spy(object, components[1]);
@@ -292,6 +305,7 @@ describeWithMockConnection('ApplicationPanelSidebar', () => {
     addEventListener: () => {},
     securityOrigin: 'https://example.com',
     databaseId: new Application.IndexedDBModel.DatabaseId({storageKey: ''}, ''),
+    getEntries: () => Promise.resolve([]),
   };
 
   const testUiUpdate = <Events, T extends keyof Events>(
@@ -300,7 +314,7 @@ describeWithMockConnection('ApplicationPanelSidebar', () => {
     SDK.TargetManager.TargetManager.instance().setScopeTarget(inScope ? target : null);
     const expectedCall = await getExpectedCall(expectedCallString);
     const model = target.model(modelClass);
-    await coordinator.done({waitForWork: true});
+    await RenderCoordinator.done({waitForWork: true});
     assert.exists(model);
     const data = [{...MOCK_EVENT_ITEM, model}] as Common.EventTarget.EventPayloadToRestParameters<Events, T>;
     model.dispatchEventToListeners(event as Platform.TypeScriptUtilities.NoUnion<T>, ...data);
@@ -365,7 +379,7 @@ describeWithMockConnection('ApplicationPanelSidebar', () => {
     sinon.stub(model, getter).returns([MOCK_GETTER_ITEM]);
     SDK.TargetManager.TargetManager.instance().setScopeTarget(target);
     await new Promise(resolve => setTimeout(resolve, 0));
-    assert.strictEqual(expectedCall.called, true);
+    sinon.assert.called(expectedCall);
   };
 
   it('adds DOM storage element after scope change',
@@ -437,7 +451,7 @@ describeWithMockConnection('ResourcesSection', () => {
       assert.strictEqual(treeElement.childCount(), 0);
       const frame = getMainFrame(target);
 
-      const url = 'http://example.com' as Platform.DevToolsPath.UrlString;
+      const url = urlString`http://example.com`;
       assert.strictEqual(treeElement.firstChild()?.childCount() ?? 0, 0);
       createResource(frame, url, 'text/html', '');
       assert.strictEqual(treeElement.firstChild()?.childCount() ?? 0, inScope ? 1 : 0);
@@ -449,7 +463,7 @@ describeWithMockConnection('ResourcesSection', () => {
       const treeElement = new UI.TreeOutline.TreeElement();
       new Application.ApplicationPanelSidebar.ResourcesSection(panel, treeElement);
 
-      const url = 'http://example.com' as Platform.DevToolsPath.UrlString;
+      const url = urlString`http://example.com`;
       createResource(getMainFrame(target), url, 'text/html', '');
       assert.strictEqual(treeElement.firstChild()?.childCount() ?? 0, 0);
 

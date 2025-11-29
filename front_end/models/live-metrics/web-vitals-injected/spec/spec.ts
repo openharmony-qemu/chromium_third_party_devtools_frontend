@@ -2,15 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import type {INPAttribution, MetricType} from '../../../../third_party/web-vitals/web-vitals.js';
+import type {INPAttribution} from '../../../../third_party/web-vitals/web-vitals.js';
+import type * as Trace from '../../../trace/trace.js';
 
 export const EVENT_BINDING_NAME = '__chromium_devtools_metrics_reporter';
 export const INTERNAL_KILL_SWITCH = '__chromium_devtools_kill_live_metrics';
 
 export const SCRIPTS_PER_LOAF_LIMIT = 10;
 export const LOAF_LIMIT = 5;
-
-export type MetricChangeEvent = Pick<MetricType, 'name'|'value'>;
 
 export type InteractionEntryGroupId = number&{_tag: 'InteractionEntryGroupId'};
 export type UniqueLayoutShiftId = `layout-shift-${number}-${number}`;
@@ -19,34 +18,38 @@ export function getUniqueLayoutShiftId(entry: LayoutShift): UniqueLayoutShiftId 
   return `layout-shift-${entry.value}-${entry.startTime}`;
 }
 
-export interface LCPPhases {
-  timeToFirstByte: number;
-  resourceLoadDelay: number;
-  resourceLoadTime: number;
-  elementRenderDelay: number;
+export interface LcpPhases {
+  timeToFirstByte: Trace.Types.Timing.Milli;
+  resourceLoadDelay: Trace.Types.Timing.Milli;
+  resourceLoadTime: Trace.Types.Timing.Milli;
+  elementRenderDelay: Trace.Types.Timing.Milli;
 }
 
-export interface INPPhases {
-  inputDelay: number;
-  processingDuration: number;
-  presentationDelay: number;
+export interface InpPhases {
+  inputDelay: Trace.Types.Timing.Milli;
+  processingDuration: Trace.Types.Timing.Milli;
+  presentationDelay: Trace.Types.Timing.Milli;
 }
 
-export interface LCPChangeEvent extends MetricChangeEvent {
+export interface LcpChangeEvent {
   name: 'LCP';
-  phases: LCPPhases;
+  value: Trace.Types.Timing.Milli;
+  phases: LcpPhases;
+  startedHidden: boolean;
   nodeIndex?: number;
 }
 
-export interface CLSChangeEvent extends MetricChangeEvent {
+export interface ClsChangeEvent {
   name: 'CLS';
+  value: number;
   clusterShiftIds: UniqueLayoutShiftId[];
 }
 
-export interface INPChangeEvent extends MetricChangeEvent {
+export interface InpChangeEvent {
   name: 'INP';
+  value: Trace.Types.Timing.Milli;
   interactionType: INPAttribution['interactionType'];
-  phases: INPPhases;
+  phases: InpPhases;
   startTime: number;
   entryGroupId: InteractionEntryGroupId;
 }
@@ -55,11 +58,11 @@ export interface INPChangeEvent extends MetricChangeEvent {
 // TODO: Translate these keys before they are logged to console
 /* eslint-disable  @typescript-eslint/naming-convention */
 export interface LoAFScript {
-  'Duration': number;
+  Duration: number;
   'Invoker Type': string|null;
-  'Invoker': string|null;
-  'Function': string|null;
-  'Source': string|null;
+  Invoker: string|null;
+  Function: string|null;
+  Source: string|null;
   'Char position': number|null;
 }
 /* eslint-enable  @typescript-eslint/naming-convention */
@@ -91,8 +94,8 @@ export interface InteractionEntryEvent {
   entryGroupId: InteractionEntryGroupId;
   startTime: number;
   nextPaintTime: number;
-  duration: number;
-  phases: INPPhases;
+  duration: Trace.Types.Timing.Milli;
+  phases: InpPhases;
   nodeIndex?: number;
   longAnimationFrameEntries: PerformanceLongAnimationFrameTimingJSON[];
 }
@@ -109,4 +112,4 @@ export interface ResetEvent {
 }
 
 export type WebVitalsEvent =
-    LCPChangeEvent|CLSChangeEvent|INPChangeEvent|InteractionEntryEvent|LayoutShiftEvent|ResetEvent;
+    LcpChangeEvent|ClsChangeEvent|InpChangeEvent|InteractionEntryEvent|LayoutShiftEvent|ResetEvent;

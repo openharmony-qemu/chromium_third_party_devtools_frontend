@@ -7,13 +7,15 @@ import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
 import * as HAR from '../har/har.js';
 
+const {urlString} = Platform.DevToolsPath;
+
 describe('HAR', () => {
   describe('Log', () => {
     describe('Entry', () => {
       describe('build', () => {
         const requestId = 'r0' as Protocol.Network.RequestId;
         const {build} = HAR.Log.Entry;
-        const url = 'p0.com' as Platform.DevToolsPath.UrlString;
+        const url = urlString`p0.com`;
 
         it('exports request cookies and authorization headers by default', async () => {
           const request = SDK.NetworkRequest.NetworkRequest.create(
@@ -149,6 +151,13 @@ describe('HAR', () => {
           request.setResponseCacheStorageCacheName(cacheName);
           request.setServiceWorkerResponseSource(Protocol.Network.ServiceWorkerResponseSource.CacheStorage);
 
+          const serviceWorkerRouterInfo: Protocol.Network.ServiceWorkerRouterInfo = {
+            ruleIdMatched: 1,
+            matchedSourceType: Protocol.Network.ServiceWorkerRouterSource.Cache,
+            actualSourceType: Protocol.Network.ServiceWorkerRouterSource.Network,
+          };
+          request.serviceWorkerRouterInfo = serviceWorkerRouterInfo;
+
           const timingInfo: Protocol.Network.ResourceTiming = {
             requestTime: 500,
             proxyStart: 0,
@@ -169,20 +178,29 @@ describe('HAR', () => {
             pushEnd: 0,
             receiveHeadersStart: 0,
             receiveHeadersEnd: 0,
+            workerRouterEvaluationStart: 200,
+            workerCacheLookupStart: 100,
           };
           request.timing = timingInfo;
 
           const entry = await build(request, {sanitize: false});
 
-          assert.strictEqual(entry.response._fetchedViaServiceWorker, true);
+          assert.isTrue(entry.response._fetchedViaServiceWorker);
           assert.strictEqual(entry.response._responseCacheStorageCacheName, cacheName);
           assert.strictEqual(
               entry.response._serviceWorkerResponseSource, Protocol.Network.ServiceWorkerResponseSource.CacheStorage);
+          assert.strictEqual(entry.response._serviceWorkerRouterRuleIdMatched, serviceWorkerRouterInfo.ruleIdMatched);
+          assert.strictEqual(
+              entry.response._serviceWorkerRouterMatchedSourceType, serviceWorkerRouterInfo.matchedSourceType);
+          assert.strictEqual(
+              entry.response._serviceWorkerRouterActualSourceType, serviceWorkerRouterInfo.actualSourceType);
 
           assert.strictEqual(entry.timings._workerStart, timingInfo.workerStart);
           assert.strictEqual(entry.timings._workerReady, timingInfo.workerReady);
           assert.strictEqual(entry.timings._workerFetchStart, timingInfo.workerFetchStart);
           assert.strictEqual(entry.timings._workerRespondWithSettled, timingInfo.workerRespondWithSettled);
+          assert.strictEqual(entry.timings._workerRouterEvaluationStart, timingInfo.workerRouterEvaluationStart);
+          assert.strictEqual(entry.timings._workerCacheLookupStart, timingInfo.workerCacheLookupStart);
         });
       });
     });

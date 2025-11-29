@@ -3,9 +3,9 @@
  * Copyright 2017 Google Inc.
  * SPDX-License-Identifier: Apache-2.0
  */
-import {existsSync} from 'fs';
-import {tmpdir} from 'os';
-import {join} from 'path';
+import {existsSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 
 import {
   Browser as InstalledBrowser,
@@ -31,11 +31,7 @@ import type {SupportedBrowser} from '../common/SupportedBrowser.js';
 import {debugError, DEFAULT_VIEWPORT} from '../common/util.js';
 import type {Viewport} from '../common/Viewport.js';
 
-import type {
-  BrowserLaunchArgumentOptions,
-  ChromeReleaseChannel,
-  PuppeteerNodeLaunchOptions,
-} from './LaunchOptions.js';
+import type {ChromeReleaseChannel, LaunchOptions} from './LaunchOptions.js';
 import {NodeWebSocketTransport as WebSocketTransport} from './NodeWebSocketTransport.js';
 import {PipeTransport} from './PipeTransport.js';
 import type {PuppeteerNode} from './PuppeteerNode.js';
@@ -75,15 +71,17 @@ export abstract class BrowserLauncher {
     return this.#browser;
   }
 
-  async launch(options: PuppeteerNodeLaunchOptions = {}): Promise<Browser> {
+  async launch(options: LaunchOptions = {}): Promise<Browser> {
     const {
       dumpio = false,
+      enableExtensions = false,
       env = process.env,
       handleSIGINT = true,
       handleSIGTERM = true,
       handleSIGHUP = true,
       acceptInsecureCerts = false,
       defaultViewport = DEFAULT_VIEWPORT,
+      downloadBehavior,
       slowMo = 0,
       timeout = 30000,
       waitForInitialPage = true,
@@ -95,6 +93,10 @@ export abstract class BrowserLauncher {
     // Default to 'webDriverBiDi' for Firefox.
     if (this.#browser === 'firefox' && protocol === undefined) {
       protocol = 'webDriverBiDi';
+    }
+
+    if (this.#browser === 'firefox' && protocol === 'cdp') {
+      throw new Error('Connecting to Firefox using CDP is no longer supported');
     }
 
     const launchArgs = await this.computeLaunchArguments({
@@ -118,23 +120,11 @@ export abstract class BrowserLauncher {
 
     if (
       this.#browser === 'firefox' &&
-      protocol !== 'webDriverBiDi' &&
-      this.puppeteer.configuration.logLevel === 'warn'
-    ) {
-      console.warn(
-        `Chrome DevTools Protocol (CDP) support for Firefox is deprecated in Puppeteer ` +
-          `and it will be eventually removed. ` +
-          `Use WebDriver BiDi instead (see https://pptr.dev/webdriver-bidi#get-started).`,
-      );
-    }
-
-    if (
-      this.#browser === 'firefox' &&
       protocol === 'webDriverBiDi' &&
       usePipe
     ) {
       throw new Error(
-        'Pipe connections are not supported wtih Firefox and WebDriver BiDi',
+        'Pipe connections are not supported with Firefox and WebDriver BiDi',
       );
     }
 
@@ -201,11 +191,11 @@ export abstract class BrowserLauncher {
           );
         } else {
           browser = await CdpBrowser._create(
-            this.browser,
             cdpConnection,
             [],
             acceptInsecureCerts,
             defaultViewport,
+            downloadBehavior,
             browserProcess.nodeProcess,
             browserCloseCallback,
             options.targetFilter,
@@ -220,6 +210,20 @@ export abstract class BrowserLauncher {
       throw error;
     }
 
+    if (Array.isArray(enableExtensions)) {
+      if (this.#browser === 'chrome' && !usePipe) {
+        throw new Error(
+          'To use `enableExtensions` with a list of paths in Chrome, you must be connected with `--remote-debugging-pipe` (`pipe: true`).',
+        );
+      }
+
+      await Promise.all([
+        enableExtensions.map(path => {
+          return browser.installExtension(path);
+        }),
+      ]);
+    }
+
     if (waitForInitialPage) {
       await this.waitForPageTarget(browser, timeout);
     }
@@ -227,15 +231,18 @@ export abstract class BrowserLauncher {
     return browser;
   }
 
-  abstract executablePath(channel?: ChromeReleaseChannel): string;
+  abstract executablePath(
+    channel?: ChromeReleaseChannel,
+    validatePath?: boolean,
+  ): string;
 
-  abstract defaultArgs(object: BrowserLaunchArgumentOptions): string[];
+  abstract defaultArgs(object: LaunchOptions): string[];
 
   /**
    * @internal
    */
   protected abstract computeLaunchArguments(
-    options: PuppeteerNodeLaunchOptions,
+    options: LaunchOptions,
   ): Promise<ResolvedLaunchArgs>;
 
   /**
@@ -415,10 +422,13 @@ export abstract class BrowserLauncher {
   /**
    * @internal
    */
-  protected resolveExecutablePath(headless?: boolean | 'shell'): string {
+  resolveExecutablePath(
+    headless?: boolean | 'shell',
+    validatePath = true,
+  ): string {
     let executablePath = this.puppeteer.configuration.executablePath;
     if (executablePath) {
-      if (!existsSync(executablePath)) {
+      if (validatePath && !existsSync(executablePath)) {
         throw new Error(
           `Tried to find the browser at the configured path (${executablePath}), but no executable was found.`,
         );
@@ -453,7 +463,7 @@ export abstract class BrowserLauncher {
       buildId: this.puppeteer.browserVersion,
     });
 
-    if (!existsSync(executablePath)) {
+    if (validatePath && !existsSync(executablePath)) {
       const configVersion =
         this.puppeteer.configuration?.[this.browser]?.version;
       if (configVersion) {

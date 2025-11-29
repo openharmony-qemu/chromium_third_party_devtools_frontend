@@ -9,7 +9,7 @@ import type {
   RehydratingExecutionContext, RehydratingScript, RehydratingTarget, ServerMessage} from './RehydratingObject.js';
 
 const mockTarget1: RehydratingTarget = {
-  targetId: 'ABCDE' as Protocol.Page.FrameId,
+  targetId: 'ABCDE' as Protocol.Target.TargetID,
   type: 'page',
   isolate: '12345',
   url: 'example.com',
@@ -51,8 +51,8 @@ const mockScript1: RehydratingScript = {
   hash: '',
   isModule: false,
   url: 'example.com',
-  hasSourceUrl: false,
-  sourceMapUrl: undefined,
+  hasSourceURL: false,
+  sourceMapURL: undefined,
   length: 10,
   sourceText: 'source text 1',
   auxData: {
@@ -73,8 +73,8 @@ const mockScript2: RehydratingScript = {
   hash: '',
   isModule: false,
   url: 'example.com',
-  hasSourceUrl: false,
-  sourceMapUrl: undefined,
+  hasSourceURL: false,
+  sourceMapURL: undefined,
   length: 10,
   sourceText: 'source text 2',
   auxData: {
@@ -136,7 +136,7 @@ describe('RehydratingSession', () => {
       method: 'Debugger.enable',
       sessionId,
     });
-    assert.strictEqual(mockRehydratingConnection.messageQueue.length, 3);
+    assert.lengthOf(mockRehydratingConnection.messageQueue, 3);
     const scriptParsedMessages = mockRehydratingConnection.messageQueue.slice(0, 2);
     const resultMessage = mockRehydratingConnection.messageQueue.slice(2);
     for (const scriptParsedMessage of scriptParsedMessages) {
@@ -155,7 +155,7 @@ describe('RehydratingSession', () => {
       method: 'Runtime.enable',
       sessionId,
     });
-    assert.strictEqual(mockRehydratingConnection.messageQueue.length, 3);
+    assert.lengthOf(mockRehydratingConnection.messageQueue, 3);
     const executionContextCreatedMessages = mockRehydratingConnection.messageQueue.slice(0, 2);
     const resultMessage = mockRehydratingConnection.messageQueue.slice(2);
     for (const executionContextCreatedMessage of executionContextCreatedMessages) {
@@ -179,7 +179,7 @@ describe('RehydratingSession', () => {
         scriptId: mockScript1.scriptId,
       },
     });
-    assert.strictEqual(mockRehydratingConnection.messageQueue.length, 1);
+    assert.lengthOf(mockRehydratingConnection.messageQueue, 1);
     const scriptSourceTextMessage = mockRehydratingConnection.messageQueue[0];
     assert.isNotNull(scriptSourceTextMessage);
     assert.strictEqual(scriptSourceTextMessage.id, messageId);
