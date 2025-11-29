@@ -925,16 +925,9 @@ export class MainMenuItem implements UI.Toolbar.Provider {
       right.setToggled(UI.DockController.DockController.instance().dockSide() === UI.DockController.DockState.RIGHT);
       left.setToggled(UI.DockController.DockController.instance().dockSide() === UI.DockController.DockState.LEFT);
       dockItemToolbar.appendToolbarItem(undock);
-       // #ifdef ARKWEB_DEVTOOLS
-      const onlySupportUndock = true;
-      if (onlySupportUndock) {
-        // ohos doesn't support dock side.
-      } else {
-        dockItemToolbar.appendToolbarItem(left);
-        dockItemToolbar.appendToolbarItem(bottom);
-        dockItemToolbar.appendToolbarItem(right);
-      }
-      // #endif ARKWEB_DEVTOOLS
+      dockItemToolbar.appendToolbarItem(left);
+      dockItemToolbar.appendToolbarItem(bottom);
+      dockItemToolbar.appendToolbarItem(right);
       dockItemElement.addEventListener('keydown', event => {
         let dir = 0;
         if (event.key === 'ArrowLeft') {
@@ -948,14 +941,6 @@ export class MainMenuItem implements UI.Toolbar.Provider {
         } else {
           return;
         }
-
-        // #ifdef ARKWEB_DEVTOOLS
-        const onlySupportUndock = true;
-        if (onlySupportUndock) {
-          // ohos doesn't support dock side.
-          dir = 0;
-        }
-        // #endif ARKWEB_DEVTOOLS
 
         const buttons = [undock, left, bottom, right];
         let index = buttons.findIndex(button => button.element.hasFocus());
