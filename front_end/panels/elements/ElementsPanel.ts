@@ -1,6 +1,7 @@
 // Copyright 2021 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-imperative-dom-api */
 
 /*
  * Copyright (C) 2007, 2008 Apple Inc.  All rights reserved.
@@ -49,6 +50,7 @@ import type {AXTreeNodeData} from './AccessibilityTreeUtils.js';
 import {AccessibilityTreeView} from './AccessibilityTreeView.js';
 import {ColorSwatchPopoverIcon} from './ColorSwatchPopoverIcon.js';
 import * as ElementsComponents from './components/components.js';
+import {ComputedStyleModel} from './ComputedStyleModel.js';
 import {ComputedStyleWidget} from './ComputedStyleWidget.js';
 import elementsPanelStyles from './elementsPanel.css.js';
 import type {ElementsTreeElement} from './ElementsTreeElement.js';
@@ -145,7 +147,11 @@ const UIStrings = {
    * @description Accessible name for the DOM tree explorer view.
    */
   domTreeExplorer: 'DOM tree explorer',
-};
+  /**
+   * @description A context menu item to reveal a submenu with badge settings.
+   */
+  adornerSettings: 'Badge settings',
+} as const;
 
 const str_ = i18n.i18n.registerUIStrings('panels/elements/ElementsPanel.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -166,7 +172,7 @@ const createAccessibilityTreeToggleButton = (isActive: boolean): HTMLElement => 
   button.data = {
     active: isActive,
     variant: Buttons.Button.Variant.TOOLBAR,
-    iconUrl: new URL('../../Images/person.svg', import.meta.url).toString(),
+    iconName: 'person',
     title,
     jslogContext: 'toggle-accessibility-tree',
   };
@@ -193,16 +199,15 @@ export class ElementsPanel extends UI.Panel.Panel implements UI.SearchableView.S
   stylesWidget: StylesSidebarPane;
   private readonly computedStyleWidget: ComputedStyleWidget;
   private readonly metricsWidget: MetricsSidebarPane;
-  private treeOutlines: Set<ElementsTreeOutline> = new Set();
-  private searchResults!: {
+  private treeOutlines = new Set<ElementsTreeOutline>();
+  private searchResults!: Array<{
     domModel: SDK.DOMModel.DOMModel,
     index: number,
     node: ((SDK.DOMModel.DOMNode | undefined)|null),
-  }[]|undefined;
+  }>|undefined;
   private currentSearchResultIndex: number;
   pendingNodeReveal: boolean;
   private readonly adornerManager: ElementsComponents.AdornerManager.AdornerManager;
-  private adornerSettingsPane: ElementsComponents.AdornerSettingsPane.AdornerSettingsPane|null;
   private readonly adornersByName: Map<string, Set<Adorners.Adorner.Adorner>>;
   accessibilityTreeButton?: HTMLElement;
   domTreeButton?: HTMLElement;
@@ -225,6 +230,7 @@ export class ElementsPanel extends UI.Panel.Panel implements UI.SearchableView.S
 
   constructor() {
     super('elements');
+    this.registerRequiredCSS(elementsPanelStyles);
 
     this.splitWidget = new UI.SplitWidget.SplitWidget(true, true, 'elements-panel-split-view-state', 325, 325);
     this.splitWidget.addEventListener(
@@ -276,9 +282,10 @@ export class ElementsPanel extends UI.Panel.Panel implements UI.SearchableView.S
 
     crumbsContainer.appendChild(this.breadcrumbs);
 
-    this.stylesWidget = StylesSidebarPane.instance();
-    this.computedStyleWidget = new ComputedStyleWidget();
-    this.metricsWidget = new MetricsSidebarPane();
+    const computedStyleModel = new ComputedStyleModel();
+    this.stylesWidget = new StylesSidebarPane(computedStyleModel);
+    this.computedStyleWidget = new ComputedStyleWidget(computedStyleModel);
+    this.metricsWidget = new MetricsSidebarPane(computedStyleModel);
 
     Common.Settings.Settings.instance()
         .moduleSetting('sidebar-position')
@@ -300,7 +307,6 @@ export class ElementsPanel extends UI.Panel.Panel implements UI.SearchableView.S
 
     this.adornerManager = new ElementsComponents.AdornerManager.AdornerManager(
         Common.Settings.Settings.instance().moduleSetting('adorner-settings'));
-    this.adornerSettingsPane = null;
     this.adornersByName = new Map();
   }
 
@@ -333,6 +339,17 @@ export class ElementsPanel extends UI.Panel.Panel implements UI.SearchableView.S
     treeElement.select();
   }
 
+  toggleAccessibilityTree(): void {
+    if (!this.domTreeButton) {
+      return;
+    }
+    if (this.splitWidget.mainWidget() === this.accessibilityTreeView) {
+      this.showDOMTree();
+    } else {
+      this.showAccessibilityTree();
+    }
+  }
+
   static instance(opts: {
     forceNew: boolean|null,
   }|undefined = {forceNew: null}): ElementsPanel {
@@ -350,7 +367,7 @@ export class ElementsPanel extends UI.Panel.Panel implements UI.SearchableView.S
     }
 
     return this.sidebarPaneView.showView(this.stylesViewToReveal).then(() => {
-      this.stylesWidget.revealProperty((cssProperty as SDK.CSSProperty.CSSProperty));
+      this.stylesWidget.revealProperty((cssProperty));
     });
   }
 
@@ -476,7 +493,6 @@ export class ElementsPanel extends UI.Panel.Panel implements UI.SearchableView.S
   override wasShown(): void {
     super.wasShown();
     UI.Context.Context.instance().setFlavor(ElementsPanel, this);
-    this.registerCSSFiles([elementsPanelStyles]);
 
     for (const treeOutline of this.treeOutlines) {
       // Attach heavy component lazily
@@ -528,7 +544,7 @@ export class ElementsPanel extends UI.Panel.Panel implements UI.SearchableView.S
     let selectedNode = event.data.node;
 
     // If the selectedNode is a pseudoNode, we want to ensure that it has a valid parentNode
-    if (selectedNode && (selectedNode.pseudoType() && !selectedNode.parentNode)) {
+    if (selectedNode?.pseudoType() && !selectedNode.parentNode) {
       selectedNode = null;
     }
     const {focus} = event.data;
@@ -613,7 +629,7 @@ export class ElementsPanel extends UI.Panel.Panel implements UI.SearchableView.S
       if (savedSelectedNodeOnReset !== this.selectedNodeOnReset) {
         return;
       }
-      let node: (SDK.DOMModel.DOMNode|null) = restoredNodeId ? domModel.nodeForId(restoredNodeId) : null;
+      let node = domModel.nodeForId(restoredNodeId);
       if (!node) {
         const inspectedDocument = domModel.existingDocument();
         node = inspectedDocument ? inspectedDocument.body || inspectedDocument.documentElement : null;
@@ -726,12 +742,6 @@ export class ElementsPanel extends UI.Panel.Panel implements UI.SearchableView.S
     }
   }
 
-  switchToAndFocus(node: SDK.DOMModel.DOMNode): void {
-    // Reset search restore.
-    this.searchableViewInternal.cancelSearch();
-    void UI.ViewManager.ViewManager.instance().showView('elements').then(() => this.selectDOMNode(node, true));
-  }
-
   private jumpToSearchResult(index: number): void {
     if (!this.searchResults) {
       return;
@@ -805,7 +815,7 @@ export class ElementsPanel extends UI.Panel.Panel implements UI.SearchableView.S
   }
 
   private hideSearchHighlights(): void {
-    if (!this.searchResults || !this.searchResults.length || this.currentSearchResultIndex === -1) {
+    if (!this.searchResults?.length || this.currentSearchResultIndex === -1) {
       return;
     }
     const searchResult = this.searchResults[this.currentSearchResultIndex];
@@ -1106,7 +1116,7 @@ export class ElementsPanel extends UI.Panel.Panel implements UI.SearchableView.S
   }
 
   private updateSidebarPosition(): void {
-    if (this.sidebarPaneView && this.sidebarPaneView.tabbedPane().shouldHideOnDetach()) {
+    if (this.sidebarPaneView?.tabbedPane().shouldHideOnDetach()) {
       return;
     }  // We can't reparent extension iframes.
 
@@ -1172,7 +1182,7 @@ export class ElementsPanel extends UI.Panel.Panel implements UI.SearchableView.S
   }
 
   private trackedCSSPropertiesUpdated({data: domNodes}:
-                                          Common.EventTarget.EventTargetEvent<(SDK.DOMModel.DOMNode | null)[]>): void {
+                                          Common.EventTarget.EventTargetEvent<Array<SDK.DOMModel.DOMNode|null>>): void {
     for (const domNode of domNodes) {
       if (!domNode) {
         continue;
@@ -1186,30 +1196,23 @@ export class ElementsPanel extends UI.Panel.Panel implements UI.SearchableView.S
     }
   }
 
-  showAdornerSettingsPane(): void {
-    // Delay the initialization of the pane to the first showing
-    // since usually this pane won't be used.
-    if (!this.adornerSettingsPane) {
-      this.adornerSettingsPane = new ElementsComponents.AdornerSettingsPane.AdornerSettingsPane();
-      this.adornerSettingsPane.addEventListener('adornersettingupdated', (event: Event) => {
-        const {adornerName, isEnabledNow, newSettings} =
-            (event as ElementsComponents.AdornerSettingsPane.AdornerSettingUpdatedEvent).data;
-        const adornersToUpdate = this.adornersByName.get(adornerName);
+  populateAdornerSettingsContextMenu(contextMenu: UI.ContextMenu.ContextMenu): void {
+    const adornerSubMenu = contextMenu.viewSection().appendSubMenuItem(
+        i18nString(UIStrings.adornerSettings), false, 'show-adorner-settings');
+    const adornerSettings = this.adornerManager.getSettings();
+    for (const [adorner, isEnabled] of adornerSettings) {
+      adornerSubMenu.defaultSection().appendCheckboxItem(adorner, () => {
+        const updatedIsEnabled = !isEnabled;
+        const adornersToUpdate = this.adornersByName.get(adorner);
         if (adornersToUpdate) {
-          for (const adorner of adornersToUpdate) {
-            isEnabledNow ? adorner.show() : adorner.hide();
+          for (const adornerToUpdate of adornersToUpdate) {
+            updatedIsEnabled ? adornerToUpdate.show() : adornerToUpdate.hide();
           }
         }
-        this.adornerManager.updateSettings(newSettings);
-      });
-      this.searchableViewInternal.element.prepend(this.adornerSettingsPane);
+        this.adornerManager.getSettings().set(adorner, updatedIsEnabled);
+        this.adornerManager.updateSettings(adornerSettings);
+      }, {checked: isEnabled, jslogContext: adorner});
     }
-
-    const adornerSettings = this.adornerManager.getSettings();
-    this.adornerSettingsPane.data = {
-      settings: adornerSettings,
-    };
-    this.adornerSettingsPane.show();
   }
 
   isAdornerEnabled(adornerText: string): boolean {
@@ -1236,13 +1239,13 @@ export class ElementsPanel extends UI.Panel.Panel implements UI.SearchableView.S
     adornerSet.delete(adorner);
   }
 
-  private static firstInspectElementCompletedForTest = function(): void {};
-  private static firstInspectElementNodeNameForTest = '';
+  protected static firstInspectElementCompletedForTest = function(): void {};
+  protected static firstInspectElementNodeNameForTest = '';
 }
 
-// @ts-ignore exported for Tests.js
+// @ts-expect-error exported for Tests.js
 globalThis.Elements = globalThis.Elements || {};
-// @ts-ignore exported for Tests.js
+// @ts-expect-error exported for Tests.js
 globalThis.Elements.ElementsPanel = ElementsPanel;
 
 const enum SplitMode {
@@ -1322,9 +1325,9 @@ export class DOMNodeRevealer implements
     function revealPromise(
         resolve: () => void, reject: (arg0: Platform.UserVisibleError.UserVisibleError) => void): void {
       if (node instanceof SDK.DOMModel.DOMNode) {
-        onNodeResolved((node as SDK.DOMModel.DOMNode));
+        onNodeResolved((node));
       } else if (node instanceof SDK.DOMModel.DeferredDOMNode) {
-        (node as SDK.DOMModel.DeferredDOMNode).resolve(checkDeferredDOMNodeThenReveal);
+        (node).resolve(checkDeferredDOMNodeThenReveal);
       } else {
         const domModel = node.runtimeModel().target().model(SDK.DOMModel.DOMModel);
         if (domModel) {
@@ -1423,6 +1426,14 @@ export class ElementsActionDelegate implements UI.ActionRegistration.ActionDeleg
         void SDK.DOMModel.DOMModelUndoStack.instance().redo();
         ElementsPanel.instance().stylesWidget.forceUpdate();
         return true;
+      case 'elements.toggle-a11y-tree':
+        ElementsPanel.instance().toggleAccessibilityTree();
+        return true;
+      case 'elements.toggle-word-wrap': {
+        const setting = Common.Settings.Settings.instance().moduleSetting<boolean>('dom-word-wrap');
+        setting.set(!setting.get());
+        return true;
+      }
       case 'elements.show-styles':
         ElementsPanel.instance().selectAndShowSidebarTab(SidebarPaneTabId.STYLES);
         return true;

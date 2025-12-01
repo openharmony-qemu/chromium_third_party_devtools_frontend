@@ -17,6 +17,7 @@ import type {
   GeolocationOptions,
   MediaFeature,
   PageEvents,
+  WaitTimeoutOptions,
 } from '../api/Page.js';
 import {
   Page,
@@ -32,6 +33,7 @@ import type {
 } from '../cdp/NetworkManager.js';
 import {Tracing} from '../cdp/Tracing.js';
 import type {
+  CookiePartitionKey,
   Cookie,
   CookieParam,
   CookieSameSite,
@@ -39,6 +41,7 @@ import type {
 } from '../common/Cookie.js';
 import {UnsupportedOperation} from '../common/Errors.js';
 import {EventEmitter} from '../common/EventEmitter.js';
+import {FileChooser} from '../common/FileChooser.js';
 import type {PDFOptions} from '../common/PDFOptions.js';
 import type {Awaitable} from '../common/types.js';
 import {
@@ -50,6 +53,7 @@ import {
 import type {Viewport} from '../common/Viewport.js';
 import {assert} from '../util/assert.js';
 import {bubble} from '../util/decorators.js';
+import {Deferred} from '../util/Deferred.js';
 import {stringToTypedArray} from '../util/encoding.js';
 import {isErrorLike} from '../util/ErrorLike.js';
 
@@ -57,6 +61,7 @@ import type {BidiBrowser} from './Browser.js';
 import type {BidiBrowserContext} from './BrowserContext.js';
 import type {BidiCdpSession} from './CDPSession.js';
 import type {BrowsingContext} from './core/BrowsingContext.js';
+import {BidiElementHandle} from './ElementHandle.js';
 import {BidiFrame} from './Frame.js';
 import type {BidiHTTPResponse} from './HTTPResponse.js';
 import {BidiKeyboard, BidiMouse, BidiTouchscreen} from './Input.js';
@@ -95,6 +100,7 @@ export class BidiPage extends Page {
   readonly #cdpEmulationManager: EmulationManager;
 
   #emulatedNetworkConditions?: InternalNetworkConditions;
+  #fileChooserDeferreds = new Set<Deferred<FileChooser>>();
 
   _client(): BidiCdpSession {
     return this.#frame.client;
@@ -170,6 +176,7 @@ export class BidiPage extends Page {
     const changeUserAgent = (userAgent: string) => {
       Object.defineProperty(navigator, 'userAgent', {
         value: userAgent,
+        configurable: true,
       });
     };
 
@@ -189,7 +196,7 @@ export class BidiPage extends Page {
         : undefined,
       // When we disable the UserAgent we want to
       // evaluate the original value in all Browsing Contexts
-      frames.map(frame => {
+      ...frames.map(frame => {
         return frame.evaluate(changeUserAgent, userAgent);
       }),
     ]);
@@ -303,12 +310,38 @@ export class BidiPage extends Page {
     return this._timeoutSettings.timeout();
   }
 
+  override getDefaultNavigationTimeout(): number {
+    return this._timeoutSettings.navigationTimeout();
+  }
+
   override isJavaScriptEnabled(): boolean {
     return this.#cdpEmulationManager.javascriptEnabled;
   }
 
   override async setGeolocation(options: GeolocationOptions): Promise<void> {
-    return await this.#cdpEmulationManager.setGeolocation(options);
+    const {longitude, latitude, accuracy = 0} = options;
+    if (longitude < -180 || longitude > 180) {
+      throw new Error(
+        `Invalid longitude "${longitude}": precondition -180 <= LONGITUDE <= 180 failed.`,
+      );
+    }
+    if (latitude < -90 || latitude > 90) {
+      throw new Error(
+        `Invalid latitude "${latitude}": precondition -90 <= LATITUDE <= 90 failed.`,
+      );
+    }
+    if (accuracy < 0) {
+      throw new Error(
+        `Invalid accuracy "${accuracy}": precondition 0 <= ACCURACY failed.`,
+      );
+    }
+    return await this.#frame.browsingContext.setGeolocationOverride({
+      coordinates: {
+        latitude: options.latitude,
+        longitude: options.longitude,
+        accuracy: options.accuracy,
+      },
+    });
   }
 
   override async setJavaScriptEnabled(enabled: boolean): Promise<void> {
@@ -576,8 +609,54 @@ export class BidiPage extends Page {
     throw new UnsupportedOperation();
   }
 
-  override waitForFileChooser(): never {
-    throw new UnsupportedOperation();
+  override async waitForFileChooser(
+    options: WaitTimeoutOptions = {},
+  ): Promise<FileChooser> {
+    const {timeout = this._timeoutSettings.timeout()} = options;
+    const deferred = Deferred.create<FileChooser>({
+      message: `Waiting for \`FileChooser\` failed: ${timeout}ms exceeded`,
+      timeout,
+    });
+
+    this.#fileChooserDeferreds.add(deferred);
+
+    if (options.signal) {
+      options.signal.addEventListener(
+        'abort',
+        () => {
+          deferred.reject(options.signal?.reason);
+        },
+        {once: true},
+      );
+    }
+
+    this.#frame.browsingContext.once('filedialogopened', info => {
+      if (!info.element) {
+        return;
+      }
+      const chooser = new FileChooser(
+        BidiElementHandle.from<HTMLInputElement>(
+          {
+            sharedId: info.element.sharedId,
+            handle: info.element.handle,
+            type: 'node',
+          },
+          this.#frame.mainRealm(),
+        ),
+        info.multiple,
+      );
+      for (const deferred of this.#fileChooserDeferreds) {
+        deferred.resolve(chooser);
+        this.#fileChooserDeferreds.delete(deferred);
+      }
+    });
+
+    try {
+      return await deferred.valueOrThrow();
+    } catch (error) {
+      this.#fileChooserDeferreds.delete(deferred);
+      throw error;
+    }
   }
 
   override workers(): BidiWebWorker[] {
@@ -730,6 +809,12 @@ export class BidiPage extends Page {
         !String.prototype.startsWith.call(cookieUrl || '', 'data:'),
         `Data URL page can not have cookie "${cookie.name}"`,
       );
+      // TODO: Support Chrome cookie partition keys
+      assert(
+        cookie.partitionKey === undefined ||
+          typeof cookie.partitionKey === 'string',
+        'BiDi only allows domain partition keys',
+      );
 
       const normalizedUrl = URL.canParse(cookieUrl)
         ? new URL(cookieUrl)
@@ -754,7 +839,7 @@ export class BidiPage extends Page {
         ...(cookie.sameSite !== undefined
           ? {sameSite: convertCookiesSameSiteCdpToBiDi(cookie.sameSite)}
           : {}),
-        ...(cookie.expires !== undefined ? {expiry: cookie.expires} : {}),
+        ...{expiry: convertCookiesExpiryCdpToBiDi(cookie.expires)},
         // Chrome-specific properties.
         ...cdpSpecificCookiePropertiesFromPuppeteerToBidi(
           cookie,
@@ -918,14 +1003,25 @@ function testUrlMatchCookie(cookie: Cookie, url: URL): boolean {
   return testUrlMatchCookiePath(cookie, normalizedUrl);
 }
 
-function bidiToPuppeteerCookie(bidiCookie: Bidi.Network.Cookie): Cookie {
+export function bidiToPuppeteerCookie(
+  bidiCookie: Bidi.Network.Cookie,
+  returnCompositePartitionKey = false,
+): Cookie {
   const partitionKey = bidiCookie[CDP_SPECIFIC_PREFIX + 'partitionKey'];
 
-  function getParitionKey(): {partitionKey?: string} {
+  function getParitionKey(): {partitionKey?: Cookie['partitionKey']} {
     if (typeof partitionKey === 'string') {
       return {partitionKey};
     }
     if (typeof partitionKey === 'object' && partitionKey !== null) {
+      if (returnCompositePartitionKey) {
+        return {
+          partitionKey: {
+            sourceOrigin: partitionKey.topLevelSite,
+            hasCrossSiteAncestor: partitionKey.hasCrossSiteAncestor ?? false,
+          },
+        };
+      }
       return {
         // TODO: a breaking change in Puppeteer is required to change
         // partitionKey type and report the composite partition key.
@@ -981,7 +1077,7 @@ function cdpSpecificCookiePropertiesFromBidiToPuppeteer(
  * Gets CDP-specific properties from the cookie, adds CDP-specific prefixes and returns
  * them as a new object which can be used in BiDi.
  */
-function cdpSpecificCookiePropertiesFromPuppeteerToBidi(
+export function cdpSpecificCookiePropertiesFromPuppeteerToBidi(
   cookieParam: CookieParam,
   ...propertyNames: Array<keyof CookieParam>
 ): Record<string, unknown> {
@@ -1000,7 +1096,7 @@ function convertCookiesSameSiteBiDiToCdp(
   return sameSite === 'strict' ? 'Strict' : sameSite === 'lax' ? 'Lax' : 'None';
 }
 
-function convertCookiesSameSiteCdpToBiDi(
+export function convertCookiesSameSiteCdpToBiDi(
   sameSite: CookieSameSite | undefined,
 ): Bidi.Network.SameSite {
   return sameSite === 'Strict'
@@ -1008,4 +1104,24 @@ function convertCookiesSameSiteCdpToBiDi(
     : sameSite === 'Lax'
       ? Bidi.Network.SameSite.Lax
       : Bidi.Network.SameSite.None;
+}
+
+export function convertCookiesExpiryCdpToBiDi(
+  expiry: number | undefined,
+): number | undefined {
+  return [undefined, -1].includes(expiry) ? undefined : expiry;
+}
+
+export function convertCookiesPartitionKeyFromPuppeteerToBiDi(
+  partitionKey: CookiePartitionKey | string | undefined,
+): string | undefined {
+  if (partitionKey === undefined || typeof partitionKey === 'string') {
+    return partitionKey;
+  }
+  if (partitionKey.hasCrossSiteAncestor) {
+    throw new UnsupportedOperation(
+      'WebDriver BiDi does not support `hasCrossSiteAncestor` yet.',
+    );
+  }
+  return partitionKey.sourceOrigin;
 }

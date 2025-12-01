@@ -7,12 +7,10 @@ import {
   renderElementIntoDOM,
 } from '../../../../testing/DOMHelpers.js';
 import {describeWithEnvironment} from '../../../../testing/EnvironmentHelpers.js';
-import * as Coordinator from '../../../../ui/components/render_coordinator/render_coordinator.js';
+import * as RenderCoordinator from '../../../../ui/components/render_coordinator/render_coordinator.js';
 import type * as TextEditor from '../../../../ui/components/text_editor/text_editor.js';
 
 import * as PreloadingComponents from './components.js';
-
-const coordinator = Coordinator.RenderCoordinator.RenderCoordinator.instance();
 
 async function renderRuleSetDetailsView(
     data: PreloadingComponents.RuleSetDetailsView.RuleSetDetailsViewData,
@@ -22,19 +20,23 @@ async function renderRuleSetDetailsView(
   component.data = data;
   renderElementIntoDOM(component);
   assert.isNotNull(component.shadowRoot);
-  await coordinator.done();
+  await RenderCoordinator.done();
 
   return component;
 }
 
 describeWithEnvironment('RuleSetDetailsView', () => {
-  it('renders nothing if not selected', async () => {
+  it('renders placeholder if not selected', async () => {
     const data = null;
 
     const component = await renderRuleSetDetailsView(data, false);
-    await coordinator.done({waitForWork: true});
     assert.isNotNull(component.shadowRoot);
-    assert.strictEqual(component.shadowRoot.textContent, '');
+    assert.exists(component.shadowRoot.querySelector('.empty-state'));
+
+    const header = component.shadowRoot.querySelector('.empty-state-header')?.textContent;
+    const description = component.shadowRoot.querySelector('.empty-state-description')?.textContent;
+    assert.deepEqual(header, 'No element selected');
+    assert.deepEqual(description, 'Select an element for more details');
   });
 
   it('renders rule set', async () => {
@@ -54,8 +56,7 @@ describeWithEnvironment('RuleSetDetailsView', () => {
       backendNodeId: 1 as Protocol.DOM.BackendNodeId,
     };
     const component = await renderRuleSetDetailsView(data, false);
-    await coordinator.done({waitForWork: true});
-    assert.deepEqual(component.shadowRoot?.getElementById('error-message-text')?.textContent, undefined);
+    assert.isUndefined(component.shadowRoot?.getElementById('error-message-text')?.textContent);
 
     const textEditor = component.shadowRoot?.querySelector('devtools-text-editor') as TextEditor.TextEditor.TextEditor;
     assert.strictEqual(textEditor.state.doc.toString(), data.sourceText);
@@ -79,13 +80,12 @@ describeWithEnvironment('RuleSetDetailsView', () => {
       requestId: 'reqeustId' as Protocol.Network.RequestId,
     };
     const component = await renderRuleSetDetailsView(data, false);
-    await coordinator.done({waitForWork: true});
-    assert.deepEqual(component.shadowRoot?.getElementById('error-message-text')?.textContent, undefined);
+    assert.isUndefined(component.shadowRoot?.getElementById('error-message-text')?.textContent);
     const textEditor = component.shadowRoot?.querySelector('devtools-text-editor') as TextEditor.TextEditor.TextEditor;
     assert.strictEqual(textEditor.state.doc.toString(), data.sourceText);
   });
 
-  it('renders invalid rule set', async () => {
+  it('renders invalid rule set, broken JSON', async () => {
     const data: Protocol.Preload.RuleSet = {
       id: 'ruleSetId:1' as Protocol.Preload.RuleSetId,
       loaderId: 'loaderId:1' as Protocol.Network.LoaderId,
@@ -100,14 +100,13 @@ describeWithEnvironment('RuleSetDetailsView', () => {
       errorMessage: 'Line: 6, column: 1, Syntax error.',
     };
     const component = await renderRuleSetDetailsView(data, false);
-    await coordinator.done({waitForWork: true});
     assert.deepEqual(
         component.shadowRoot?.getElementById('error-message-text')?.textContent, 'Line: 6, column: 1, Syntax error.');
     const textEditor = component.shadowRoot?.querySelector('devtools-text-editor') as TextEditor.TextEditor.TextEditor;
     assert.strictEqual(textEditor.state.doc.toString(), data.sourceText);
   });
 
-  it('renders invalid rule set', async () => {
+  it('renders invalid rule set, lacking `urls`', async () => {
     const data: Protocol.Preload.RuleSet = {
       id: 'ruleSetId:1' as Protocol.Preload.RuleSetId,
       loaderId: 'loaderId:1' as Protocol.Network.LoaderId,
@@ -125,7 +124,6 @@ describeWithEnvironment('RuleSetDetailsView', () => {
       errorMessage: 'A list rule must have a "urls" array.',
     };
     const component = await renderRuleSetDetailsView(data, false);
-    await coordinator.done({waitForWork: true});
     assert.deepEqual(
         component.shadowRoot?.getElementById('error-message-text')?.textContent,
         'A list rule must have a "urls" array.');
@@ -141,8 +139,7 @@ describeWithEnvironment('RuleSetDetailsView', () => {
       backendNodeId: 1 as Protocol.DOM.BackendNodeId,
     };
     const component = await renderRuleSetDetailsView(data, true);
-    await coordinator.done({waitForWork: true});
-    assert.deepEqual(component.shadowRoot?.getElementById('error-message-text')?.textContent, undefined);
+    assert.isUndefined(component.shadowRoot?.getElementById('error-message-text')?.textContent);
 
     const textEditor = component.shadowRoot?.querySelector('devtools-text-editor') as TextEditor.TextEditor.TextEditor;
     // Formatted sourceText should be different from the data.sourceText in this case.

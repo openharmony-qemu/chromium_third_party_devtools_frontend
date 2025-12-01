@@ -1,6 +1,7 @@
 // Copyright 2021 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-imperative-dom-api */
 
 import * as Common from '../../../core/common/common.js';
 import * as i18n from '../../../core/i18n/i18n.js';
@@ -15,6 +16,7 @@ import * as Icon from '../icon_button/icon_button.js';
 import {editorTheme} from './theme.js';
 
 const LINES_TO_SCAN_FOR_INDENTATION_GUESSING = 1000;
+const RECOMPUTE_INDENT_MAX_SIZE = 200;
 
 const UIStrings = {
   /**
@@ -28,7 +30,7 @@ const UIStrings = {
    *@example {5} PH3
    */
   sSuggestionSOfS: '{PH1}, suggestion {PH2} of {PH3}',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('ui/components/text_editor/config.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
@@ -72,7 +74,7 @@ export class DynamicSetting<T> {
     return new DynamicSetting<boolean>(name, val => val ? enabled : disabled);
   }
 
-  static none: readonly DynamicSetting<unknown>[] = [];
+  static none: ReadonlyArray<DynamicSetting<unknown>> = [];
 }
 
 export const tabMovesFocus = DynamicSetting.bool('text-editor-tab-moves-focus', [], CM.keymap.of([{
@@ -209,13 +211,30 @@ export const codeFolding = DynamicSetting.bool('text-editor-code-folding', [
   CM.keymap.of(CM.foldKeymap),
 ]);
 
-const deriveIndentUnit = CM.Prec.highest(CM.indentUnit.compute([], (state: CM.EditorState) => {
-  const lines = state.doc.iterLines(1, Math.min(state.doc.lines + 1, LINES_TO_SCAN_FOR_INDENTATION_GUESSING));
+const AutoDetectIndent = CM.StateField.define<string>({
+  create: state => detectIndentation(state.doc),
+  update: (indent, tr) => {
+    return tr.docChanged && preservedLength(tr.changes) <= RECOMPUTE_INDENT_MAX_SIZE ? detectIndentation(tr.state.doc) :
+                                                                                       indent;
+  },
+  provide: f => CM.Prec.highest(CM.indentUnit.from(f)),
+});
+
+function preservedLength(ch: CM.ChangeDesc): number {
+  let len = 0;
+  ch.iterGaps((_from, _to, l) => {
+    len += l;
+  });
+  return len;
+}
+
+function detectIndentation(doc: CM.Text): string {
+  const lines = doc.iterLines(1, Math.min(doc.lines + 1, LINES_TO_SCAN_FOR_INDENTATION_GUESSING));
   const indentUnit = TextUtils.TextUtils.detectIndentation(lines);
   return indentUnit ?? Common.Settings.Settings.instance().moduleSetting('text-editor-indent').get();
-}));
+}
 
-export const autoDetectIndent = DynamicSetting.bool('text-editor-auto-detect-indent', deriveIndentUnit);
+export const autoDetectIndent = DynamicSetting.bool('text-editor-auto-detect-indent', AutoDetectIndent);
 
 function matcher(decorator: CM.MatchDecorator): CM.Extension {
   return CM.ViewPlugin.define(
@@ -271,7 +290,7 @@ export const showWhitespace = new DynamicSetting<string>('show-whitespaces-in-ed
 
 export const allowScrollPastEof = DynamicSetting.bool('allow-scroll-past-eof', CM.scrollPastEnd());
 
-const cachedIndentUnit: {[indent: string]: CM.Extension} = Object.create(null);
+const cachedIndentUnit: Record<string, CM.Extension> = Object.create(null);
 
 function getIndentUnit(indent: string): CM.Extension {
   let value = cachedIndentUnit[indent];
@@ -284,6 +303,8 @@ function getIndentUnit(indent: string): CM.Extension {
 export const indentUnit = new DynamicSetting<string>('text-editor-indent', getIndentUnit);
 
 export const domWordWrap = DynamicSetting.bool('dom-word-wrap', CM.EditorView.lineWrapping);
+
+export const sourcesWordWrap = DynamicSetting.bool('sources.word-wrap', CM.EditorView.lineWrapping);
 
 function detectLineSeparator(text: string): CM.Extension {
   if (/\r\n/.test(text) && !/(^|[^\r])\n/.test(text)) {
@@ -409,10 +430,8 @@ class CompletionHint extends CM.WidgetType {
 }
 
 export const showCompletionHint = CM.ViewPlugin.fromClass(class {
-decorations:
-  CM.DecorationSet = CM.Decoration.none;
-currentHint:
-  string|null = null;
+  decorations: CM.DecorationSet = CM.Decoration.none;
+  currentHint: string|null = null;
 
   update(update: CM.ViewUpdate): void {
     const top = this.currentHint = this.topCompletion(update.state);
@@ -456,7 +475,7 @@ currentHint:
 export function contentIncludingHint(view: CM.EditorView): string {
   const plugin = view.plugin(showCompletionHint);
   let content = view.state.doc.toString();
-  if (plugin && plugin.currentHint) {
+  if (plugin?.currentHint) {
     const {head} = view.state.selection.main;
     content = content.slice(0, head) + plugin.currentHint + content.slice(head);
   }

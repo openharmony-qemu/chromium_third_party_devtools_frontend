@@ -31,7 +31,7 @@ const UIStrings = {
    *@description Text in Scope Chain Sidebar Pane of the Sources panel
    */
   returnValue: 'Return value',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('core/sdk/SourceMapScopeChainEntry.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
@@ -78,7 +78,7 @@ export class SourceMapScopeChainEntry implements ScopeChainEntry {
       case 'block':
         return Protocol.Debugger.ScopeType.Block;
     }
-    return this.#scope.kind;
+    return this.#scope.kind ?? '';
   }
 
   typeName(): string {
@@ -90,7 +90,7 @@ export class SourceMapScopeChainEntry implements ScopeChainEntry {
       case 'block':
         return i18nString(UIStrings.block);
     }
-    return this.#scope.kind;
+    return this.#scope.kind ?? '';
   }
 
   name(): string|undefined {

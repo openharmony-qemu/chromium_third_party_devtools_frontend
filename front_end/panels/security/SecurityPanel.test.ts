@@ -2,19 +2,53 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import type * as Platform from '../../core/platform/platform.js';
+import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
-import {createTarget} from '../../testing/EnvironmentHelpers.js';
+import {createTarget, updateHostConfig} from '../../testing/EnvironmentHelpers.js';
 import {describeWithMockConnection} from '../../testing/MockConnection.js';
 import {getMainFrame, navigate} from '../../testing/ResourceTreeHelpers.js';
 
 import * as Security from './security.js';
 
+const {urlString} = Platform.DevToolsPath;
+
 describeWithMockConnection('SecurityAndPrivacyPanel', () => {
+  describe('viewMemory', () => {
+    it('initially shows control view if privacy UI is enabled', () => {
+      updateHostConfig({devToolsPrivacyUI: {enabled: true}});
+      const securityPanel = Security.SecurityPanel.SecurityPanel.instance({forceNew: true});
+
+      assert.instanceOf(securityPanel.visibleView, Security.CookieControlsView.CookieControlsView);
+    });
+
+    it('initially shows security main view if privacy UI is not enabled', () => {
+      updateHostConfig({devToolsPrivacyUI: {enabled: false}});
+      const securityPanel = Security.SecurityPanel.SecurityPanel.instance({forceNew: true});
+
+      assert.instanceOf(securityPanel.visibleView, Security.SecurityPanel.SecurityMainView);
+    });
+
+    it('remembers last selected view when new panel is made', () => {
+      updateHostConfig({devToolsPrivacyUI: {enabled: true}});
+      let securityPanel = Security.SecurityPanel.SecurityPanel.instance({forceNew: true});
+
+      // Should initially be the controls view
+      assert.instanceOf(securityPanel.visibleView, Security.CookieControlsView.CookieControlsView);
+
+      // Select and switch to the security main view
+      securityPanel.sidebar.securityOverviewElement.select(/* omitFocus=*/ false, /* selectedByUser=*/ true);
+      assert.instanceOf(securityPanel.visibleView, Security.SecurityPanel.SecurityMainView);
+
+      // Create a new security panel. The last selected view memory should make the main view visible
+      securityPanel = Security.SecurityPanel.SecurityPanel.instance({forceNew: true});
+      assert.instanceOf(securityPanel.visibleView, Security.SecurityPanel.SecurityMainView);
+    });
+  });
+
   describe('updateOrigin', () => {
     it('correctly updates the URL scheme highlighting', () => {
-      const origin = 'https://foo.bar' as Platform.DevToolsPath.UrlString;
+      const origin = urlString`https://foo.bar`;
       const securityPanel = Security.SecurityPanel.SecurityPanel.instance({forceNew: true});
 
       securityPanel.sidebar.addOrigin(origin, Protocol.Security.SecurityState.Unknown);
@@ -107,7 +141,7 @@ describeWithMockConnection('SecurityPanel', () => {
     // Check that the SecurityPanel listens to any PrimaryPageChanged event
     const sidebarTreeClearSpy = sinon.spy(securityPanel.sidebar, 'clearOrigins');
     navigate(getMainFrame(target));
-    assert.isTrue(sidebarTreeClearSpy.calledOnce);
+    sinon.assert.calledOnce(sidebarTreeClearSpy);
   });
 
   it('shows \'reload page\' message when no data is available', async () => {

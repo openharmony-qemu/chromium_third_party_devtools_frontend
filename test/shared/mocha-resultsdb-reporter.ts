@@ -6,7 +6,6 @@ import * as fs from 'fs';
 import * as Mocha from 'mocha';
 import * as path from 'path';
 
-// eslint-disable-next-line  rulesdir/es_modules_import
 import * as ResultsDb from '../conductor/resultsdb.js';
 import {
   ScreenshotError,
@@ -47,10 +46,8 @@ interface TestRetry {
 }
 
 interface HookWithParent {
-  parent: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    [key: string]: any,
-  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  parent: Record<string, any>;
 }
 
 class ResultsDbReporter extends Mocha.reporters.Spec {
@@ -135,7 +132,7 @@ class ResultsDbReporter extends Mocha.reporters.Spec {
     const testRetry = ((test as unknown) as TestRetry);
     const result = {
       testId: ResultsDb.sanitizedTestId(testId),
-      duration: `${test.duration || 0}ms`,
+      duration: `${((test.duration || 1) * .001).toFixed(3)}s`,
       tags: [{key: 'run', value: String(testRetry.currentRetry() + 1)}],
     };
     const hookName = this.maybeHook(test);

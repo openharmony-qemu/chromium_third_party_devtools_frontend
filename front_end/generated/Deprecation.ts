@@ -1,4 +1,4 @@
-// Copyright 2024 The Chromium Authors. All rights reserved.
+// Copyright 2025 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -14,6 +14,10 @@ export const UIStrings = {
    * @description This warning occurs when a page attempts to request a resource whose URL contained both a newline character (`\n` or `\r`), and a less-than character (`<`). These resources are blocked.
    */
   CanRequestURLHTTPContainingNewline: "Resource requests whose URLs contained both removed whitespace `\\(n|r|t)` characters and less-than characters (`<`) are blocked. Please remove newlines and encode less-than characters from places like element attribute values in order to load these resources.",
+  /**
+   * @description Warning displayed to developers that they did not specify character encoding for HTML document, and that auto-detection of specific character set (i.e. ISO-2022-JP) used by the webiste won't be supported in the near futre.
+   */
+  CharsetAutoDetectionISO2022JP: "Auto-detection of ISO-2022-JP character set is deprecated and it will be disabled in the near future. Please specify character set in the Content Type header or by using a meta tag (https://developer.mozilla.org/en-US/docs/Glossary/Character_encoding).",
   /**
    * @description This warning occurs when the website attempts to invoke the deprecated `chrome.loadTimes().connectionInfo` API.
    */
@@ -43,14 +47,6 @@ export const UIStrings = {
    */
   CrossOriginWindowConfirm: "Triggering window.confirm from cross origin iframes has been deprecated and will be removed in the future.",
   /**
-   * @description Warning displayed to developers when their website uses `:--customstatename` in CSS. They can simply switch their CSS to `:state(customstatename)` and it will be the same.
-   */
-  CSSCustomStateDeprecatedSyntax: "`:--customstatename` is deprecated. Please use the `:state(customstatename)` syntax instead.",
-  /**
-   * @description Warning displayed to developers when their website uses `inset-area` in CSS. They can simply switch their CSS to `position-area` and it will function in the same way.
-   */
-  CSSInsetAreaProperty: "The `inset-area` property is deprecated. Please use the `position-area` property instead.",
-  /**
    * @description Warning displayed to developers when they hide the Cast button on a video element using the deprecated CSS selector instead of using the disableRemotePlayback attribute on the element.
    */
   CSSSelectorInternalMediaControlsOverlayCastButton: "The `disableRemotePlayback` attribute should be used in order to disable the default Cast integration instead of using `-internal-media-controls-overlay-cast-button` selector.",
@@ -75,17 +71,21 @@ export const UIStrings = {
    */
   GeolocationInsecureOriginDeprecatedNotRemoved: "`getCurrentPosition()` and `watchPosition()` are deprecated on insecure origins. To use this feature, you should consider switching your application to a secure origin, such as HTTPS. See https://goo.gle/chrome-insecure-origins for more details.",
   /**
-   * @description Warning displayed to developers when non-standard getInnerHTML function is called. This function is deprecated and will be removed.
-   */
-  GetInnerHTML: "The getInnerHTML() function is deprecated, and will be removed from this browser very soon. Please use getHTML() instead.",
-  /**
    * @description This warning occurs when the `getUserMedia()` API is invoked on an insecure (e.g., HTTP) site. This is only permitted on secure sites (e.g., HTTPS).
    */
   GetUserMediaInsecureOrigin: "`getUserMedia()` no longer works on insecure origins. To use this feature, you should consider switching your application to a secure origin, such as HTTPS. See https://goo.gle/chrome-insecure-origins for more details.",
   /**
+   * @description This warning occurs when a site uses <h1> inside <article>, <aside>, <nav>, or <section>. It means the behavior (font size) may change in a future Chrome release, when some special rules are removed from the browser.
+   */
+  H1UserAgentFontSizeInSection: "Found an <h1> tag within an <article>, <aside>, <nav>, or <section> which does not have a specified font-size. The size of this heading text will be changing in this browser in the near future. See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/Heading_Elements#specifying_a_uniform_font_size_for_h1 for more information.",
+  /**
    * @description A deprecation warning shown to developers in the DevTools Issues tab when code tries to use the deprecated hostCandidate field, guiding developers to use the equivalent information in the .address and .port fields instead.
    */
   HostCandidateAttributeGetter: "`RTCPeerConnectionIceErrorEvent.hostCandidate` is deprecated. Please use `RTCPeerConnectionIceErrorEvent.address` or `RTCPeerConnectionIceErrorEvent.port` instead.",
+  /**
+   * @description A deprecation warning shown in the DevTools Issues tab, when a request for digital credentials API is formatted using a deprecated format.
+   */
+  IdentityDigitalCredentials: "This format for the navigator.credentials.get() request for digital credentials is deprecated, please update your call to use the new format.",
   /**
    * @description A deprecation warning shown in the DevTools Issues tab, when a service worker reads one of the fields from an event named 'canmakepayment'.
    */
@@ -98,6 +98,10 @@ export const UIStrings = {
    * @description This is a deprecated warning to developers that a field in a structure has been renamed.
    */
   InterestGroupDailyUpdateUrl: "The `dailyUpdateUrl` field of `InterestGroups` passed to `joinAdInterestGroup()` has been renamed to `updateUrl`, to more accurately reflect its behavior.",
+  /**
+   * @description Warning displayed to developers that instead of calling the `Intl.v8BreakIterator` constructor, which is not a standard JavaScript API, use ECMA402 standard API Intl.Segmenter shipped in end of 2020 instead.
+   */
+  IntlV8BreakIterator: "`Intl.v8BreakIterator` is deprecated. Please use `Intl.Segmenter` instead.",
   /**
    * @description This warning occurs when a stylesheet loaded from a local file directive does not end in the file type `.css`.
    */
@@ -125,7 +129,7 @@ export const UIStrings = {
   /**
    * @description Warning displayed to developers when CreateImageBitmap is used with the newly deprecated option imageOrientation: 'none'.
    */
-  ObsoleteCreateImageBitmapImageOrientationNone: "Option `imageOrientation: 'none'` in createImageBitmap is deprecated. Please use createImageBitmap with option {imageOrientation: 'from-image'} instead.",
+  ObsoleteCreateImageBitmapImageOrientationNone: "Option `imageOrientation: 'none'` in createImageBitmap is deprecated. Please use createImageBitmap with option '{imageOrientation: 'from-image'}' instead.",
   /**
    * @description This warning occurs when the WebRTC protocol attempts to negotiate a connection using an obsolete cipher and risks connection security.
    */
@@ -223,17 +227,13 @@ export const UIStrings = {
    */
   UnloadHandler: "Unload event listeners are deprecated and will be removed.",
   /**
-   * @description This warning occurs when the website attempts to invoke the deprecated GPUAdapter `requestAdapterInfo()` method.
-   */
-  V8GPUAdapter_RequestAdapterInfo_Method: "The GPUAdapter `requestAdapterInfo()` method is deprecated, instead use the GPUAdapter `info` attribute.",
-  /**
    * @description A deprecation warning shown in the DevTools Issues tab. The placeholder is always the noun 'SharedArrayBuffer' which refers to a JavaScript construct. 'Extensions' refers to Chrome extensions. The warning is shown when Chrome Extensions attempt to use 'SharedArrayBuffer's under insecure circumstances.
    */
   V8SharedArrayBufferConstructedInExtensionWithoutIsolation: "Extensions should opt into cross-origin isolation to continue using `SharedArrayBuffer`. See https://developer.chrome.com/docs/extensions/mv3/cross-origin-isolation/.",
   /**
-   * @description Warning displayed to developers when the Web SQL API is used to let them know this API is deprecated.
+   * @description This warning occurs when the website attempts to use the deprecated GPUAdapter `isFallbackAdapter` attribute.
    */
-  WebSQL: "Web SQL is deprecated. Please use SQLite WebAssembly or Indexed Database",
+  WebGPUAdapterIsFallbackAdapter: "The GPUAdapter `isFallbackAdapter` attribute is deprecated, instead use the GPUAdapterInfo `isFallbackAdapter` attribute.",
   /**
    * @description Warning displayed to developers that they are using `XMLHttpRequest` API in a way that they expect an unsupported character encoding `UTF-16` could be used in the server reply.
    */
@@ -242,11 +242,7 @@ export const UIStrings = {
    * @description Warning displayed to developers. It is shown when the `XMLHttpRequest` API is used in a way that it slows down the page load of the next page. The `main thread` refers to an operating systems thread used to run most of the processing of HTML documents, so please use a consistent wording.
    */
   XMLHttpRequestSynchronousInNonWorkerOutsideBeforeUnload: "Synchronous `XMLHttpRequest` on the main thread is deprecated because of its detrimental effects to the end user's experience. For more help, check https://xhr.spec.whatwg.org/.",
-  /**
-   * @description Warning displayed to developers that instead of using `supportsSession()`, which returns a promise that resolves if the XR session can be supported and rejects if not, they should use `isSessionSupported()` which will return a promise which resolves to a boolean indicating if the XR session can be supported or not, but may reject to throw an exception.
-   */
-  XRSupportsSession: "`supportsSession()` is deprecated. Please use `isSessionSupported()` and check the resolved boolean value instead.",
-};
+} as const;
 
 export interface DeprecationDescriptor {
   milestone?: number;
@@ -257,14 +253,6 @@ export const DEPRECATIONS_METADATA: Partial<Record<string, DeprecationDescriptor
   "AuthorizationCoveredByWildcard": {
     "milestone": 97
   },
-  "CSSCustomStateDeprecatedSyntax": {
-    "chromeStatusFeature": 5140610730426368,
-    "milestone": 122
-  },
-  "CSSInsetAreaProperty": {
-    "chromeStatusFeature": 5142143019253760,
-    "milestone": 129
-  },
   "CSSSelectorInternalMediaControlsOverlayCastButton": {
     "chromeStatusFeature": 5714245488476160
   },
@@ -273,6 +261,9 @@ export const DEPRECATIONS_METADATA: Partial<Record<string, DeprecationDescriptor
   },
   "CanRequestURLHTTPContainingNewline": {
     "chromeStatusFeature": 5735596811091968
+  },
+  "CharsetAutoDetectionISO2022JP": {
+    "chromeStatusFeature": 6576566521561088
   },
   "ChromeLoadTimesConnectionInfo": {
     "chromeStatusFeature": 5637885046816768
@@ -297,8 +288,12 @@ export const DEPRECATIONS_METADATA: Partial<Record<string, DeprecationDescriptor
     "chromeStatusFeature": 5128825141198848,
     "milestone": 119
   },
-  "GetInnerHTML": {
-    "chromeStatusFeature": 5081733588582400
+  "H1UserAgentFontSizeInSection": {
+    "chromeStatusFeature": 6192419898654720,
+    "milestone": 136
+  },
+  "IdentityDigitalCredentials": {
+    "chromeStatusFeature": 5166035265650688
   },
   "IdentityInCanMakePaymentEvent": {
     "chromeStatusFeature": 5190978431352832
@@ -370,20 +365,13 @@ export const DEPRECATIONS_METADATA: Partial<Record<string, DeprecationDescriptor
   "UnloadHandler": {
     "chromeStatusFeature": 5579556305502208
   },
-  "V8GPUAdapter_RequestAdapterInfo_Method": {
-    "chromeStatusFeature": 5140787340509184
-  },
   "V8SharedArrayBufferConstructedInExtensionWithoutIsolation": {
     "milestone": 96
   },
-  "WebSQL": {
-    "chromeStatusFeature": 5134293578285056,
-    "milestone": 115
+  "WebGPUAdapterIsFallbackAdapter": {
+    "chromeStatusFeature": 4870179714236416
   },
   "XHRJSONEncodingDetection": {
     "milestone": 93
-  },
-  "XRSupportsSession": {
-    "milestone": 80
   }
 };

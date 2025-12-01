@@ -6,7 +6,7 @@
 // found in the LICENSE file.
 
 import * as Common from '../../core/common/common.js';
-import type * as Platform from '../../core/platform/platform.js';
+import * as Platform from '../../core/platform/platform.js';
 import * as Root from '../../core/root/root.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Bindings from '../../models/bindings/bindings.js';
@@ -25,6 +25,8 @@ import {createContentProviderUISourceCodes} from '../../testing/UISourceCodeHelp
 import * as UI from '../../ui/legacy/legacy.js';
 
 import * as Sources from './sources.js';
+
+const {urlString} = Platform.DevToolsPath;
 
 describeWithMockConnection('NetworkNavigatorView', () => {
   let workspace: Workspace.Workspace.WorkspaceImpl;
@@ -59,9 +61,9 @@ describeWithMockConnection('NetworkNavigatorView', () => {
       target = createTarget({parentTarget: tabTarget});
       ({project} = createContentProviderUISourceCodes({
          items: [
-           {url: 'http://example.com/' as Platform.DevToolsPath.UrlString, mimeType: 'text/html'},
-           {url: 'http://example.com/favicon.ico' as Platform.DevToolsPath.UrlString, mimeType: 'image/x-icon'},
-           {url: 'http://example.com/gtm.js' as Platform.DevToolsPath.UrlString, mimeType: 'application/javascript'},
+           {url: urlString`http://example.com/`, mimeType: 'text/html'},
+           {url: urlString`http://example.com/favicon.ico`, mimeType: 'image/x-icon'},
+           {url: urlString`http://example.com/gtm.js`, mimeType: 'application/javascript'},
          ],
          projectType: Workspace.Workspace.projectTypes.Network,
          target,
@@ -76,7 +78,7 @@ describeWithMockConnection('NetworkNavigatorView', () => {
       const {project} = createContentProviderUISourceCodes({
         items: [
           {
-            url: 'http://example.com/script.js' as Platform.DevToolsPath.UrlString,
+            url: urlString`http://example.com/script.js`,
             mimeType: 'application/javascript',
             resourceType: Common.ResourceType.resourceTypes.Script,
           },
@@ -100,12 +102,12 @@ describeWithMockConnection('NetworkNavigatorView', () => {
       const {project} = createContentProviderUISourceCodes({
         items: [
           {
-            url: 'http://example.com/list-xhr.json' as Platform.DevToolsPath.UrlString,
+            url: urlString`http://example.com/list-xhr.json`,
             mimeType: 'application/json',
             resourceType: Common.ResourceType.resourceTypes.XHR,
           },
           {
-            url: 'http://example.com/list-fetch.json' as Platform.DevToolsPath.UrlString,
+            url: urlString`http://example.com/list-fetch.json`,
             mimeType: 'application/json',
             resourceType: Common.ResourceType.resourceTypes.Fetch,
           },
@@ -116,7 +118,7 @@ describeWithMockConnection('NetworkNavigatorView', () => {
 
       const navigatorView = Sources.SourcesNavigator.NetworkNavigatorView.instance({forceNew: true});
       const rootElement = navigatorView.scriptsTree.rootElement();
-      assert.strictEqual(rootElement.children().length, 0);
+      assert.lengthOf(rootElement.children(), 0);
 
       project.removeProject();
     });
@@ -130,14 +132,14 @@ describeWithMockConnection('NetworkNavigatorView', () => {
       assert.isFalse(rootElement.firstChild()?.expanded);
       assert.isTrue(rootElement.firstChild()?.selected);
 
-      target.setInspectedURL('http://example.com/' as Platform.DevToolsPath.UrlString);
+      target.setInspectedURL(urlString`http://example.com/`);
 
       assert.isTrue(navigatorView.scriptsTree.firstChild()?.expanded);
       assert.isTrue(navigatorView.scriptsTree.firstChild()?.firstChild()?.selected);
     });
 
     it('reveals main frame target when added', async () => {
-      target.setInspectedURL('http://example.com/' as Platform.DevToolsPath.UrlString);
+      target.setInspectedURL(urlString`http://example.com/`);
       const navigatorView = Sources.SourcesNavigator.NetworkNavigatorView.instance({forceNew: true});
 
       const rootElement = navigatorView.scriptsTree.rootElement();
@@ -152,9 +154,9 @@ describeWithMockConnection('NetworkNavigatorView', () => {
     const target = createTarget();
     const {project} = createContentProviderUISourceCodes({
       items: [
-        {url: 'http://example.com/' as Platform.DevToolsPath.UrlString, mimeType: 'text/html'},
-        {url: 'http://example.com/favicon.ico' as Platform.DevToolsPath.UrlString, mimeType: 'image/x-icon'},
-        {url: 'http://example.com/gtm.js' as Platform.DevToolsPath.UrlString, mimeType: 'application/javascript'},
+        {url: urlString`http://example.com/`, mimeType: 'text/html'},
+        {url: urlString`http://example.com/favicon.ico`, mimeType: 'image/x-icon'},
+        {url: urlString`http://example.com/gtm.js`, mimeType: 'application/javascript'},
       ],
       projectId: 'project',
       projectType: Workspace.Workspace.projectTypes.Network,
@@ -163,8 +165,8 @@ describeWithMockConnection('NetworkNavigatorView', () => {
     const anotherTarget = createTarget();
     const {project: anotherProject} = createContentProviderUISourceCodes({
       items: [
-        {url: 'http://example.org/' as Platform.DevToolsPath.UrlString, mimeType: 'text/html'},
-        {url: 'http://example.org/background.bmp' as Platform.DevToolsPath.UrlString, mimeType: 'image/x-icon'},
+        {url: urlString`http://example.org/`, mimeType: 'text/html'},
+        {url: urlString`http://example.org/background.bmp`, mimeType: 'image/x-icon'},
       ],
       projectId: 'anotherProject',
       projectType: Workspace.Workspace.projectTypes.Network,
@@ -200,15 +202,15 @@ describeWithMockConnection('NetworkNavigatorView', () => {
     it('selects just once when removing multiple sibling source codes', () => {
       const {project} = createContentProviderUISourceCodes({
         items: [
-          {url: 'http://example.com/a.js' as Platform.DevToolsPath.UrlString, mimeType: 'application/javascript'},
-          {url: 'http://example.com/b.js' as Platform.DevToolsPath.UrlString, mimeType: 'application/javascript'},
+          {url: urlString`http://example.com/a.js`, mimeType: 'application/javascript'},
+          {url: urlString`http://example.com/b.js`, mimeType: 'application/javascript'},
         ],
         projectType: Workspace.Workspace.projectTypes.Network,
         target,
       });
       const {project: otherProject} = createContentProviderUISourceCodes({
         items: [
-          {url: 'http://example.com/c.js' as Platform.DevToolsPath.UrlString, mimeType: 'application/javascript'},
+          {url: urlString`http://example.com/c.js`, mimeType: 'application/javascript'},
         ],
         projectType: Workspace.Workspace.projectTypes.Network,
         projectId: 'other',
@@ -235,8 +237,8 @@ describeWithMockConnection('NetworkNavigatorView', () => {
 
       project.removeProject();
 
-      assert.isTrue(nodeBSelectSpy.notCalled);
-      assert.isTrue(nodeCSelectSpy.called);
+      sinon.assert.notCalled(nodeBSelectSpy);
+      sinon.assert.called(nodeCSelectSpy);
 
       otherProject.removeProject();
     });
@@ -244,9 +246,9 @@ describeWithMockConnection('NetworkNavigatorView', () => {
     it('selects parent after removing all children', () => {
       const {project} = createContentProviderUISourceCodes({
         items: [
-          {url: 'http://example.com/a.js' as Platform.DevToolsPath.UrlString, mimeType: 'application/javascript'},
-          {url: 'http://example.com/b.js' as Platform.DevToolsPath.UrlString, mimeType: 'application/javascript'},
-          {url: 'http://example.com/c.js' as Platform.DevToolsPath.UrlString, mimeType: 'application/javascript'},
+          {url: urlString`http://example.com/a.js`, mimeType: 'application/javascript'},
+          {url: urlString`http://example.com/b.js`, mimeType: 'application/javascript'},
+          {url: urlString`http://example.com/c.js`, mimeType: 'application/javascript'},
         ],
         projectType: Workspace.Workspace.projectTypes.Network,
         target,
@@ -274,9 +276,9 @@ describeWithMockConnection('NetworkNavigatorView', () => {
 
       project.removeProject();
 
-      assert.isTrue(nodeBSelectSpy.notCalled);
-      assert.isTrue(nodeCSelectSpy.notCalled);
-      assert.isTrue(nodeExampleComSelectSpy.called);
+      sinon.assert.notCalled(nodeBSelectSpy);
+      sinon.assert.notCalled(nodeCSelectSpy);
+      sinon.assert.called(nodeExampleComSelectSpy);
 
       // Note that the last asserion is slightly misleading since the empty example.com node is removed.
       // Let us make that clear here.
@@ -286,15 +288,15 @@ describeWithMockConnection('NetworkNavigatorView', () => {
     it('selects sibling after removing folder children', async () => {
       const {project} = createContentProviderUISourceCodes({
         items: [
-          {url: 'http://example.com/d/a.js' as Platform.DevToolsPath.UrlString, mimeType: 'application/javascript'},
-          {url: 'http://example.com/d/b.js' as Platform.DevToolsPath.UrlString, mimeType: 'application/javascript'},
+          {url: urlString`http://example.com/d/a.js`, mimeType: 'application/javascript'},
+          {url: urlString`http://example.com/d/b.js`, mimeType: 'application/javascript'},
         ],
         projectType: Workspace.Workspace.projectTypes.Network,
         target,
       });
       const {project: otherProject} = createContentProviderUISourceCodes({
         items: [
-          {url: 'http://example.com/c.js' as Platform.DevToolsPath.UrlString, mimeType: 'application/javascript'},
+          {url: urlString`http://example.com/c.js`, mimeType: 'application/javascript'},
         ],
         projectType: Workspace.Workspace.projectTypes.Network,
         projectId: 'other',
@@ -328,8 +330,8 @@ describeWithMockConnection('NetworkNavigatorView', () => {
       // Instead, the selection will be pushed to 'c.js' (with an intermediate step at 'd').
       // (Ideally, it would move directly from 'a.js' to 'c.js', but we are currently only
       // optimizing away the moves to siblings.)
-      assert.isTrue(nodeBSelectSpy.notCalled);
-      assert.isTrue(nodeCSelectSpy.called);
+      sinon.assert.notCalled(nodeBSelectSpy);
+      sinon.assert.called(nodeCSelectSpy);
 
       // Also note that the folder 'd' is removed. Let us make that explicit.
       assert.strictEqual(exampleComNode.childCount(), 1);
@@ -341,15 +343,15 @@ describeWithMockConnection('NetworkNavigatorView', () => {
     it('selects sibling after removing individual folder children', async () => {
       const {project} = createContentProviderUISourceCodes({
         items: [
-          {url: 'http://example.com/d/a.js' as Platform.DevToolsPath.UrlString, mimeType: 'application/javascript'},
-          {url: 'http://example.com/e/b.js' as Platform.DevToolsPath.UrlString, mimeType: 'application/javascript'},
+          {url: urlString`http://example.com/d/a.js`, mimeType: 'application/javascript'},
+          {url: urlString`http://example.com/e/b.js`, mimeType: 'application/javascript'},
         ],
         projectType: Workspace.Workspace.projectTypes.Network,
         target,
       });
       const {project: otherProject} = createContentProviderUISourceCodes({
         items: [
-          {url: 'http://example.com/c.js' as Platform.DevToolsPath.UrlString, mimeType: 'application/javascript'},
+          {url: urlString`http://example.com/c.js`, mimeType: 'application/javascript'},
         ],
         projectType: Workspace.Workspace.projectTypes.Network,
         projectId: 'other',
@@ -385,9 +387,9 @@ describeWithMockConnection('NetworkNavigatorView', () => {
       // it should move to 'c' rather being pushed forward to 'e'.
       project.removeProject();
 
-      assert.isTrue(nodeESelectSpy.notCalled);
-      assert.isTrue(nodeBSelectSpy.notCalled);
-      assert.isTrue(nodeCSelectSpy.called);
+      sinon.assert.notCalled(nodeESelectSpy);
+      sinon.assert.notCalled(nodeBSelectSpy);
+      sinon.assert.called(nodeCSelectSpy);
 
       // Also note that nodeD and nodeE are removed. Let us make that explicit.
       assert.strictEqual(exampleComNode.childCount(), 1);
@@ -438,8 +440,8 @@ describeWithMockConnection('NetworkNavigatorView', () => {
       dispatchEvent(
           target, 'Runtime.executionContextDestroyed', {executionContextId: 2, executionContextUniqueId: 'c2'});
 
-      assert.isTrue(nodeBSelectSpy.notCalled);
-      assert.isTrue(nodeCSelectSpy.called);
+      sinon.assert.notCalled(nodeBSelectSpy);
+      sinon.assert.called(nodeCSelectSpy);
 
       // Sanity check - we should have only one source now.
       assert.strictEqual(exampleComNode.childCount(), 1);
@@ -479,19 +481,19 @@ describeWithMockConnection('NetworkNavigatorView', () => {
       const {project} = createContentProviderUISourceCodes({
         items: [
           {
-            url: 'http://example.com/ignored/a/a-hidden.js' as Platform.DevToolsPath.UrlString,
+            url: urlString`http://example.com/ignored/a/a-hidden.js`,
             mimeType: 'application/javascript',
           },
           {
-            url: 'http://example.com/ignored/b/b-hidden.js' as Platform.DevToolsPath.UrlString,
+            url: urlString`http://example.com/ignored/b/b-hidden.js`,
             mimeType: 'application/javascript',
           },
           {
-            url: 'http://example.com/mixed/a/a-hidden.js' as Platform.DevToolsPath.UrlString,
+            url: urlString`http://example.com/mixed/a/a-hidden.js`,
             mimeType: 'application/javascript',
           },
           {
-            url: 'http://example.com/mixed/b/b.js' as Platform.DevToolsPath.UrlString,
+            url: urlString`http://example.com/mixed/b/b.js`,
             mimeType: 'application/javascript',
           },
         ],
@@ -515,19 +517,19 @@ describeWithMockConnection('NetworkNavigatorView', () => {
       const {project} = createContentProviderUISourceCodes({
         items: [
           {
-            url: 'http://example.com/ignored/a/a-hidden.js' as Platform.DevToolsPath.UrlString,
+            url: urlString`http://example.com/ignored/a/a-hidden.js`,
             mimeType: 'application/javascript',
           },
           {
-            url: 'http://example.com/ignored/b/b-hidden.js' as Platform.DevToolsPath.UrlString,
+            url: urlString`http://example.com/ignored/b/b-hidden.js`,
             mimeType: 'application/javascript',
           },
           {
-            url: 'http://example.com/mixed/a/a-hidden.js' as Platform.DevToolsPath.UrlString,
+            url: urlString`http://example.com/mixed/a/a-hidden.js`,
             mimeType: 'application/javascript',
           },
           {
-            url: 'http://example.com/mixed/b/b.js' as Platform.DevToolsPath.UrlString,
+            url: urlString`http://example.com/mixed/b/b.js`,
             mimeType: 'application/javascript',
           },
         ],
@@ -562,15 +564,15 @@ describeWithMockConnection('NetworkNavigatorView', () => {
       const {project} = createContentProviderUISourceCodes({
         items: [
           {
-            url: 'http://example.com/ignored/a/a-hidden.js' as Platform.DevToolsPath.UrlString,
+            url: urlString`http://example.com/ignored/a/a-hidden.js`,
             mimeType: 'application/javascript',
           },
           {
-            url: 'http://example.com/ignored/b/b-hidden.js' as Platform.DevToolsPath.UrlString,
+            url: urlString`http://example.com/ignored/b/b-hidden.js`,
             mimeType: 'application/javascript',
           },
           {
-            url: 'http://example.com/mixed/a/a-hidden.js' as Platform.DevToolsPath.UrlString,
+            url: urlString`http://example.com/mixed/a/a-hidden.js`,
             mimeType: 'application/javascript',
           },
         ],
@@ -590,7 +592,7 @@ describeWithMockConnection('NetworkNavigatorView', () => {
       const {project: otherProject} = createContentProviderUISourceCodes({
         items: [
           {
-            url: 'http://example.com/mixed/b/b.js' as Platform.DevToolsPath.UrlString,
+            url: urlString`http://example.com/mixed/b/b.js`,
             mimeType: 'application/javascript',
           },
         ],

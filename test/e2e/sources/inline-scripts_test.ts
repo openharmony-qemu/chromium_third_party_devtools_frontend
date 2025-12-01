@@ -9,7 +9,6 @@ import {
   getBrowserAndPages,
   waitFor,
 } from '../../shared/helper.js';
-
 import {
   addBreakpointForLine,
   getCallFrameNames,
@@ -20,13 +19,13 @@ import {
 
 describe('The Sources Tab', () => {
   // Skip this test until the flakiness is fixed.
-  it.skip('[crbug.com/1466450]: sets the breakpoint in the first script for multiple inline scripts', async () => {
-    const {frontend, target} = getBrowserAndPages();
+  it.skip('[crbug.com/40276401]: sets the breakpoint in the first script for multiple inline scripts', async () => {
+    const {target} = getBrowserAndPages();
     await openSourceCodeEditorForFile('inline-scripts.html', 'inline-scripts.html');
-    await addBreakpointForLine(frontend, 4);
-    await addBreakpointForLine(frontend, 11);
+    await addBreakpointForLine(4);
+    await addBreakpointForLine(11);
 
-    target.reload();
+    await target.reload();
     await waitFor(PAUSE_INDICATOR_SELECTOR);
 
     let names = await getCallFrameNames();

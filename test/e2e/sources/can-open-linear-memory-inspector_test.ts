@@ -5,7 +5,6 @@
 import {assert} from 'chai';
 
 import {$, $$, click, getBrowserAndPages, goToResource, step, waitFor, waitForFunction} from '../../shared/helper.js';
-
 import {checkIfTabExistsInDrawer, DRAWER_PANEL_SELECTOR} from '../helpers/cross-tool-helper.js';
 import {
   addBreakpointForLine,
@@ -33,7 +32,7 @@ describe('Scope View', () => {
     });
 
     await step(`add a breakpoint to line No.${breakpointLine}`, async () => {
-      await addBreakpointForLine(frontend, breakpointLine);
+      await addBreakpointForLine(breakpointLine);
     });
 
     await step('reload the page', async () => {

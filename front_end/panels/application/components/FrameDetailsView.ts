@@ -1,6 +1,7 @@
 // Copyright 2021 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-lit-render-outside-of-view */
 
 import '../../../ui/components/expandable_list/expandable_list.js';
 import '../../../ui/components/report_view/report_view.js';
@@ -19,10 +20,10 @@ import * as CspEvaluator from '../../../third_party/csp_evaluator/csp_evaluator.
 import * as Buttons from '../../../ui/components/buttons/buttons.js';
 import type * as ExpandableList from '../../../ui/components/expandable_list/expandable_list.js';
 import * as LegacyWrapper from '../../../ui/components/legacy_wrapper/legacy_wrapper.js';
-import * as Coordinator from '../../../ui/components/render_coordinator/render_coordinator.js';
+import * as RenderCoordinator from '../../../ui/components/render_coordinator/render_coordinator.js';
 import type * as ReportView from '../../../ui/components/report_view/report_view.js';
 import * as Components from '../../../ui/legacy/components/utils/utils.js';
-import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import * as Lit from '../../../ui/lit/lit.js';
 import * as VisualLogging from '../../../ui/visual_logging/visual_logging.js';
 
 import frameDetailsReportViewStyles from './frameDetailsReportView.css.js';
@@ -33,7 +34,7 @@ import {
 } from './PermissionsPolicySection.js';
 import type {StackTraceData} from './StackTrace.js';
 
-const {html} = LitHtml;
+const {html} = Lit;
 
 const UIStrings = {
   /**
@@ -248,9 +249,9 @@ const UIStrings = {
   createdByAdScriptExplanation:
       'There was an ad script in the `(async) stack` when this frame was created. Examining the creation `stack trace` of this frame might provide more insight.',
   /**
-   *@description Label for a link to an ad script, which created the current iframe.
+   *@description Label for the link(s) to the ad script(s) that led to this frame's creation.
    */
-  creatorAdScript: 'Creator Ad Script',
+  creatorAdScriptAncestry: 'Creator Ad Script Ancestry',
   /**
    *@description Text describing the absence of a value.
    */
@@ -261,28 +262,26 @@ const UIStrings = {
    *(please don't translate 'origin trials').
    */
   originTrialsExplanation: 'Origin trials give you access to a new or experimental feature.',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/application/components/FrameDetailsView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
-
-const coordinator = Coordinator.RenderCoordinator.RenderCoordinator.instance();
 
 export interface FrameDetailsReportViewData {
   frame: SDK.ResourceTreeModel.ResourceTreeFrame;
   target?: SDK.Target.Target;
-  adScriptId: Protocol.Page.AdScriptId|null;
+  adScriptAncestryIds: Protocol.Page.AdScriptId[]|null;
 }
 
 export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.WrappableComponent {
   readonly #shadow = this.attachShadow({mode: 'open'});
   #frame?: SDK.ResourceTreeModel.ResourceTreeFrame;
-  #target?: SDK.Target.Target;
+  #target: SDK.Target.Target|null = null;
   #protocolMonitorExperimentEnabled = false;
   #permissionsPolicies: Promise<Protocol.Page.PermissionsPolicyFeatureState[]|null>|null = null;
   #permissionsPolicySectionData: PermissionsPolicySectionData = {policies: [], showDetails: false};
   #originTrialTreeView: OriginTrialTreeView = new OriginTrialTreeView();
   #linkifier = new Components.Linkifier.Linkifier();
-  #adScriptId: Protocol.Page.AdScriptId|null = null;
+  #adScriptAncestryIds: Protocol.Page.AdScriptId[]|null = null;
 
   constructor(frame: SDK.ResourceTreeModel.ResourceTreeFrame) {
     super();
@@ -293,51 +292,61 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
   connectedCallback(): void {
     this.parentElement?.classList.add('overflow-auto');
     this.#protocolMonitorExperimentEnabled = Root.Runtime.experiments.isEnabled('protocol-monitor');
-    this.#shadow.adoptedStyleSheets = [frameDetailsReportViewStyles];
   }
 
   override async render(): Promise<void> {
-    this.#adScriptId = (await this.#frame?.parentFrame()?.getAdScriptId(this.#frame?.id)) || null;
-    const debuggerModel = this.#adScriptId?.debuggerId ?
-        await SDK.DebuggerModel.DebuggerModel.modelForDebuggerId(this.#adScriptId?.debuggerId) :
-        null;
-    this.#target = debuggerModel?.target();
+    const results = await this.#frame?.parentFrame()?.getAdScriptAncestryIds(this.#frame?.id);
+    if (Array.isArray(results) && results.length > 0) {
+      this.#adScriptAncestryIds = results;
+
+      // Obtain the Target associated with the first ad script, because in most scenarios all
+      // scripts share the same debuggerId. However, discrepancies might arise when content scripts
+      // from browser extensions are involved. We will monitor the debugging experiences and revisit
+      // this approach if it proves problematic.
+      const firstScript = this.#adScriptAncestryIds[0];
+      const debuggerModel = firstScript?.debuggerId ?
+          await SDK.DebuggerModel.DebuggerModel.modelForDebuggerId(firstScript.debuggerId) :
+          null;
+      this.#target = debuggerModel?.target() ?? null;
+    }
+
     if (!this.#permissionsPolicies && this.#frame) {
       this.#permissionsPolicies = this.#frame.getPermissionsPolicyState();
     }
-    await coordinator.write('FrameDetailsView render', () => {
+    await RenderCoordinator.write('FrameDetailsView render', () => {
       if (!this.#frame) {
         return;
       }
 
       // Disabled until https://crbug.com/1079231 is fixed.
       // clang-format off
-      LitHtml.render(html`
+      Lit.render(html`
+        <style>${frameDetailsReportViewStyles}</style>
         <devtools-report .data=${{reportTitle: this.#frame.displayName()} as ReportView.ReportView.ReportData}
         jslog=${VisualLogging.pane('frames')}>
           ${this.#renderDocumentSection()}
           ${this.#renderIsolationSection()}
           ${this.#renderApiAvailabilitySection()}
           ${this.#renderOriginTrial()}
-          ${LitHtml.Directives.until(this.#permissionsPolicies?.then(policies => {
+          ${Lit.Directives.until(this.#permissionsPolicies?.then(policies => {
             this.#permissionsPolicySectionData.policies = policies || [];
             return html`
               <devtools-resources-permissions-policy-section
-                .data=${this.#permissionsPolicySectionData as PermissionsPolicySectionData}
+                .data=${this.#permissionsPolicySectionData}
               >
               </devtools-resources-permissions-policy-section>
             `;
-          }), LitHtml.nothing)}
-          ${this.#protocolMonitorExperimentEnabled ? this.#renderAdditionalInfoSection() : LitHtml.nothing}
+          }), Lit.nothing)}
+          ${this.#protocolMonitorExperimentEnabled ? this.#renderAdditionalInfoSection() : Lit.nothing}
         </devtools-report>
       `, this.#shadow, {host: this});
       // clang-format on
     });
   }
 
-  #renderOriginTrial(): LitHtml.LitTemplate {
+  #renderOriginTrial(): Lit.LitTemplate {
     if (!this.#frame) {
-      return LitHtml.nothing;
+      return Lit.nothing;
     }
 
     this.#originTrialTreeView.classList.add('span-cols');
@@ -349,20 +358,19 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
     // clang-format off
     return html`
     <devtools-report-section-header>${i18n.i18n.lockedString('Origin trials')}</devtools-report-section-header>
-    <div class="span-cols">
-        ${i18nString(UIStrings.originTrialsExplanation)}
+    <devtools-report-section><span class="report-section">${i18nString(UIStrings.originTrialsExplanation)}
         <x-link href="https://developer.chrome.com/docs/web-platform/origin-trials/" class="link"
-        jslog=${VisualLogging.link('learn-more.origin-trials').track({click: true})}>${i18nString(UIStrings.learnMore)}</x-link>
-    </div>
+        jslog=${VisualLogging.link('learn-more.origin-trials').track({click: true})}>${i18nString(UIStrings.learnMore)}</x-link></span>
+    </devtools-report-section>
     ${this.#originTrialTreeView}
     <devtools-report-divider></devtools-report-divider>
     `;
     // clang-format on
   }
 
-  #renderDocumentSection(): LitHtml.LitTemplate {
+  #renderDocumentSection(): Lit.LitTemplate {
     if (!this.#frame) {
-      return LitHtml.nothing;
+      return Lit.nothing;
     }
 
     return html`
@@ -377,30 +385,31 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
       </devtools-report-value>
       ${this.#maybeRenderUnreachableURL()}
       ${this.#maybeRenderOrigin()}
-      ${LitHtml.Directives.until(this.#renderOwnerElement(), LitHtml.nothing)}
+      ${Lit.Directives.until(this.#renderOwnerElement(), Lit.nothing)}
       ${this.#maybeRenderCreationStacktrace()}
       ${this.#maybeRenderAdStatus()}
+      ${this.#maybeRenderCreatorAdScriptAncestry()}
       <devtools-report-divider></devtools-report-divider>
     `;
   }
 
-  #maybeRenderSourcesLinkForURL(): LitHtml.LitTemplate {
+  #maybeRenderSourcesLinkForURL(): Lit.LitTemplate {
     if (!this.#frame || this.#frame.unreachableUrl()) {
-      return LitHtml.nothing;
+      return Lit.nothing;
     }
     const sourceCode = this.#uiSourceCodeForFrame(this.#frame);
     return renderIconLink(
-        'breakpoint-circle',
+        'label',
         i18nString(UIStrings.clickToOpenInSourcesPanel),
         () => Common.Revealer.reveal(sourceCode),
         'reveal-in-sources',
     );
   }
 
-  #maybeRenderNetworkLinkForURL(): LitHtml.LitTemplate {
+  #maybeRenderNetworkLinkForURL(): Lit.LitTemplate {
     if (this.#frame) {
       const resource = this.#frame.resourceForURL(this.#frame.url);
-      if (resource && resource.request) {
+      if (resource?.request) {
         const request = resource.request;
         return renderIconLink('arrow-up-down-circle', i18nString(UIStrings.clickToOpenInNetworkPanel), () => {
           const requestLocation = NetworkForward.UIRequestLocation.UIRequestLocation.tab(
@@ -409,7 +418,7 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
         }, 'reveal-in-network');
       }
     }
-    return LitHtml.nothing;
+    return Lit.nothing;
   }
 
   #uiSourceCodeForFrame(frame: SDK.ResourceTreeModel.ResourceTreeFrame): Workspace.UISourceCode.UISourceCode|null {
@@ -425,9 +434,9 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
     return null;
   }
 
-  #maybeRenderUnreachableURL(): LitHtml.LitTemplate {
+  #maybeRenderUnreachableURL(): Lit.LitTemplate {
     if (!this.#frame || !this.#frame.unreachableUrl()) {
-      return LitHtml.nothing;
+      return Lit.nothing;
     }
     return html`
       <devtools-report-key>${i18nString(UIStrings.unreachableUrl)}</devtools-report-key>
@@ -440,7 +449,7 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
     `;
   }
 
-  #renderNetworkLinkForUnreachableURL(): LitHtml.LitTemplate {
+  #renderNetworkLinkForUnreachableURL(): Lit.LitTemplate {
     if (this.#frame) {
       const unreachableUrl = Common.ParsedURL.ParsedURL.fromString(this.#frame.unreachableUrl());
       if (unreachableUrl) {
@@ -464,10 +473,10 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
         );
       }
     }
-    return LitHtml.nothing;
+    return Lit.nothing;
   }
 
-  #maybeRenderOrigin(): LitHtml.LitTemplate {
+  #maybeRenderOrigin(): Lit.LitTemplate {
     if (this.#frame && this.#frame.securityOrigin && this.#frame.securityOrigin !== '://') {
       return html`
         <devtools-report-key>${i18nString(UIStrings.origin)}</devtools-report-key>
@@ -476,10 +485,10 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
         </devtools-report-value>
       `;
     }
-    return LitHtml.nothing;
+    return Lit.nothing;
   }
 
-  async #renderOwnerElement(): Promise<LitHtml.LitTemplate> {
+  async #renderOwnerElement(): Promise<Lit.LitTemplate> {
     if (this.#frame) {
       const linkTargetDOMNode = await this.#frame.getOwnerDOMNodeOrDocument();
       if (linkTargetDOMNode) {
@@ -503,12 +512,12 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
         // clang-format on
       }
     }
-    return LitHtml.nothing;
+    return Lit.nothing;
   }
 
-  #maybeRenderCreationStacktrace(): LitHtml.LitTemplate {
+  #maybeRenderCreationStacktrace(): Lit.LitTemplate {
     const creationStackTraceData = this.#frame?.getCreationStackTraceData();
-    if (creationStackTraceData && creationStackTraceData.creationStackTrace) {
+    if (creationStackTraceData?.creationStackTrace) {
       // Disabled until https://crbug.com/1079231 is fixed.
       // clang-format off
       return html`
@@ -526,7 +535,7 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
       `;
       // clang-format on
     }
-    return LitHtml.nothing;
+    return Lit.nothing;
   }
 
   #getAdFrameTypeStrings(type: Protocol.Page.AdFrameType.Child|Protocol.Page.AdFrameType.Root):
@@ -550,13 +559,13 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
     }
   }
 
-  #maybeRenderAdStatus(): LitHtml.LitTemplate {
+  #maybeRenderAdStatus(): Lit.LitTemplate {
     if (!this.#frame) {
-      return LitHtml.nothing;
+      return Lit.nothing;
     }
     const adFrameType = this.#frame.adFrameType();
     if (adFrameType === Protocol.Page.AdFrameType.None) {
-      return LitHtml.nothing;
+      return Lit.nothing;
     }
     const typeStrings = this.#getAdFrameTypeStrings(adFrameType);
     const rows = [html`<div title=${typeStrings.description}>${typeStrings.value}</div>`];
@@ -564,30 +573,60 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
       rows.push(html`<div>${this.#getAdFrameExplanationString(explanation)}</div>`);
     }
 
-    const adScriptLinkElement = this.#target ? this.#linkifier.linkifyScriptLocation(
-                                                   this.#target, this.#adScriptId?.scriptId || null,
-                                                   Platform.DevToolsPath.EmptyUrlString, undefined, undefined) :
-                                               null;
-
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
     return html`
       <devtools-report-key>${i18nString(UIStrings.adStatus)}</devtools-report-key>
-      <devtools-report-value
-      jslog=${VisualLogging.section('ad-status')}>
+      <devtools-report-value class="ad-status-list" jslog=${VisualLogging.section('ad-status')}>
         <devtools-expandable-list .data=${
           {rows, title: i18nString(UIStrings.adStatus)} as ExpandableList.ExpandableList.ExpandableListData}></devtools-expandable-list></devtools-report-value>
-      ${this.#target ? html`
-        <devtools-report-key>${i18nString(UIStrings.creatorAdScript)}</devtools-report-key>
-        <devtools-report-value class="ad-script-link">${adScriptLinkElement?.setAttribute('jslog', `${VisualLogging.link('ad-script').track({click: true})}`)}</devtools-report-value>
-      ` : LitHtml.nothing}
     `;
     // clang-format on
   }
 
-  #renderIsolationSection(): LitHtml.LitTemplate {
+  #maybeRenderCreatorAdScriptAncestry(): Lit.LitTemplate {
     if (!this.#frame) {
-      return LitHtml.nothing;
+      return Lit.nothing;
+    }
+    const adFrameType = this.#frame.adFrameType();
+    if (adFrameType === Protocol.Page.AdFrameType.None) {
+      return Lit.nothing;
+    }
+
+    if (!this.#target || !this.#adScriptAncestryIds || this.#adScriptAncestryIds.length === 0) {
+      return Lit.nothing;
+    }
+
+    const rows = this.#adScriptAncestryIds.map(adScriptId => {
+      const adScriptLinkElement = this.#linkifier.linkifyScriptLocation(
+          this.#target,
+          adScriptId.scriptId || null,
+          Platform.DevToolsPath.EmptyUrlString,
+          undefined,
+          undefined,
+      );
+
+      adScriptLinkElement?.setAttribute('jslog', `${VisualLogging.link('ad-script').track({click: true})}`);
+
+      return html`<div>${adScriptLinkElement}</div>`;
+    });
+
+    // Disabled until https://crbug.com/1079231 is fixed.
+    // clang-format off
+    return html`
+      <devtools-report-key>${i18nString(UIStrings.creatorAdScriptAncestry)}</devtools-report-key>
+      <devtools-report-value class="creator-ad-script-ancestry-list" jslog=${VisualLogging.section('creator-ad-script-ancestry')}>
+        <devtools-expandable-list .data=${
+          {rows, title: i18nString(UIStrings.creatorAdScriptAncestry)} as ExpandableList.ExpandableList.ExpandableListData}>
+        </devtools-expandable-list>
+      </devtools-report-value>
+    `;
+    // clang-format on
+  }
+
+  #renderIsolationSection(): Lit.LitTemplate {
+    if (!this.#frame) {
+      return Lit.nothing;
     }
     return html`
       <devtools-report-section-header>${i18nString(UIStrings.securityIsolation)}</devtools-report-section-header>
@@ -600,17 +639,17 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
       <devtools-report-value>
         ${this.#frame.isCrossOriginIsolated() ? i18nString(UIStrings.yes) : i18nString(UIStrings.no)}
       </devtools-report-value>
-      ${LitHtml.Directives.until(this.#maybeRenderCoopCoepCSPStatus(), LitHtml.nothing)}
+      ${Lit.Directives.until(this.#maybeRenderCoopCoepCSPStatus(), Lit.nothing)}
       <devtools-report-divider></devtools-report-divider>
     `;
   }
 
-  #maybeRenderSecureContextExplanation(): LitHtml.LitTemplate {
+  #maybeRenderSecureContextExplanation(): Lit.LitTemplate {
     const explanation = this.#getSecureContextExplanation();
     if (explanation) {
       return html`<span class="inline-comment">${explanation}</span>`;
     }
-    return LitHtml.nothing;
+    return Lit.nothing;
   }
 
   #getSecureContextExplanation(): Platform.UIString.LocalizedString|null {
@@ -627,7 +666,7 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
     return null;
   }
 
-  async #maybeRenderCoopCoepCSPStatus(): Promise<LitHtml.LitTemplate> {
+  async #maybeRenderCoopCoepCSPStatus(): Promise<Lit.LitTemplate> {
     if (this.#frame) {
       const model = this.#frame.resourceTreeModel().target().model(SDK.NetworkManager.NetworkManager);
       const info = model && await model.getSecurityIsolationStatus(this.#frame.id);
@@ -645,16 +684,16 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
         `;
       }
     }
-    return LitHtml.nothing;
+    return Lit.nothing;
   }
 
   #maybeRenderCrossOriginStatus(
       info: Protocol.Network.CrossOriginEmbedderPolicyStatus|Protocol.Network.CrossOriginOpenerPolicyStatus|undefined,
       policyName: string,
       noneValue: Protocol.Network.CrossOriginEmbedderPolicyValue|
-      Protocol.Network.CrossOriginOpenerPolicyValue): LitHtml.LitTemplate {
+      Protocol.Network.CrossOriginOpenerPolicyValue): Lit.LitTemplate {
     if (!info) {
-      return LitHtml.nothing;
+      return Lit.nothing;
     }
     const isEnabled = info.value !== noneValue;
     const isReportOnly = (!isEnabled && info.reportOnlyValue !== noneValue);
@@ -663,15 +702,14 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
       <devtools-report-key>${policyName}</devtools-report-key>
       <devtools-report-value>
         ${isEnabled ? info.value : info.reportOnlyValue}
-        ${isReportOnly ? html`<span class="inline-comment">report-only</span>` : LitHtml.nothing}
+        ${isReportOnly ? html`<span class="inline-comment">report-only</span>` : Lit.nothing}
         ${
-        endpoint ? html`<span class="inline-name">${i18nString(UIStrings.reportingTo)}</span>${endpoint}` :
-                   LitHtml.nothing}
+        endpoint ? html`<span class="inline-name">${i18nString(UIStrings.reportingTo)}</span>${endpoint}` : Lit.nothing}
       </devtools-report-value>
     `;
   }
 
-  #renderEffectiveDirectives(directives: string): LitHtml.LitTemplate[] {
+  #renderEffectiveDirectives(directives: string): Lit.LitTemplate[] {
     const parsedDirectives = new CspEvaluator.CspParser.CspParser(directives).csp.directives;
     const result = [];
     for (const directive in parsedDirectives) {
@@ -681,7 +719,7 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
     return result;
   }
 
-  #renderSingleCSP(cspInfo: Protocol.Network.ContentSecurityPolicyStatus): LitHtml.LitTemplate {
+  #renderSingleCSP(cspInfo: Protocol.Network.ContentSecurityPolicyStatus, divider: boolean): Lit.LitTemplate {
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
     return html`
@@ -703,11 +741,12 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
         ${cspInfo.source === Protocol.Network.ContentSecurityPolicySource.HTTP ? i18n.i18n.lockedString('HTTP header') : i18n.i18n.lockedString('Meta tag')}
         ${this.#renderEffectiveDirectives(cspInfo.effectiveDirectives)}
       </devtools-report-value>
+      ${divider ? html`<devtools-report-divider class="subsection-divider"></devtools-report-divider>` : Lit.nothing}
     `;
     // clang-format on
   }
 
-  #renderCSPSection(cspInfos: Protocol.Network.ContentSecurityPolicyStatus[]|undefined): LitHtml.LitTemplate {
+  #renderCSPSection(cspInfos: Protocol.Network.ContentSecurityPolicyStatus[]|undefined): Lit.LitTemplate {
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
     return html`
@@ -715,7 +754,7 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
       <devtools-report-section-header>
         ${i18nString(UIStrings.contentSecurityPolicy)}
       </devtools-report-section-header>
-      ${(cspInfos && cspInfos.length) ? cspInfos.map(cspInfo => this.#renderSingleCSP(cspInfo)) : html`
+      ${(cspInfos?.length) ? cspInfos.map((cspInfo, index) => this.#renderSingleCSP(cspInfo, index < cspInfos?.length - 1)) : html`
         <devtools-report-key>${
           i18n.i18n.lockedString('Content-Security-Policy')}</devtools-report-key>
         <devtools-report-value>
@@ -726,25 +765,28 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
     // clang-format on
   }
 
-  #renderApiAvailabilitySection(): LitHtml.LitTemplate {
+  #renderApiAvailabilitySection(): Lit.LitTemplate {
     if (!this.#frame) {
-      return LitHtml.nothing;
+      return Lit.nothing;
     }
 
     return html`
       <devtools-report-section-header>${i18nString(UIStrings.apiAvailability)}</devtools-report-section-header>
-      <div class="span-cols">
-        ${i18nString(UIStrings.availabilityOfCertainApisDepends)}
-        <x-link href="https://web.dev/why-coop-coep/" class="link" jslog=${
-        VisualLogging.link('learn-more.coop-coep').track({click: true})}>${i18nString(UIStrings.learnMore)}</x-link>
-      </div>
+      <devtools-report-section>
+        <span class="report-section">${
+        i18nString(
+            UIStrings
+                .availabilityOfCertainApisDepends)}<x-link href="https://web.dev/why-coop-coep/" class="link" jslog=${
+        VisualLogging.link('learn-more.coop-coep').track({click: true})}>${
+        i18nString(UIStrings.learnMore)}</x-link></span>
+      </devtools-report-section>
       ${this.#renderSharedArrayBufferAvailability()}
       ${this.#renderMeasureMemoryAvailability()}
       <devtools-report-divider></devtools-report-divider>
     `;
   }
 
-  #renderSharedArrayBufferAvailability(): LitHtml.LitTemplate {
+  #renderSharedArrayBufferAvailability(): Lit.LitTemplate {
     if (this.#frame) {
       const features = this.#frame.getGatedAPIFeatures();
       if (features) {
@@ -758,10 +800,10 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
             i18nString(UIStrings.sharedarraybufferConstructorIs) :
             (sabAvailable ? i18nString(UIStrings.sharedarraybufferConstructorIsAvailable) : '');
 
-        function renderHint(frame: SDK.ResourceTreeModel.ResourceTreeFrame): LitHtml.LitTemplate {
+        function renderHint(frame: SDK.ResourceTreeModel.ResourceTreeFrame): Lit.LitTemplate {
           switch (frame.getCrossOriginIsolatedContextType()) {
             case Protocol.Page.CrossOriginIsolatedContextType.Isolated:
-              return LitHtml.nothing;
+              return Lit.nothing;
             case Protocol.Page.CrossOriginIsolatedContextType.NotIsolated:
               if (sabAvailable) {
                 return html`<span class="inline-comment">${
@@ -777,7 +819,7 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
               }
               break;
           }
-          return LitHtml.nothing;
+          return Lit.nothing;
         }
 
         // SharedArrayBuffer is an API name, so we don't translate it.
@@ -789,10 +831,10 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
         `;
       }
     }
-    return LitHtml.nothing;
+    return Lit.nothing;
   }
 
-  #renderMeasureMemoryAvailability(): LitHtml.LitTemplate {
+  #renderMeasureMemoryAvailability(): Lit.LitTemplate {
     if (this.#frame) {
       const measureMemoryAvailable = this.#frame.isCrossOriginIsolated();
       const availabilityText =
@@ -809,12 +851,12 @@ export class FrameDetailsReportView extends LegacyWrapper.LegacyWrapper.Wrappabl
         </devtools-report-value>
       `;
     }
-    return LitHtml.nothing;
+    return Lit.nothing;
   }
 
-  #renderAdditionalInfoSection(): LitHtml.LitTemplate {
+  #renderAdditionalInfoSection(): Lit.LitTemplate {
     if (!this.#frame) {
-      return LitHtml.nothing;
+      return Lit.nothing;
     }
 
     return html`

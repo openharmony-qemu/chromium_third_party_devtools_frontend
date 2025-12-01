@@ -1,6 +1,9 @@
 // Copyright 2019 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-imperative-dom-api */
+
+import '../../ui/legacy/legacy.js';
 
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
@@ -57,7 +60,7 @@ const UIStrings = {
    *to the clipboard. UTF-8 is a format for encoding data.
    */
   copyAsUtf: 'Copy as `UTF-8`',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/network/BinaryResourceView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class BinaryResourceView extends UI.Widget.VBox {
@@ -72,13 +75,14 @@ export class BinaryResourceView extends UI.Widget.VBox {
 
   constructor(
       content: TextUtils.StreamingContentData.StreamingContentData, contentUrl: Platform.DevToolsPath.UrlString,
-      resourceType: Common.ResourceType.ResourceType) {
-    super();
+      resourceType: Common.ResourceType.ResourceType, element?: HTMLElement) {
+    super(undefined, undefined, element);
+    this.registerRequiredCSS(binaryResourceViewStyles);
 
     this.binaryResourceViewFactory =
         new SourceFrame.BinaryResourceViewFactory.BinaryResourceViewFactory(content, contentUrl, resourceType);
 
-    this.toolbar = new UI.Toolbar.Toolbar('binary-view-toolbar', this.element);
+    this.toolbar = this.element.createChild('devtools-toolbar', 'binary-view-toolbar');
 
     this.binaryViewObjects = [
       new BinaryViewObject(
@@ -111,7 +115,7 @@ export class BinaryResourceView extends UI.Widget.VBox {
 
     this.copiedText = new UI.Toolbar.ToolbarText();
     this.copiedText.element.classList.add('binary-view-copied-text');
-    this.toolbar.element.appendChild(this.copiedText.element);
+    this.toolbar.appendChild(this.copiedText.element);
 
     this.addFadeoutSettimeoutId = null;
 
@@ -147,11 +151,6 @@ export class BinaryResourceView extends UI.Widget.VBox {
     this.addFadeoutSettimeoutId = window.setTimeout(addFadeoutClass.bind(this), 2000);
   }
 
-  override wasShown(): void {
-    this.updateView();
-    this.registerCSSFiles([binaryResourceViewStyles]);
-  }
-
   private updateView(): void {
     const newViewObject = this.getCurrentViewObject();
     if (!newViewObject) {
@@ -168,12 +167,12 @@ export class BinaryResourceView extends UI.Widget.VBox {
     }
     this.lastView = newView;
 
-    newView.show(this.element, this.toolbar.element);
-    this.binaryViewTypeCombobox.selectElement().value = this.binaryViewTypeSetting.get();
+    newView.show(this.element, this.toolbar);
+    this.binaryViewTypeCombobox.element.value = this.binaryViewTypeSetting.get();
   }
 
   private binaryViewTypeChanged(): void {
-    const selectedOption = (this.binaryViewTypeCombobox.selectedOption() as HTMLOptionElement | null);
+    const selectedOption = (this.binaryViewTypeCombobox.selectedOption());
     if (!selectedOption) {
       return;
     }

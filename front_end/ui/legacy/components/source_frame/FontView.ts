@@ -1,6 +1,7 @@
 // Copyright 2021 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-imperative-dom-api */
 
 /*
  * Copyright (C) 2007, 2008 Apple Inc.  All rights reserved.
@@ -36,7 +37,7 @@ import * as TextUtils from '../../../../models/text_utils/text_utils.js';
 import * as VisualLogging from '../../../visual_logging/visual_logging.js';
 import * as UI from '../../legacy.js';
 
-import fontViewStyles from './fontView.css.legacy.js';
+import fontViewStyles from './fontView.css.js';
 
 const UIStrings = {
   /**
@@ -48,7 +49,7 @@ const UIStrings = {
    *@example {https://example.com} PH1
    */
   previewOfFontFromS: 'Preview of font from {PH1}',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/components/source_frame/FontView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class FontView extends UI.View.SimpleView {
@@ -107,7 +108,7 @@ export class FontView extends UI.View.SimpleView {
     if (!this.fontPreviewElement) {
       return;
     }
-    UI.ARIAUtils.markAsHidden(this.fontPreviewElement);
+    UI.ARIAUtils.setHidden(this.fontPreviewElement, true);
     this.fontPreviewElement.style.overflow = 'hidden';
     this.fontPreviewElement.style.setProperty('font-family', uniqueFontName);
     this.fontPreviewElement.style.setProperty('visibility', 'hidden');

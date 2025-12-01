@@ -33,8 +33,8 @@
 
 import * as Common from '../../core/common/common.js';
 import * as SDK from '../../core/sdk/sdk.js';
-import type * as Protocol from '../../generated/protocol.js';
 import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
+import type * as Protocol from '../../generated/protocol.js';
 
 export class DOMStorage extends Common.ObjectWrapper.ObjectWrapper<DOMStorage.EventTypes> {
   private readonly model: DOMStorageModel;
@@ -104,19 +104,17 @@ export namespace DOMStorage {
     value: string;
   }
 
-  export type EventTypes = {
-    [Events.DOM_STORAGE_ITEMS_CLEARED]: void,
-    [Events.DOM_STORAGE_ITEM_REMOVED]: DOMStorageItemRemovedEvent,
-    [Events.DOM_STORAGE_ITEM_ADDED]: DOMStorageItemAddedEvent,
-    [Events.DOM_STORAGE_ITEM_UPDATED]: DOMStorageItemUpdatedEvent,
-  };
+  export interface EventTypes {
+    [Events.DOM_STORAGE_ITEMS_CLEARED]: void;
+    [Events.DOM_STORAGE_ITEM_REMOVED]: DOMStorageItemRemovedEvent;
+    [Events.DOM_STORAGE_ITEM_ADDED]: DOMStorageItemAddedEvent;
+    [Events.DOM_STORAGE_ITEM_UPDATED]: DOMStorageItemUpdatedEvent;
+  }
 }
 
 export class DOMStorageModel extends SDK.SDKModel.SDKModel<EventTypes> {
   private readonly storageKeyManagerInternal: SDK.StorageKeyManager.StorageKeyManager|null;
-  private storagesInternal: {
-    [x: string]: DOMStorage,
-  };
+  private storagesInternal: Record<string, DOMStorage>;
   readonly agent: ProtocolProxyApi.DOMStorageApi;
   private enabled?: boolean;
 
@@ -126,10 +124,6 @@ export class DOMStorageModel extends SDK.SDKModel.SDKModel<EventTypes> {
     this.storageKeyManagerInternal = target.model(SDK.StorageKeyManager.StorageKeyManager);
     this.storagesInternal = {};
     this.agent = target.domstorageAgent();
-  }
-
-  get storageKeyManagerForTest(): SDK.StorageKeyManager.StorageKeyManager|null {
-    return this.storageKeyManagerInternal;
   }
 
   enable(): void {
@@ -263,10 +257,10 @@ export const enum Events {
   DOM_STORAGE_REMOVED = 'DOMStorageRemoved',
 }
 
-export type EventTypes = {
-  [Events.DOM_STORAGE_ADDED]: DOMStorage,
-  [Events.DOM_STORAGE_REMOVED]: DOMStorage,
-};
+export interface EventTypes {
+  [Events.DOM_STORAGE_ADDED]: DOMStorage;
+  [Events.DOM_STORAGE_REMOVED]: DOMStorage;
+}
 
 export class DOMStorageDispatcher implements ProtocolProxyApi.DOMStorageDispatcher {
   private readonly model: DOMStorageModel;

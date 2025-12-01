@@ -1,6 +1,7 @@
 // Copyright (c) 2020 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-lit-render-outside-of-view */
 
 import '../../../ui/components/icon_button/icon_button.js';
 import '../../../ui/components/node_text/node_text.js';
@@ -8,15 +9,15 @@ import '../../../ui/components/node_text/node_text.js';
 import * as i18n from '../../../core/i18n/i18n.js';
 import type * as SDK from '../../../core/sdk/sdk.js';
 import * as ComponentHelpers from '../../../ui/components/helpers/helpers.js';
-import * as Coordinator from '../../../ui/components/render_coordinator/render_coordinator.js';
-import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import * as RenderCoordinator from '../../../ui/components/render_coordinator/render_coordinator.js';
+import * as Lit from '../../../ui/lit/lit.js';
 import * as VisualLogging from '../../../ui/visual_logging/visual_logging.js';
 
 import elementsBreadcrumbsStyles from './elementsBreadcrumbs.css.js';
 import {crumbsToRender, type UserScrollPosition} from './ElementsBreadcrumbsUtils.js';
 import type {DOMNode} from './Helper.js';
 
-const {html} = LitHtml;
+const {html} = Lit;
 
 const UIStrings = {
   /**
@@ -31,7 +32,7 @@ const UIStrings = {
    * @description A label/tooltip for a button that scrolls the breadcrumbs bar to the right to show more entries.
    */
   scrollRight: 'Scroll right',
-};
+} as const;
 
 const str_ = i18n.i18n.registerUIStrings('panels/elements/components/ElementsBreadcrumbs.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -50,12 +51,10 @@ export interface ElementsBreadcrumbsData {
   selectedNode: DOMNode|null;
   crumbs: DOMNode[];
 }
-const coordinator = Coordinator.RenderCoordinator.RenderCoordinator.instance();
 
 export class ElementsBreadcrumbs extends HTMLElement {
   readonly #shadow = this.attachShadow({mode: 'open'});
   readonly #resizeObserver = new ResizeObserver(() => this.#checkForOverflowOnResize());
-  readonly #renderBound = this.#render.bind(this);
 
   #crumbsData: readonly DOMNode[] = [];
   #selectedDOMNode: Readonly<DOMNode>|null = null;
@@ -64,15 +63,11 @@ export class ElementsBreadcrumbs extends HTMLElement {
   #isObservingResize = false;
   #userHasManuallyScrolled = false;
 
-  connectedCallback(): void {
-    this.#shadow.adoptedStyleSheets = [elementsBreadcrumbsStyles];
-  }
-
   set data(data: ElementsBreadcrumbsData) {
     this.#selectedDOMNode = data.selectedNode;
     this.#crumbsData = data.crumbs;
     this.#userHasManuallyScrolled = false;
-    void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+    void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
   }
 
   disconnectedCallback(): void {
@@ -102,11 +97,11 @@ export class ElementsBreadcrumbs extends HTMLElement {
       return;
     }
 
-    const crumbWindowWidth = await coordinator.read<number>(() => {
+    const crumbWindowWidth = await RenderCoordinator.read<number>(() => {
       return crumbWindow.clientWidth;
     });
 
-    const scrollContainerWidth = await coordinator.read<number>(() => {
+    const scrollContainerWidth = await RenderCoordinator.read<number>(() => {
       return crumbScrollContainer.clientWidth;
     });
 
@@ -117,12 +112,10 @@ export class ElementsBreadcrumbs extends HTMLElement {
       if (scrollContainerWidth < crumbWindowWidth) {
         this.#overflowing = false;
       }
-    } else {
       // We currently do not have overflow buttons.
       // If the content won't fit anymore, then rerender with overflow.
-      if (scrollContainerWidth > crumbWindowWidth) {
-        this.#overflowing = true;
-      }
+    } else if (scrollContainerWidth > crumbWindowWidth) {
+      this.#overflowing = true;
     }
     void this.#ensureSelectedNodeIsVisible();
     void this.#updateScrollState(crumbWindow);
@@ -175,11 +168,11 @@ export class ElementsBreadcrumbs extends HTMLElement {
       return;
     }
 
-    const crumbWindowWidth = await coordinator.read<number>(() => {
+    const crumbWindowWidth = await RenderCoordinator.read<number>(() => {
       return crumbWindow.clientWidth;
     });
 
-    const scrollContainerWidth = await coordinator.read<number>(() => {
+    const scrollContainerWidth = await RenderCoordinator.read<number>(() => {
       return crumbScrollContainer.clientWidth;
     });
 
@@ -191,13 +184,11 @@ export class ElementsBreadcrumbs extends HTMLElement {
         this.#overflowing = false;
         void this.#render();
       }
-    } else {
       // We currently do not have overflow buttons.
       // If the content won't fit anymore, then rerender with overflow.
-      if (scrollContainerWidth > crumbWindowWidth) {
-        this.#overflowing = true;
-        void this.#render();
-      }
+    } else if (scrollContainerWidth > crumbWindowWidth) {
+      this.#overflowing = true;
+      void this.#render();
     }
   }
 
@@ -265,8 +256,8 @@ export class ElementsBreadcrumbs extends HTMLElement {
     };
   }
 
-  #renderOverflowButton(direction: 'left'|'right', disabled: boolean): LitHtml.TemplateResult {
-    const buttonStyles = LitHtml.Directives.classMap({
+  #renderOverflowButton(direction: 'left'|'right', disabled: boolean): Lit.TemplateResult {
+    const buttonStyles = Lit.Directives.classMap({
       overflow: true,
       [direction]: true,
       hidden: !this.#overflowing,
@@ -290,7 +281,7 @@ export class ElementsBreadcrumbs extends HTMLElement {
         </devtools-icon>
       </button>
       `;
-          // clang-format on
+        // clang-format on
   }
 
   #render(): void {
@@ -298,7 +289,8 @@ export class ElementsBreadcrumbs extends HTMLElement {
 
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
-    LitHtml.render(html`
+    Lit.render(html`
+      <style>${elementsBreadcrumbsStyles}</style>
       <nav class="crumbs" aria-label=${i18nString(UIStrings.breadcrumbs)} jslog=${VisualLogging.elementsBreadcrumbs()}>
         ${this.#renderOverflowButton('left', this.#userScrollPosition === 'start')}
 
@@ -309,9 +301,9 @@ export class ElementsBreadcrumbs extends HTMLElement {
                 crumb: true,
                 selected: crumb.selected,
               };
-              // eslint-disable-next-line rulesdir/ban_a_tags_in_lit_html
+              // eslint-disable-next-line rulesdir/no-a-tags-in-lit
               return html`
-                <li class=${LitHtml.Directives.classMap(crumbClasses)}
+                <li class=${Lit.Directives.classMap(crumbClasses)}
                   data-node-id=${crumb.node.id}
                   data-crumb="true"
                 >
@@ -361,7 +353,7 @@ export class ElementsBreadcrumbs extends HTMLElement {
     const activeCrumb = this.#shadow.querySelector(`.crumb[data-node-id="${activeCrumbId}"]`);
 
     if (activeCrumb) {
-      await coordinator.scroll(() => {
+      await RenderCoordinator.scroll(() => {
         activeCrumb.scrollIntoView({
           // We only want to scroll smoothly when the user is clicking the
           // buttons manually. If we are automatically scrolling, we could be

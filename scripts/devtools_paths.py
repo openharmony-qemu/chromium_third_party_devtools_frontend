@@ -60,7 +60,7 @@ def eslint_path():
 
 
 def mocha_path():
-    return path.join(node_modules_path(), 'mocha', 'bin', 'mocha')
+    return path.join(node_modules_path(), 'mocha', 'bin', 'mocha.js')
 
 
 def karma_path():
@@ -77,11 +77,12 @@ def hosted_mode_script_path():
 
 
 def esbuild_path():
-    # add by jie.zhang 20220627 for build debug
-    if sys.platform == 'win32':
-        return path.join(devtools_root_path(), 'third_party', 'esbuild', 'esbuild.exe')
-    # end add by jie.zhang 20220627 for build debug
     return path.join(devtools_root_path(), 'third_party', 'esbuild', 'esbuild')
+
+
+def autoninja_path():
+    return path.join(devtools_root_path(), 'third_party', 'depot_tools',
+                     'autoninja')
 
 
 def downloaded_chrome_binary_path():
@@ -125,3 +126,7 @@ def package_json_path():
 def browser_protocol_path():
     return path.join(third_party_path(), 'blink', 'public',
                      'devtools_protocol', 'browser_protocol.pdl')
+
+
+def custom_devtools_frontend_path(target):
+    return path.join(root_path(), 'out', target, 'gen', 'front_end')

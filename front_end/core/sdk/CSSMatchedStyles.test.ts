@@ -5,57 +5,14 @@
 import * as Protocol from '../../generated/protocol.js';
 import {createTarget} from '../../testing/EnvironmentHelpers.js';
 import {describeWithMockConnection} from '../../testing/MockConnection.js';
+import {getMatchedStyles, ruleMatch} from '../../testing/StyleHelpers.js';
 
 import * as SDK from './sdk.js';
-
-function ruleMatch(
-    selector: string, cssProperties: Protocol.CSS.CSSProperty[], range?: Protocol.CSS.SourceRange,
-    styleSheetId = '0' as Protocol.CSS.StyleSheetId): Protocol.CSS.RuleMatch {
-  return {
-    rule: {
-      selectorList: {selectors: [{text: selector}], text: selector},
-      origin: Protocol.CSS.StyleSheetOrigin.Regular,
-      style: {
-        cssProperties,
-        styleSheetId,
-        range,
-        shorthandEntries: [],
-      },
-    },
-    matchingSelectors: [0],
-  };
-}
-
-function createMatchedStyles(
-    payload: Partial<SDK.CSSMatchedStyles.CSSMatchedStylesPayload>, node?: SDK.DOMModel.DOMNode) {
-  if (!node) {
-    node = sinon.createStubInstance(SDK.DOMModel.DOMNode);
-    node.id = 1 as Protocol.DOM.NodeId;
-  }
-  return SDK.CSSMatchedStyles.CSSMatchedStyles.create({
-    cssModel: sinon.createStubInstance(SDK.CSSModel.CSSModel),
-    node,
-    inlinePayload: null,
-    attributesPayload: null,
-    matchedPayload: [],
-    pseudoPayload: [],
-    inheritedPayload: [],
-    inheritedPseudoPayload: [],
-    animationsPayload: [],
-    parentLayoutNodeId: undefined,
-    positionTryRules: [],
-    propertyRules: [],
-    cssPropertyRegistrations: [],
-    fontPaletteValuesRule: undefined,
-    activePositionFallbackIndex: -1,
-    ...payload,
-  });
-}
 
 describe('CSSMatchedStyles', () => {
   describe('computeCSSVariable', () => {
     const testCssValueEquals = async (text: string, expectedValue: unknown) => {
-      const matchedStyles = await createMatchedStyles({
+      const matchedStyles = await getMatchedStyles({
         matchedPayload: [
           ruleMatch(
               'div',
@@ -126,7 +83,7 @@ describe('CSSMatchedStyles', () => {
       node.parentNode.parentNode.parentNode = sinon.createStubInstance(SDK.DOMModel.DOMNode);
       node.parentNode.parentNode.parentNode.id = 4 as Protocol.DOM.NodeId;
 
-      const matchedStyles = await createMatchedStyles({
+      const matchedStyles = await getMatchedStyles({
         node,
         matchedPayload: [ruleMatch('div', [{name: '--foo', value: 'foo1'}])],  // styleFoo1
         inheritedPayload: [
@@ -231,12 +188,11 @@ describe('CSSMatchedStyles', () => {
       const parent = sinon.createStubInstance(SDK.DOMModel.DOMNode);
       parent.id = 2 as Protocol.DOM.NodeId;
       node.parentNode = parent;
-      const matchedStyles = await createMatchedStyles(
-          {
-            matchedPayload: [ruleMatch('div', [{name: '--color', value: 'inherit'}])],
-            inheritedPayload: [{matchedCSSRules: [ruleMatch('div', [{name: '--color', value: 'inherited-color'}])]}],
-          },
-          node);
+      const matchedStyles = await getMatchedStyles({
+        matchedPayload: [ruleMatch('div', [{name: '--color', value: 'inherit'}])],
+        inheritedPayload: [{matchedCSSRules: [ruleMatch('div', [{name: '--color', value: 'inherited-color'}])]}],
+        node
+      });
       assert.strictEqual(
           matchedStyles.computeCSSVariable(matchedStyles.nodeStyles()[0], '--color')?.value, 'inherited-color');
     });
@@ -253,7 +209,7 @@ describe('CSSMatchedStyles', () => {
         const inheritedPayload = inheritedRules.map(
             ruleTexts => ({matchedCSSRules: ruleTexts.map((rule, i) => ruleToRuleMatch(rule, i + styleRules.length))}));
 
-        const matchedStyles = await createMatchedStyles({matchedPayload, inheritedPayload});
+        const matchedStyles = await getMatchedStyles({matchedPayload, inheritedPayload});
         return matchedStyles.computeCSSVariable(matchedStyles.nodeStyles()[0], name)?.value ?? null;
       }
 
@@ -261,8 +217,8 @@ describe('CSSMatchedStyles', () => {
         --a: var(--b);
         --b: var(--a);
         `;
-      assert.strictEqual(await compute('--a', [simpleCycle], []), null);
-      assert.strictEqual(await compute('--b', [simpleCycle], []), null);
+      assert.isNull(await compute('--a', [simpleCycle], []));
+      assert.isNull(await compute('--b', [simpleCycle], []));
 
       const cycleOnUnusedFallback = `
         --a: 2;
@@ -277,46 +233,46 @@ describe('CSSMatchedStyles', () => {
         --a: var(--b, 1);
         --b: var(--a, 2);
         `;
-      assert.strictEqual(await compute('--a', [simpleCycleWithFallbacks], []), null);
-      assert.strictEqual(await compute('--b', [simpleCycleWithFallbacks], []), null);
+      assert.isNull(await compute('--a', [simpleCycleWithFallbacks], []));
+      assert.isNull(await compute('--b', [simpleCycleWithFallbacks], []));
 
       const longerCycle = `
         --a: var(--b);
         --b: var(--c);
         --c: var(--a);
         `;
-      assert.strictEqual(await compute('--a', [longerCycle], []), null);
-      assert.strictEqual(await compute('--b', [longerCycle], []), null);
-      assert.strictEqual(await compute('--c', [longerCycle], []), null);
+      assert.isNull(await compute('--a', [longerCycle], []));
+      assert.isNull(await compute('--b', [longerCycle], []));
+      assert.isNull(await compute('--c', [longerCycle], []));
 
       const longerCycleWithFallbacks = `
         --a: var(--b, 2);
         --b: var(--c, 3);
         --c: var(--a, 4);
         `;
-      assert.strictEqual(await compute('--a', [longerCycleWithFallbacks], []), null);
-      assert.strictEqual(await compute('--b', [longerCycleWithFallbacks], []), null);
-      assert.strictEqual(await compute('--c', [longerCycleWithFallbacks], []), null);
+      assert.isNull(await compute('--a', [longerCycleWithFallbacks], []));
+      assert.isNull(await compute('--b', [longerCycleWithFallbacks], []));
+      assert.isNull(await compute('--c', [longerCycleWithFallbacks], []));
 
       const pointingIntoCycle = `
         ${longerCycle}
         --d: var(--a);
         --e: var(--b);
         `;
-      assert.strictEqual(await compute('--a', [pointingIntoCycle], []), null);
-      assert.strictEqual(await compute('--b', [pointingIntoCycle], []), null);
-      assert.strictEqual(await compute('--c', [pointingIntoCycle], []), null);
-      assert.strictEqual(await compute('--d', [pointingIntoCycle], []), null);
-      assert.strictEqual(await compute('--e', [pointingIntoCycle], []), null);
+      assert.isNull(await compute('--a', [pointingIntoCycle], []));
+      assert.isNull(await compute('--b', [pointingIntoCycle], []));
+      assert.isNull(await compute('--c', [pointingIntoCycle], []));
+      assert.isNull(await compute('--d', [pointingIntoCycle], []));
+      assert.isNull(await compute('--e', [pointingIntoCycle], []));
 
       const pointingIntoCycleWithFallback = `
         ${longerCycle}
         --d: var(--a, 4);
         --e: var(--b, 5);
         `;
-      assert.strictEqual(await compute('--a', [pointingIntoCycleWithFallback], []), null);
-      assert.strictEqual(await compute('--b', [pointingIntoCycleWithFallback], []), null);
-      assert.strictEqual(await compute('--c', [pointingIntoCycleWithFallback], []), null);
+      assert.isNull(await compute('--a', [pointingIntoCycleWithFallback], []));
+      assert.isNull(await compute('--b', [pointingIntoCycleWithFallback], []));
+      assert.isNull(await compute('--c', [pointingIntoCycleWithFallback], []));
       assert.strictEqual(await compute('--d', [pointingIntoCycleWithFallback], []), '4');
       assert.strictEqual(await compute('--e', [pointingIntoCycleWithFallback], []), '5');
 
@@ -326,29 +282,29 @@ describe('CSSMatchedStyles', () => {
         --c: var(--a) var(--b);
         --d: var(--c);
         `;
-      assert.strictEqual(await compute('--a', [multipleEdges], []), null);
-      assert.strictEqual(await compute('--b', [multipleEdges], []), null);
-      assert.strictEqual(await compute('--c', [multipleEdges], []), null);
-      assert.strictEqual(await compute('--d', [multipleEdges], []), null);
+      assert.isNull(await compute('--a', [multipleEdges], []));
+      assert.isNull(await compute('--b', [multipleEdges], []));
+      assert.isNull(await compute('--c', [multipleEdges], []));
+      assert.isNull(await compute('--d', [multipleEdges], []));
 
       const pointingIntoMultipleEdgeCycle = `
         ${multipleEdges}
         --e: var(--c) var(--d);
         `;
-      assert.strictEqual(await compute('--a', [pointingIntoMultipleEdgeCycle], []), null);
-      assert.strictEqual(await compute('--b', [pointingIntoMultipleEdgeCycle], []), null);
-      assert.strictEqual(await compute('--c', [pointingIntoMultipleEdgeCycle], []), null);
-      assert.strictEqual(await compute('--d', [pointingIntoMultipleEdgeCycle], []), null);
-      assert.strictEqual(await compute('--e', [pointingIntoMultipleEdgeCycle], []), null);
+      assert.isNull(await compute('--a', [pointingIntoMultipleEdgeCycle], []));
+      assert.isNull(await compute('--b', [pointingIntoMultipleEdgeCycle], []));
+      assert.isNull(await compute('--c', [pointingIntoMultipleEdgeCycle], []));
+      assert.isNull(await compute('--d', [pointingIntoMultipleEdgeCycle], []));
+      assert.isNull(await compute('--e', [pointingIntoMultipleEdgeCycle], []));
 
       const pointingIntoMultipleEdgeCycleWithFallback = `
         ${multipleEdges}
         --e: var(--c, 4) var(--d, 5);
         `;
-      assert.strictEqual(await compute('--a', [pointingIntoMultipleEdgeCycleWithFallback], []), null);
-      assert.strictEqual(await compute('--b', [pointingIntoMultipleEdgeCycleWithFallback], []), null);
-      assert.strictEqual(await compute('--c', [pointingIntoMultipleEdgeCycleWithFallback], []), null);
-      assert.strictEqual(await compute('--d', [pointingIntoMultipleEdgeCycleWithFallback], []), null);
+      assert.isNull(await compute('--a', [pointingIntoMultipleEdgeCycleWithFallback], []));
+      assert.isNull(await compute('--b', [pointingIntoMultipleEdgeCycleWithFallback], []));
+      assert.isNull(await compute('--c', [pointingIntoMultipleEdgeCycleWithFallback], []));
+      assert.isNull(await compute('--d', [pointingIntoMultipleEdgeCycleWithFallback], []));
       assert.strictEqual(await compute('--e', [pointingIntoMultipleEdgeCycleWithFallback], []), '4 5');
 
       const multipleCyclesWithFallback = `
@@ -358,12 +314,12 @@ describe('CSSMatchedStyles', () => {
         --f: var(--d);
         --g: var(--a, var(--d, 5));
         `;
-      assert.strictEqual(await compute('--a', [multipleCyclesWithFallback], []), null);
-      assert.strictEqual(await compute('--b', [multipleCyclesWithFallback], []), null);
-      assert.strictEqual(await compute('--c', [multipleCyclesWithFallback], []), null);
-      assert.strictEqual(await compute('--d', [multipleCyclesWithFallback], []), null);
-      assert.strictEqual(await compute('--e', [multipleCyclesWithFallback], []), null);
-      assert.strictEqual(await compute('--f', [multipleCyclesWithFallback], []), null);
+      assert.isNull(await compute('--a', [multipleCyclesWithFallback], []));
+      assert.isNull(await compute('--b', [multipleCyclesWithFallback], []));
+      assert.isNull(await compute('--c', [multipleCyclesWithFallback], []));
+      assert.isNull(await compute('--d', [multipleCyclesWithFallback], []));
+      assert.isNull(await compute('--e', [multipleCyclesWithFallback], []));
+      assert.isNull(await compute('--f', [multipleCyclesWithFallback], []));
       assert.strictEqual(await compute('--g', [multipleCyclesWithFallback], []), '5');
 
       const notACycle = `
@@ -374,7 +330,7 @@ describe('CSSMatchedStyles', () => {
         --b: var(--a);
         `;
       assert.strictEqual(await compute('--a', [notACycle], [[inherited]]), '1');
-      assert.strictEqual(await compute('--b', [notACycle], [[inherited]]), null);
+      assert.isNull(await compute('--b', [notACycle], [[inherited]]));
     });
   });
 
@@ -387,24 +343,25 @@ describe('CSSMatchedStyles', () => {
        node.id = 1 as Protocol.DOM.NodeId;
        const startColumn = 0, endColumn = 1;
        const matchedPayload = [
-         ruleMatch('body', [{name: '--var', value: 'blue'}], {startLine: 0, startColumn, endLine: 0, endColumn}),
-         ruleMatch('*', [{name: 'color', value: 'var(--var)'}], {startLine: 1, startColumn, endLine: 1, endColumn}),
-         ruleMatch('*', [{name: '--var', value: 'red'}], {startLine: 2, startColumn, endLine: 2, endColumn}),
+         ruleMatch(
+             'body', [{name: '--var', value: 'blue'}], {range: {startLine: 0, startColumn, endLine: 0, endColumn}}),
+         ruleMatch(
+             '*', [{name: 'color', value: 'var(--var)'}], {range: {startLine: 1, startColumn, endLine: 1, endColumn}}),
+         ruleMatch('*', [{name: '--var', value: 'red'}], {range: {startLine: 2, startColumn, endLine: 2, endColumn}}),
        ];
        const inheritedPayload = [{matchedCSSRules: matchedPayload.slice(1)}];
-       const matchedStyles = await createMatchedStyles({
+       const matchedStyles = await getMatchedStyles({
          node,
          matchedPayload,
          inheritedPayload,
        });
 
-       assert.deepStrictEqual(
-           matchedStyles.nodeStyles().map(style => style.allProperties().map(prop => prop.propertyText)), [
-             ['--var: red;'],
-             ['color: var(--var);'],
-             ['--var: blue;'],
-             ['--var: red;'],
-           ]);
+       assert.deepEqual(matchedStyles.nodeStyles().map(style => style.allProperties().map(prop => prop.propertyText)), [
+         ['--var: red;'],
+         ['color: var(--var);'],
+         ['--var: blue;'],
+         ['--var: red;'],
+       ]);
      });
 
   describe('resolveGlobalKeyword', () => {
@@ -511,8 +468,8 @@ describe('CSSMatchedStyles', () => {
         // Value is undefined
         {name: '--unregistered-is-not-inherited', value: 'unset', expectedValue: undefined},
       ];
-      const matchedStyles = await createMatchedStyles(
-          {matchedPayload: [ruleMatch('div', properties)], inheritedPayload, cssPropertyRegistrations}, node);
+      const matchedStyles = await getMatchedStyles(
+          {matchedPayload: [ruleMatch('div', properties)], inheritedPayload, cssPropertyRegistrations, node});
       checkResolution(matchedStyles, properties);
     });
 
@@ -545,8 +502,8 @@ describe('CSSMatchedStyles', () => {
         // Value is undefined
         {name: '--unregistered-is-not-inherited', value: 'inherit', expectedValue: undefined},
       ];
-      const matchedStyles = await createMatchedStyles(
-          {matchedPayload: [ruleMatch('div', properties)], inheritedPayload, cssPropertyRegistrations}, node);
+      const matchedStyles = await getMatchedStyles(
+          {matchedPayload: [ruleMatch('div', properties)], inheritedPayload, cssPropertyRegistrations, node});
       checkResolution(matchedStyles, properties);
     });
 
@@ -579,8 +536,8 @@ describe('CSSMatchedStyles', () => {
         // Value is undefined
         {name: '--unregistered-is-not-inherited', value: 'initial', expectedValue: undefined},
       ];
-      const matchedStyles = await createMatchedStyles(
-          {matchedPayload: [ruleMatch('div', properties)], inheritedPayload, cssPropertyRegistrations}, node);
+      const matchedStyles = await getMatchedStyles(
+          {matchedPayload: [ruleMatch('div', properties)], inheritedPayload, cssPropertyRegistrations, node});
       checkResolution(matchedStyles, properties);
     });
 
@@ -619,13 +576,12 @@ describe('CSSMatchedStyles', () => {
         {name: 'font-family', value: 'revert'},
       ]);
       uaRule.rule.origin = Protocol.CSS.StyleSheetOrigin.UserAgent;
-      const matchedStyles = await createMatchedStyles(
-          {
-            matchedPayload: [uaRule, userRule, ruleMatch('div', properties)],
-            inheritedPayload,
-            cssPropertyRegistrations,
-          },
-          node);
+      const matchedStyles = await getMatchedStyles({
+        matchedPayload: [uaRule, userRule, ruleMatch('div', properties)],
+        inheritedPayload,
+        cssPropertyRegistrations,
+        node
+      });
       checkResolution(matchedStyles, properties);
     });
 
@@ -681,14 +637,13 @@ describe('CSSMatchedStyles', () => {
       oneMoreLayer.rule.layers = [{text: 'outer'}, {text: 'layer3'}];
       const uaRule = ruleMatch('div', [{name: 'font-variant', value: 'ua-font-variant'}]);
       uaRule.rule.origin = Protocol.CSS.StyleSheetOrigin.UserAgent;
-      const matchedStyles = await createMatchedStyles(
-          {
-            inlinePayload,
-            matchedPayload: [uaRule, oneMoreLayer, nextLayer, sameLayer, mainRule],
-            inheritedPayload,
-            cssPropertyRegistrations,
-          },
-          node);
+      const matchedStyles = await getMatchedStyles({
+        inlinePayload,
+        matchedPayload: [uaRule, oneMoreLayer, nextLayer, sameLayer, mainRule],
+        inheritedPayload,
+        cssPropertyRegistrations,
+        node,
+      });
       checkResolution(matchedStyles, properties);
 
       // Check for inline style
@@ -700,6 +655,46 @@ describe('CSSMatchedStyles', () => {
       const resolved = matchedStyles.resolveGlobalKeyword(inlineProperty, SDK.CSSMetadata.CSSWideKeyword.REVERT_LAYER);
       assert.strictEqual(resolved?.value, 'author-origin');
     });
+  });
+
+  it('can correctly resolve properties by name', async () => {
+    const node = sinon.createStubInstance(SDK.DOMModel.DOMNode);
+    node.id = 1 as Protocol.DOM.NodeId;
+    node.nodeType.returns(Node.ELEMENT_NODE);
+    const parent = sinon.createStubInstance(SDK.DOMModel.DOMNode);
+    parent.id = 2 as Protocol.DOM.NodeId;
+    parent.nodeType.returns(Node.ELEMENT_NODE);
+    node.parentNode = parent;
+    const matchedPayload = [
+      // Property is found in the same rule
+      ruleMatch('div', {'--a': 'A', '--b': 'B'}),
+      // ... in a sibling rule
+      ruleMatch('div', {'--c': 'C', '--d': 'D'}),
+    ];
+    const inheritedPayload = [{
+      matchedCSSRules: [
+        // ... in an inherited rule
+        ruleMatch('div', {'--e': 'E'}),
+        ruleMatch('div', {'--f': 'F'}),
+        ruleMatch('div', {'background-color': 'x'}),
+        ruleMatch('div', {color: 'y'}),
+      ]
+    }];
+    const matchedStyles = await getMatchedStyles({node, matchedPayload, inheritedPayload});
+
+    const styles = matchedStyles.nodeStyles();
+    assert.lengthOf(styles, 5);
+    assert.isNull(matchedStyles.resolveProperty('--z', styles[0]));
+    assert.strictEqual(matchedStyles.resolveProperty('--a', styles[0])?.value, 'A');
+    assert.strictEqual(matchedStyles.resolveProperty('--b', styles[0])?.value, 'B');
+    assert.strictEqual(matchedStyles.resolveProperty('--a', styles[1])?.value, 'A');
+    assert.strictEqual(matchedStyles.resolveProperty('--b', styles[1])?.value, 'B');
+    assert.strictEqual(matchedStyles.resolveProperty('--e', styles[0])?.value, 'E');
+    assert.strictEqual(matchedStyles.resolveProperty('--f', styles[0])?.value, 'F');
+    assert.strictEqual(matchedStyles.resolveProperty('--e', styles[1])?.value, 'E');
+    assert.strictEqual(matchedStyles.resolveProperty('--f', styles[1])?.value, 'F');
+    assert.strictEqual(matchedStyles.resolveProperty('color', styles[0])?.value, 'y');
+    assert.isNull(matchedStyles.resolveProperty('background-color', styles[0]));
   });
 });
 
@@ -739,7 +734,7 @@ describeWithMockConnection('NodeCascade', () => {
         syntax: '<color>',
       },
     ];
-    const matchedStyles = await createMatchedStyles({
+    const matchedStyles = await getMatchedStyles({
       cssModel,
       node,
       matchedPayload: [
@@ -767,7 +762,7 @@ describeWithMockConnection('NodeCascade', () => {
       active: true,
       styleSheetId: nestedRule.rule.styleSheetId,
     }];
-    const matchedStyles = await createMatchedStyles({
+    const matchedStyles = await getMatchedStyles({
       matchedPayload: [outerRule, nestedRule],
     });
 

@@ -143,7 +143,7 @@ const UIStrings = {
   /**
    *@description Title of an action in the sources tool to close all
    */
-  closeAll: 'Close All',
+  closeAll: 'Close all',
   /**
    *@description Text in the Shortcuts page to explain a keyboard shortcut (jump to previous editing location in text editor)
    */
@@ -189,13 +189,15 @@ const UIStrings = {
    */
   createNewSnippet: 'Create new snippet',
   /**
-   *@description Title of an action in the sources tool to add folder to workspace
+   * @description Button in the Workspace tab of the Sources panel, used to
+   *              (manually) add a folder to the workspace.
+   */
+  addFolderManually: 'Add folder manually',
+  /**
+   * @description Title of an action in the Sources panel command menu to (manually)
+   *              add a folder to the workspace.
    */
   addFolderToWorkspace: 'Add folder to workspace',
-  /**
-   *@description Title of an action in the sources tool to add folder to workspace
-   */
-  addFolder: 'Add folder',
   /**
    *@description Title of an action in the debugger tool to previous call frame
    */
@@ -417,6 +419,10 @@ const UIStrings = {
    */
   symbol: 'Symbol',
   /**
+   *@description Text for help title of go to symbol menu
+   */
+  goToSymbol: 'Go to symbol',
+  /**
    *@description Text for command prefix of open a file
    */
   open: 'Open',
@@ -425,8 +431,12 @@ const UIStrings = {
    */
   file: 'File',
   /**
+   *@description Text for help title of open file menu
+   */
+  openFile: 'Open file',
+  /**
    * @description  Title of a setting under the Sources category in Settings. If this option is off,
-   * the sources panel will not be automatically be focsed whenever the application hits a breakpoint
+   * the sources panel will not be automatically be focused whenever the application hits a breakpoint
    * and comes to a halt.
    */
   disableAutoFocusOnDebuggerPaused: 'Do not focus Sources panel when triggering a breakpoint',
@@ -456,7 +466,19 @@ const UIStrings = {
    * @description Title of an action that navigates to the next editor in the Sources panel.
    */
   previousEditorTab: 'Previous editor',
-};
+  /**
+   * @description Title of a setting under the Sources category in Settings. If
+   *              this option is on, the Sources panel will automatically wrap
+   *              long lines and try to avoid showing a horizontal scrollbar if
+   *              possible.
+   */
+  wordWrap: 'Word wrap',
+  /**
+   * @description Title of an action in the Sources panel that toggles the 'Word
+   *              wrap' setting.
+   */
+  toggleWordWrap: 'Toggle word wrap',
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/sources/sources-meta.ts', UIStrings);
 const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined, str_);
 let loadedSourcesModule: (typeof Sources|undefined);
@@ -909,6 +931,22 @@ UI.ActionRegistration.registerActionExtension({
     return new Sources.SourcesView.ActionDelegate();
   },
   title: i18nLazyString(UIStrings.closeAll),
+  bindings: [
+    {
+      platform: UI.ActionRegistration.Platforms.WINDOWS_LINUX,
+      shortcut: 'Ctrl+K W',
+      keybindSets: [
+        UI.ActionRegistration.KeybindSet.VS_CODE,
+      ],
+    },
+    {
+      platform: UI.ActionRegistration.Platforms.MAC,
+      shortcut: 'Meta+K W',
+      keybindSets: [
+        UI.ActionRegistration.KeybindSet.VS_CODE,
+      ],
+    },
+  ],
 });
 
 UI.ActionRegistration.registerActionExtension({
@@ -1682,6 +1720,34 @@ Common.Settings.registerSettingExtension({
 Common.Settings.registerSettingExtension({
   category: Common.Settings.SettingCategory.SOURCES,
   storageType: Common.Settings.SettingStorageType.SYNCED,
+  title: i18nLazyString(UIStrings.wordWrap),
+  settingName: 'sources.word-wrap',
+  settingType: Common.Settings.SettingType.BOOLEAN,
+  defaultValue: false,
+});
+
+UI.ActionRegistration.registerActionExtension({
+  category: UI.ActionRegistration.ActionCategory.SOURCES,
+  actionId: 'sources.toggle-word-wrap',
+  async loadActionDelegate() {
+    const Sources = await loadSourcesModule();
+    return new Sources.SourcesPanel.ActionDelegate();
+  },
+  title: i18nLazyString(UIStrings.toggleWordWrap),
+  contextTypes() {
+    return maybeRetrieveContextTypes(Sources => [Sources.SourcesView.SourcesView]);
+  },
+  bindings: [
+    {
+      shortcut: 'Alt+Z',
+      keybindSets: [UI.ActionRegistration.KeybindSet.VS_CODE],
+    },
+  ],
+});
+
+Common.Settings.registerSettingExtension({
+  category: Common.Settings.SettingCategory.SOURCES,
+  storageType: Common.Settings.SettingStorageType.SYNCED,
   title: i18nLazyString(UIStrings.displayVariableValuesInlineWhile),
   settingName: 'inline-variable-values',
   settingType: Common.Settings.SettingType.BOOLEAN,
@@ -1952,8 +2018,7 @@ Common.Revealer.registerRevealer({
 UI.Toolbar.registerToolbarItem({
   actionId: 'sources.add-folder-to-workspace',
   location: UI.Toolbar.ToolbarItemLocation.FILES_NAVIGATION_TOOLBAR,
-  label: i18nLazyString(UIStrings.addFolder),
-  showLabel: true,
+  label: i18nLazyString(UIStrings.addFolderManually),
   loadItem: undefined,
   order: undefined,
   separator: undefined,
@@ -2004,11 +2069,11 @@ UI.ContextMenu.registerItem({
 QuickOpen.FilteredListWidget.registerProvider({
   prefix: '@',
   iconName: 'symbol',
-  iconWidth: '20px',
   async provider() {
     const Sources = await loadSourcesModule();
     return new Sources.OutlineQuickOpen.OutlineQuickOpen();
   },
+  helpTitle: i18nLazyString(UIStrings.goToSymbol),
   titlePrefix: i18nLazyString(UIStrings.goTo),
   titleSuggestion: i18nLazyString(UIStrings.symbol),
 });
@@ -2016,11 +2081,11 @@ QuickOpen.FilteredListWidget.registerProvider({
 QuickOpen.FilteredListWidget.registerProvider({
   prefix: ':',
   iconName: 'colon',
-  iconWidth: '20px',
   async provider() {
     const Sources = await loadSourcesModule();
     return new Sources.GoToLineQuickOpen.GoToLineQuickOpen();
   },
+  helpTitle: i18nLazyString(UIStrings.goToLine),
   titlePrefix: i18nLazyString(UIStrings.goTo),
   titleSuggestion: i18nLazyString(UIStrings.line),
 });
@@ -2028,11 +2093,11 @@ QuickOpen.FilteredListWidget.registerProvider({
 QuickOpen.FilteredListWidget.registerProvider({
   prefix: '',
   iconName: 'document',
-  iconWidth: '20px',
   async provider() {
     const Sources = await loadSourcesModule();
     return new Sources.OpenFileQuickOpen.OpenFileQuickOpen();
   },
+  helpTitle: i18nLazyString(UIStrings.openFile),
   titlePrefix: i18nLazyString(UIStrings.open),
   titleSuggestion: i18nLazyString(UIStrings.file),
 });

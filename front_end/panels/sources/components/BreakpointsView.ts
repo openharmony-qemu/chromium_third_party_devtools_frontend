@@ -1,6 +1,7 @@
 // Copyright (c) 2022 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-lit-render-outside-of-view */
 
 import '../../../ui/components/icon_button/icon_button.js';
 
@@ -16,15 +17,15 @@ import * as TextUtils from '../../../models/text_utils/text_utils.js';
 import * as Workspace from '../../../models/workspace/workspace.js';
 import * as Input from '../../../ui/components/input/input.js';
 import * as LegacyWrapper from '../../../ui/components/legacy_wrapper/legacy_wrapper.js';
-import * as Coordinator from '../../../ui/components/render_coordinator/render_coordinator.js';
+import * as RenderCoordinator from '../../../ui/components/render_coordinator/render_coordinator.js';
 import * as UI from '../../../ui/legacy/legacy.js';
-import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import * as Lit from '../../../ui/lit/lit.js';
 import * as VisualLogging from '../../../ui/visual_logging/visual_logging.js';
 
 import breakpointsViewStyles from './breakpointsView.css.js';
 import {findNextNodeForKeyboardNavigation, getDifferentiatingPathMap, type TitleInfo} from './BreakpointsViewUtils.js';
 
-const {html, Directives: {ifDefined, repeat, classMap, live}} = LitHtml;
+const {html, Directives: {ifDefined, repeat, classMap, live}} = Lit;
 
 const UIStrings = {
   /**
@@ -106,19 +107,15 @@ const UIStrings = {
    *@example {'hello'} PH1
    */
   logpointCode: 'Logpoint: {PH1}',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/sources/components/BreakpointsView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
-const coordinator = Coordinator.RenderCoordinator.RenderCoordinator.instance();
-
 const MAX_SNIPPET_LENGTH = 200;
 
 export interface BreakpointsViewData {
   breakpointsActive: boolean;
   pauseOnUncaughtExceptions: boolean;
   pauseOnCaughtExceptions: boolean;
-  // TODO(crbug.com/1382762): Remove special casing with dependent toggles as soon as Node LTS caught up on independent pause of exception toggles.
-  independentPauseToggles: boolean;
   groups: BreakpointGroup[];
 }
 
@@ -200,12 +197,6 @@ export class BreakpointsSidebarController implements UI.ContextFlavorListener.Co
 
   static removeInstance(): void {
     breakpointsViewControllerInstance = null;
-  }
-
-  static targetSupportsIndependentPauseOnExceptionToggles(): boolean {
-    const hasNodeTargets =
-        SDK.TargetManager.TargetManager.instance().targets().some(target => target.type() === SDK.Target.Type.NODE);
-    return !hasNodeTargets;
   }
 
   flavorChanged(_object: Object|null): void {
@@ -297,7 +288,6 @@ export class BreakpointsSidebarController implements UI.ContextFlavorListener.Co
 
   async getUpdatedBreakpointViewData(): Promise<BreakpointsViewData> {
     const breakpointsActive = this.#breakpointsActiveSetting.get();
-    const independentPauseToggles = BreakpointsSidebarController.targetSupportsIndependentPauseOnExceptionToggles();
     const pauseOnUncaughtExceptions = this.#pauseOnUncaughtExceptionSetting.get();
     const pauseOnCaughtExceptions = this.#pauseOnCaughtExceptionSetting.get();
 
@@ -307,7 +297,6 @@ export class BreakpointsSidebarController implements UI.ContextFlavorListener.Co
         breakpointsActive,
         pauseOnCaughtExceptions,
         pauseOnUncaughtExceptions,
-        independentPauseToggles,
         groups: [],
       };
     }
@@ -326,7 +315,7 @@ export class BreakpointsSidebarController implements UI.ContextFlavorListener.Co
       const locations = locationsGroupedById[idx];
       const fstLocation = locations[0];
       const sourceURL = fstLocation.uiLocation.uiSourceCode.url();
-      const scriptId = fstLocation.uiLocation.uiSourceCode.canononicalScriptId();
+      const scriptId = fstLocation.uiLocation.uiSourceCode.canonicalScriptId();
       const uiLocation = fstLocation.uiLocation;
 
       const isHit = selectedUILocation !== null &&
@@ -380,7 +369,6 @@ export class BreakpointsSidebarController implements UI.ContextFlavorListener.Co
       breakpointsActive,
       pauseOnCaughtExceptions,
       pauseOnUncaughtExceptions,
-      independentPauseToggles,
       groups: Array.from(scriptIdToGroup.values()),
     };
   }
@@ -441,7 +429,7 @@ export class BreakpointsSidebarController implements UI.ContextFlavorListener.Co
 
   async #getHitUILocation(): Promise<Workspace.UISourceCode.UILocation|null> {
     const details = UI.Context.Context.instance().flavor(SDK.DebuggerModel.DebuggerPausedDetails);
-    if (details && details.callFrames.length) {
+    if (details?.callFrames.length) {
       return await Bindings.DebuggerWorkspaceBinding.DebuggerWorkspaceBinding.instance().rawLocationToUILocation(
           details.callFrames[0].location());
     }
@@ -537,20 +525,16 @@ export class BreakpointsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
 
   readonly #shadow = this.attachShadow({mode: 'open'});
 
-  #pauseOnUncaughtExceptions: boolean = false;
-  #pauseOnCaughtExceptions: boolean = false;
+  #pauseOnUncaughtExceptions = false;
+  #pauseOnCaughtExceptions = false;
 
-  // TODO(crbug.com/1382762): Remove special casing with dependent toggles as soon as Node LTS caught up on independent pause of exception toggles.
-  #independentPauseToggles: boolean = false;
-
-  #breakpointsActive: boolean = true;
+  #breakpointsActive = true;
   #breakpointGroups: BreakpointGroup[] = [];
-  #urlToDifferentiatingPath: Map<Platform.DevToolsPath.UrlString, string> = new Map();
+  #urlToDifferentiatingPath = new Map<Platform.DevToolsPath.UrlString, string>();
 
   set data(data: BreakpointsViewData) {
     this.#pauseOnUncaughtExceptions = data.pauseOnUncaughtExceptions;
     this.#pauseOnCaughtExceptions = data.pauseOnCaughtExceptions;
-    this.#independentPauseToggles = data.independentPauseToggles;
     this.#breakpointsActive = data.breakpointsActive;
     this.#breakpointGroups = data.groups;
 
@@ -563,23 +547,18 @@ export class BreakpointsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
     void this.render();
   }
 
-  connectedCallback(): void {
-    this.#shadow.adoptedStyleSheets = [Input.checkboxStyles, breakpointsViewStyles];
-  }
-
   override async render(): Promise<void> {
-    await coordinator.write('BreakpointsView render', () => {
+    await RenderCoordinator.write('BreakpointsView render', () => {
       const clickHandler = async(event: Event): Promise<void> => {
         const currentTarget = event.currentTarget as HTMLElement;
         await this.#setSelected(currentTarget);
         event.consume();
       };
 
-      const pauseOnCaughtIsChecked =
-          (this.#independentPauseToggles || this.#pauseOnUncaughtExceptions) && this.#pauseOnCaughtExceptions;
-      const pauseOnCaughtExceptionIsDisabled = !this.#independentPauseToggles && !this.#pauseOnUncaughtExceptions;
       // clang-format off
       const out = html`
+        <style>${Input.checkboxStyles}</style>
+        <style>${breakpointsViewStyles}</style>
         <div class='pause-on-uncaught-exceptions'
             tabindex='0'
             @click=${clickHandler}
@@ -597,10 +576,10 @@ export class BreakpointsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
               @click=${clickHandler}
               @keydown=${this.#keyDownHandler}
               role='checkbox'
-              aria-checked=${pauseOnCaughtIsChecked}
+              aria-checked=${this.#pauseOnCaughtExceptions}
               data-last-pause>
             <label class='checkbox-label'>
-              <input data-pause-on-caught-checkbox type='checkbox' class="small" tabindex=-1 ?checked=${pauseOnCaughtIsChecked} ?disabled=${pauseOnCaughtExceptionIsDisabled} @change=${this.#onPauseOnCaughtExceptionsStateChanged.bind(this)} jslog=${VisualLogging.toggle('pause-on-caught-exception').track({ change: true })}>
+              <input data-pause-on-caught-checkbox type='checkbox' class="small" tabindex=-1 ?checked=${this.#pauseOnCaughtExceptions} @change=${this.#onPauseOnCaughtExceptionsStateChanged.bind(this)} jslog=${VisualLogging.toggle('pause-on-caught-exception').track({ change: true })}>
               <span>${i18nString(UIStrings.pauseOnCaughtExceptions)}</span>
             </label>
         </div>
@@ -611,12 +590,12 @@ export class BreakpointsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
             (group, groupIndex) => html`${this.#renderBreakpointGroup(group, groupIndex)}`)}
         </div>`;
       // clang-format on
-      LitHtml.render(out, this.#shadow, {host: this});
+      Lit.render(out, this.#shadow, {host: this});
     });
 
     // If no element is tabbable, set the pause-on-exceptions to be tabbable. This can happen
     // if the previously focused element was removed.
-    await coordinator.write('BreakpointsView make pause-on-exceptions focusable', () => {
+    await RenderCoordinator.write('BreakpointsView make pause-on-exceptions focusable', () => {
       if (this.#shadow.querySelector('[tabindex="0"]') === null) {
         const element = this.#shadow.querySelector<HTMLElement>('[data-first-pause]');
         element?.setAttribute('tabindex', '0');
@@ -631,11 +610,11 @@ export class BreakpointsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
 
     if (event.key === 'Home' || event.key === 'End') {
       event.consume(true);
-      return this.#handleHomeOrEndKey(event.key);
+      return await this.#handleHomeOrEndKey(event.key);
     }
     if (Platform.KeyboardUtilities.keyIsArrowKey(event.key)) {
       event.consume(true);
-      return this.#handleArrowKey(event.key, event.target);
+      return await this.#handleArrowKey(event.key, event.target);
     }
     if (Platform.KeyboardUtilities.isEnterOrSpaceKey(event)) {
       const currentTarget = event.currentTarget as HTMLElement;
@@ -653,7 +632,7 @@ export class BreakpointsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
     if (!element) {
       return;
     }
-    void coordinator.write('BreakpointsView focus on selected element', () => {
+    void RenderCoordinator.write('BreakpointsView focus on selected element', () => {
       const prevSelected = this.#shadow.querySelector('[tabindex="0"]');
       prevSelected?.setAttribute('tabindex', '-1');
       element.setAttribute('tabindex', '0');
@@ -664,28 +643,28 @@ export class BreakpointsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
   async #handleArrowKey(key: Platform.KeyboardUtilities.ArrowKey, target: HTMLElement): Promise<void> {
     const setGroupExpandedState = (detailsElement: HTMLDetailsElement, expanded: boolean): Promise<void> => {
       if (expanded) {
-        return coordinator.write('BreakpointsView expand', () => {
+        return RenderCoordinator.write('BreakpointsView expand', () => {
           detailsElement.setAttribute('open', '');
         });
       }
-      return coordinator.write('BreakpointsView expand', () => {
+      return RenderCoordinator.write('BreakpointsView expand', () => {
         detailsElement.removeAttribute('open');
       });
     };
     const nextNode = await findNextNodeForKeyboardNavigation(target, key, setGroupExpandedState);
-    return this.#setSelected(nextNode);
+    return await this.#setSelected(nextNode);
   }
 
   async #handleHomeOrEndKey(key: 'Home'|'End'): Promise<void> {
     if (key === 'Home') {
       const pauseOnExceptionsNode = this.#shadow.querySelector<HTMLElement>('[data-first-pause]');
-      return this.#setSelected(pauseOnExceptionsNode);
+      return await this.#setSelected(pauseOnExceptionsNode);
     }
     if (key === 'End') {
       const numGroups = this.#breakpointGroups.length;
       if (numGroups === 0) {
         const lastPauseOnExceptionsNode = this.#shadow.querySelector<HTMLElement>('[data-last-pause]');
-        return this.#setSelected(lastPauseOnExceptionsNode);
+        return await this.#setSelected(lastPauseOnExceptionsNode);
       }
       const lastGroupIndex = numGroups - 1;
       const lastGroup = this.#breakpointGroups[lastGroupIndex];
@@ -693,15 +672,15 @@ export class BreakpointsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
       if (lastGroup.expanded) {
         const lastBreakpointItem =
             this.#shadow.querySelector<HTMLElement>('[data-last-group] > [data-last-breakpoint]');
-        return this.#setSelected(lastBreakpointItem);
+        return await this.#setSelected(lastBreakpointItem);
       }
       const lastGroupSummaryElement = this.#shadow.querySelector<HTMLElement>('[data-last-group] > summary');
-      return this.#setSelected(lastGroupSummaryElement);
+      return await this.#setSelected(lastGroupSummaryElement);
     }
     return;
   }
 
-  #renderEditBreakpointButton(breakpointItem: BreakpointItem): LitHtml.TemplateResult {
+  #renderEditBreakpointButton(breakpointItem: BreakpointItem): Lit.TemplateResult {
     const clickHandler = (event: Event): void => {
       void this.#controller.breakpointEdited(breakpointItem, true /* editButtonClicked */);
       event.consume();
@@ -719,7 +698,7 @@ export class BreakpointsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
   }
 
   #renderRemoveBreakpointButton(
-      breakpointItems: BreakpointItem[], tooltipText: string, action: Host.UserMetrics.Action): LitHtml.TemplateResult {
+      breakpointItems: BreakpointItem[], tooltipText: string, action: Host.UserMetrics.Action): Lit.TemplateResult {
     const clickHandler = (event: Event): void => {
       Host.userMetrics.actionTaken(action);
       void this.#controller.breakpointsRemoved(breakpointItems);
@@ -772,7 +751,7 @@ export class BreakpointsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
     void menu.show();
   }
 
-  #renderBreakpointGroup(group: BreakpointGroup, groupIndex: number): LitHtml.TemplateResult {
+  #renderBreakpointGroup(group: BreakpointGroup, groupIndex: number): Lit.TemplateResult {
     const contextmenuHandler = (event: Event): void => {
       this.#onBreakpointGroupContextMenu(event, group);
       event.consume();
@@ -819,7 +798,7 @@ export class BreakpointsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
     // clang-format on
   }
 
-  #renderGroupCheckbox(group: BreakpointGroup): LitHtml.TemplateResult {
+  #renderGroupCheckbox(group: BreakpointGroup): Lit.TemplateResult {
     const groupCheckboxToggled = (e: Event): void => {
       Host.userMetrics.actionTaken(Host.UserMetrics.Action.BreakpointsInFileCheckboxToggled);
       const element = e.target as HTMLInputElement;
@@ -844,7 +823,7 @@ export class BreakpointsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
     `;
   }
 
-  #renderFileIcon(): LitHtml.TemplateResult {
+  #renderFileIcon(): Lit.TemplateResult {
     return html`<devtools-icon name="file-script"></devtools-icon>`;
   }
 
@@ -894,7 +873,7 @@ export class BreakpointsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
 
   #renderBreakpointEntry(
       breakpointItem: BreakpointItem, editable: boolean, groupIndex: number,
-      breakpointItemIndex: number): LitHtml.TemplateResult {
+      breakpointItemIndex: number): Lit.TemplateResult {
     const codeSnippetClickHandler = (event: Event): void => {
       void this.#controller.jumpToSource(breakpointItem);
       event.consume();
@@ -942,7 +921,7 @@ export class BreakpointsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
       </label>
       <span class='code-snippet' @click=${codeSnippetClickHandler} title=${ifDefined(codeSnippetTooltip)} jslog=${VisualLogging.action('sources.jump-to-breakpoint').track({click: true})}>${codeSnippet}</span>
       <span class='breakpoint-item-location-or-actions'>
-        ${editable ? this.#renderEditBreakpointButton(breakpointItem) : LitHtml.nothing}
+        ${editable ? this.#renderEditBreakpointButton(breakpointItem) : Lit.nothing}
         ${this.#renderRemoveBreakpointButton([breakpointItem], i18nString(UIStrings.removeBreakpoint), Host.UserMetrics.Action.BreakpointRemovedFromRemoveButton)}
         <span class='location'>${breakpointItem.location}</span>
       </span>
@@ -995,25 +974,6 @@ export class BreakpointsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
 
   #onPauseOnUncaughtExceptionsStateChanged(e: Event): void {
     const {checked} = e.target as HTMLInputElement;
-    if (!this.#independentPauseToggles) {
-      const pauseOnCaughtCheckbox = this.#shadow.querySelector<HTMLInputElement>('[data-pause-on-caught-checkbox]');
-      assertNotNullOrUndefined(pauseOnCaughtCheckbox);
-      if (!checked && pauseOnCaughtCheckbox.checked) {
-        // If we can only pause on caught exceptions if we pause on uncaught exceptions, make sure to
-        // uncheck the pause on caught exception checkbox.
-        pauseOnCaughtCheckbox.click();
-      }
-
-      void coordinator.write('BreakpointsView update pause-on-uncaught-exception', () => {
-        // Disable/enable the pause on caught exception checkbox depending on whether
-        // or not we are pausing on uncaught exceptions.
-        if (checked) {
-          pauseOnCaughtCheckbox.disabled = false;
-        } else {
-          pauseOnCaughtCheckbox.disabled = true;
-        }
-      });
-    }
     this.#controller.setPauseOnUncaughtExceptions(checked);
   }
 }

@@ -6,15 +6,14 @@ import * as Common from '../../core/common/common.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Logs from '../../models/logs/logs.js';
 import * as Trace from '../../models/trace/trace.js';
-import {createTarget} from '../../testing/EnvironmentHelpers.js';
+import {renderElementIntoDOM} from '../../testing/DOMHelpers.js';
+import {createTarget, registerNoopActions} from '../../testing/EnvironmentHelpers.js';
 import {describeWithMockConnection} from '../../testing/MockConnection.js';
 import {createNetworkPanelForMockConnection} from '../../testing/NetworkHelpers.js';
-import * as Coordinator from '../../ui/components/render_coordinator/render_coordinator.js';
+import * as RenderCoordinator from '../../ui/components/render_coordinator/render_coordinator.js';
 import * as UI from '../../ui/legacy/legacy.js';
 
 import * as Network from './network.js';
-
-const coordinator = Coordinator.RenderCoordinator.RenderCoordinator.instance();
 
 describeWithMockConnection('NetworkPanel', () => {
   let target: SDK.Target.Target;
@@ -26,7 +25,7 @@ describeWithMockConnection('NetworkPanel', () => {
   });
 
   afterEach(async () => {
-    await coordinator.done();
+    await RenderCoordinator.done();
     networkPanel.detach();
   });
 
@@ -68,6 +67,7 @@ describeWithMockConnection('NetworkPanel', () => {
   let networkPanel: Network.NetworkPanel.NetworkPanel;
 
   beforeEach(async () => {
+    registerNoopActions(['inspector-main.reload']);
     UI.ActionRegistration.maybeRemoveActionExtension('network.toggle-recording');
     UI.ActionRegistration.maybeRemoveActionExtension('network.clear');
     await import('./network-meta.js');
@@ -83,23 +83,21 @@ describeWithMockConnection('NetworkPanel', () => {
     UI.ShortcutRegistry.ShortcutRegistry.instance({forceNew: true, actionRegistry: actionRegistryInstance});
 
     networkPanel = Network.NetworkPanel.NetworkPanel.instance({forceNew: true, displayScreenshotDelay: 0});
-    networkPanel.markAsRoot();
-    networkPanel.show(document.body);
-    await coordinator.done();
+    renderElementIntoDOM(networkPanel);
+    await RenderCoordinator.done();
   });
 
   afterEach(async () => {
-    await coordinator.done();
+    await RenderCoordinator.done();
     networkPanel.detach();
   });
 
   it('clears network log on button click', async () => {
     const networkLogResetSpy = sinon.spy(Logs.NetworkLog.NetworkLog.instance(), 'reset');
-    const toolbar = networkPanel.element.querySelector('.network-toolbar-container .toolbar');
-    const button = toolbar!.shadowRoot!.querySelector('[aria-label="Clear network log"]');
+    const button = networkPanel.element.querySelector('[aria-label="Clear network log"]');
     assert.instanceOf(button, HTMLElement);
     button.click();
-    await coordinator.done({waitForWork: true});
-    assert.isTrue(networkLogResetSpy.called);
+    await RenderCoordinator.done({waitForWork: true});
+    sinon.assert.called(networkLogResetSpy);
   });
 });

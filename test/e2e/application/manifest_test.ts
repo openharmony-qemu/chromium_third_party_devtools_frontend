@@ -4,8 +4,7 @@
 
 import {assert} from 'chai';
 
-import {click, getBrowserAndPages, getTestServerPort, waitFor} from '../../shared/helper.js';
-
+import {click, getTestServerPort, waitFor} from '../../shared/helper.js';
 import {getTrimmedTextContent, navigateToApplicationTab} from '../helpers/application-helpers.js';
 
 const MANIFEST_SELECTOR = '[aria-label="Manifest"]';
@@ -20,10 +19,9 @@ const FIELD_VALUES_SELECTOR = '.report-field-value';
 // The tests are provided for local debugging only. They require debug
 // mode and setting a chrome feature flag:
 // npm run debug-e2etest -- -- --chrome-features=WebAppEnableManifestId
-describe.skip('[crbug.com/1222571]: The Manifest Page', () => {
+describe.skip('[crbug.com/40774149]: The Manifest Page', () => {
   it('shows app id', async () => {
-    const {target} = getBrowserAndPages();
-    await navigateToApplicationTab(target, 'app-manifest-id');
+    await navigateToApplicationTab('app-manifest-id');
     await click(MANIFEST_SELECTOR);
     await waitFor(APP_ID_SELECTOR);
 
@@ -34,8 +32,7 @@ describe.skip('[crbug.com/1222571]: The Manifest Page', () => {
   });
 
   it('shows start id as app id', async () => {
-    const {target} = getBrowserAndPages();
-    await navigateToApplicationTab(target, 'app-manifest-no-id');
+    await navigateToApplicationTab('app-manifest-no-id');
     await click(MANIFEST_SELECTOR);
     await waitFor(APP_ID_SELECTOR);
 

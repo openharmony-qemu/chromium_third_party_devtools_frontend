@@ -16,7 +16,6 @@ import {
   waitForNone,
   waitForWithTries,
 } from '../../shared/helper.js';
-
 import {navigateToIssuesTab} from '../helpers/issues-helpers.js';
 import {openSourcesPanel} from '../helpers/sources-helpers.js';
 
@@ -80,20 +79,18 @@ async function waitForExpandedIssueTitle(issueIconComponent: puppeteer.ElementHa
 }
 
 describe('The row\'s icon bucket', function() {
-  if (this.timeout()) {
-    this.timeout(10000);
-  }
-
   // This test and the tests below require the use of unsafe hoverElement/clickElement helpers
   // because they return a list of elements and check each one of them. Perhaps, the tests
   // can be changed to check the elements one by one using the safer hover/click helpers.
   // Or perhaps the tests only ever check a single element and the list checks are not needed at all.
   it('should display error messages', async () => {
-    await openFileInSourceTab('trusted-type-policy-violation-report-only.rawresponse');
+    await openFileInSourceTab('trusted-type-violations-enforced.rawresponse');
     const iconComponents = await getIconComponents('cm-messageIcon-error');
     const messages: string[] = [];
     const expectedMessages = [
-      '[Report Only] Refused to create a TrustedTypePolicy named \'policy2\' because it violates the following Content Security Policy directive: "trusted-types policy1".',
+      'Refused to create a TrustedTypePolicy named \'policy2\' because it violates the following Content Security Policy directive: "trusted-types policy1".',
+      'Uncaught TypeError: Failed to execute \'createPolicy\' on \'TrustedTypePolicyFactory\': Policy "policy2" disallowed.',
+
     ];
     for (const iconComponent of iconComponents) {
       await hoverElement(iconComponent);
@@ -105,7 +102,7 @@ describe('The row\'s icon bucket', function() {
   });
 
   // Flakily fails with finding an empty icon.
-  it.skip('[crbug.com/1508270] should use the correct error icon', async () => {
+  it.skip('[crbug.com/40948985] should use the correct error icon', async () => {
     await openFileInSourceTab('trusted-type-violations-report-only.rawresponse');
     const bucketIconComponents = await getIconComponents('cm-messageIcon-error');
     for (const bucketIconComponent of bucketIconComponents) {
@@ -160,7 +157,7 @@ describe('The row\'s icon bucket', function() {
     ]);
 
     const icons = await getIconComponents('cm-messageIcon-issue');
-    assert.strictEqual(icons.length, 1);
+    assert.lengthOf(icons, 1);
   });
 
   it('should reveal Issues tab when the icon is clicked', async () => {
@@ -172,7 +169,7 @@ describe('The row\'s icon bucket', function() {
     await click(HIDE_NAVIGATOR_SELECTOR);
 
     const bucketIssueIconComponents = await getIconComponents('cm-messageIcon-issue');
-    assert.strictEqual(bucketIssueIconComponents.length, 1);
+    assert.lengthOf(bucketIssueIconComponents, 1);
     const issueIconComponent = bucketIssueIconComponents[0];
     await clickElement(issueIconComponent);
 
@@ -203,7 +200,7 @@ describe('The row\'s icon bucket', function() {
 
     const {issueIcon, issueTitle} = await waitForFunction(async () => {
       const bucketIssueIconComponents = await getIconComponents('cm-messageIcon-issue');
-      assert.strictEqual(bucketIssueIconComponents.length, 1);
+      assert.lengthOf(bucketIssueIconComponents, 1);
       const issueIconComponent = bucketIssueIconComponents[0];
       await issueIconComponent.hover();
       const vbox = await waitForWithTries('div.vbox.flex-auto.no-pointer-events', undefined, {tries: 3});

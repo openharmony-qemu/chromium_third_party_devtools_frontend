@@ -7,9 +7,9 @@ import {TraceLoader} from '../../../testing/TraceLoader.js';
 import * as Trace from '../trace.js';
 
 function countMetricOcurrences(
-    scoresByMetricName:
+    scoresByMetricName: Array<
         Map<Trace.Handlers.ModelHandlers.PageLoadMetrics.MetricName,
-            Trace.Handlers.ModelHandlers.PageLoadMetrics.MetricScore>[],
+            Trace.Handlers.ModelHandlers.PageLoadMetrics.MetricScore>>,
     metricName: Trace.Handlers.ModelHandlers.PageLoadMetrics.MetricName): number {
   return scoresByMetricName.reduce((acc, val) => {
     if (val.get(metricName)) {
@@ -60,7 +60,7 @@ describeWithEnvironment('PageLoadMetricsHandler', function() {
       if (!pageLoadEventsForMainFrame) {
         assert.fail('Page load events for main frame were unexpectedly null.');
       }
-      // Single FCP event that occured after the refresh.
+      // Single FCP event that occurred after the refresh.
       assert.strictEqual(pageLoadEventsForMainFrame.size, 1);
       const scoresByMetricName = [...pageLoadEventsForMainFrame.values()];
       const fcpCount =
@@ -88,7 +88,7 @@ describeWithEnvironment('PageLoadMetricsHandler', function() {
       if (!pageLoadEventsForMainFrame) {
         assert.fail('Page load events for main frame were unexpectedly null.');
       }
-      // Single FCP event that occured after the refresh.
+      // Single FCP event that occurred after the refresh.
       assert.strictEqual(pageLoadEventsForMainFrame.size, 1);
       const events = pageLoadEventsForMainFrame.get(navigationId);
       const allFoundMetricScoresForMainFrame = events ? Array.from(events.values()) : [];
@@ -263,7 +263,7 @@ describeWithEnvironment('PageLoadMetricsHandler', function() {
       for (const metricName of Trace.Types.Events.MarkerName) {
         const markerEventsOfThisType = allMarkerEvents.filter(event => event.name === metricName);
         // There should be 2 events for each marker and all of them should correspond to the main frame
-        assert.strictEqual(markerEventsOfThisType.length, 2);
+        assert.lengthOf(markerEventsOfThisType, 2);
         assert.isTrue(markerEventsOfThisType.every(
             marker => Trace.Handlers.ModelHandlers.PageLoadMetrics.getFrameIdForPageLoadEvent(marker) === mainFrameId));
       }
@@ -279,7 +279,7 @@ describeWithEnvironment('PageLoadMetricsHandler', function() {
       const {PageLoadMetrics} = parsedTrace;
       const pageLoadMarkers = PageLoadMetrics.allMarkerEvents;
       const largestContentfulPaints = pageLoadMarkers.filter(Trace.Types.Events.isLargestContentfulPaintCandidate);
-      assert.strictEqual(largestContentfulPaints.length, 1);
+      assert.lengthOf(largestContentfulPaints, 1);
       assert.strictEqual(largestContentfulPaints[0].args.data?.candidateIndex, 2);
     });
   });

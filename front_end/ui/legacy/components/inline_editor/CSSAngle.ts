@@ -1,11 +1,12 @@
 // Copyright (c) 2020 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-lit-render-outside-of-view */
 
 import './CSSAngleEditor.js';
 import './CSSAngleSwatch.js';
 
-import * as LitHtml from '../../../lit-html/lit-html.js';
+import * as Lit from '../../../lit/lit.js';
 
 import cssAngleStyles from './cssAngle.css.js';
 import {
@@ -19,8 +20,8 @@ import {
 } from './CSSAngleUtils.js';
 import {ValueChangedEvent} from './InlineEditorUtils.js';
 
-const {render, html} = LitHtml;
-const styleMap = LitHtml.Directives.styleMap;
+const {render, html} = Lit;
+const styleMap = Lit.Directives.styleMap;
 
 export class PopoverToggledEvent extends Event {
   static readonly eventName = 'popovertoggled';
@@ -70,10 +71,6 @@ export class CSSAngle extends HTMLElement {
   private popoverStyleTop = '';
   private popoverStyleLeft = '';
   private onMinifyingAction = this.minify.bind(this);
-
-  connectedCallback(): void {
-    this.shadow.adoptedStyleSheets = [cssAngleStyles];
-  }
 
   set data(data: CSSAngleData) {
     const parsedResult = parseText(data.angleText);
@@ -162,6 +159,7 @@ export class CSSAngle extends HTMLElement {
     this.displayedAngle = roundAngleByUnit(convertAngleUnit(angle, this.displayedAngle.unit));
     this.angle = this.displayedAngle;
     this.dispatchEvent(new ValueChangedEvent(`${this.angle.value}${this.angle.unit}`));
+    this.render();
   }
 
   private displayNextUnit(): void {
@@ -225,6 +223,7 @@ export class CSSAngle extends HTMLElement {
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
     render(html`
+      <style>${cssAngleStyles}</style>
       <div class="css-angle" @focusout=${this.minify} @keydown=${this.onKeydown} tabindex="-1">
         <div class="preview">
           <devtools-css-angle-swatch
@@ -243,7 +242,7 @@ export class CSSAngle extends HTMLElement {
     // clang-format on
   }
 
-  private renderPopover(): LitHtml.TemplateResult {
+  private renderPopover(): Lit.TemplateResult {
     let contextualBackground = '';
     if (this.propertyValue && !this.propertyValue.match(/url\(.*\)/i)) {
       contextualBackground = this.propertyValue;

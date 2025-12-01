@@ -224,8 +224,8 @@ export class ItemsRange {
   startPosition: number;
   endPosition: number;
   totalLength: number;
-  items: (Node|Edge)[];
-  constructor(startPosition: number, endPosition: number, totalLength: number, items: (Node|Edge)[]) {
+  items: Array<Node|Edge>;
+  constructor(startPosition: number, endPosition: number, totalLength: number, items: Array<Node|Edge>) {
     this.startPosition = startPosition;
     this.endPosition = endPosition;
     this.totalLength = totalLength;
@@ -246,16 +246,10 @@ export class StaticData {
   }
 }
 
-export class Statistics {
-  total!: number;
-  v8heap!: number;
-  native!: number;
-  code!: number;
-  jsArrays!: number;
-  strings!: number;
-  system!: number;
-  constructor() {
-  }
+export interface Statistics {
+  total: number;
+  native: {total: number, typedArrays: number};
+  v8heap: {total: number, code: number, jsArrays: number, strings: number, system: number};
 }
 
 export class NodeFilter {

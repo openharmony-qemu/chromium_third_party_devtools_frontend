@@ -53,7 +53,7 @@ export async function waitForSomeRequestsToAppear(numberOfRequests: number) {
 
 export async function getAllRequestNames() {
   const requests = await $$(REQUEST_LIST_SELECTOR + ' .name-column');
-  return await Promise.all(requests.map(request => request.evaluate(r => r.childNodes[1].textContent)));
+  return await Promise.all(requests.map(request => request.evaluate(r => r.childNodes[2].textContent)));
 }
 
 export async function getNumberOfRequests() {
@@ -66,7 +66,7 @@ export async function getSelectedRequestName() {
     return null;
   }
   return await request.evaluate(node => {
-    return node && node.childNodes[1].textContent;
+    return node?.childNodes[2].textContent;
   });
 }
 
@@ -82,7 +82,7 @@ export async function selectRequestByName(name: string, clickOptions?: puppeteer
   const rect = await frontend.evaluate((name, selector) => {
     const elements = document.querySelectorAll(selector);
     for (const element of elements) {
-      if (element.childNodes[1].textContent === name) {
+      if (element.childNodes[2].textContent === name) {
         const {left, top, width, height} = element.getBoundingClientRect();
         return {left, top, width, height};
       }
@@ -136,17 +136,16 @@ export async function setTextFilter(text: string): Promise<void> {
 export async function getTextFilterContent(): Promise<string> {
   const toolbarHandle = await waitFor('.text-filter');
   const textFilterContent = toolbarHandle.evaluate(toolbar => {
-    const input = toolbar.shadowRoot?.querySelector('[aria-label="Filter"]');
-    return input?.textContent ?? '';
+    return toolbar.querySelector('[aria-label="Filter"]')?.textContent ?? '';
   });
-  return textFilterContent;
+  return await textFilterContent;
 }
 
 export async function clearTextFilter(): Promise<void> {
   const textFilterContent = await getTextFilterContent();
   if (textFilterContent) {
     const toolbarHandle = await waitFor('.text-filter');
-    await click('devtools-button', {root: toolbarHandle});
+    await click('[aria-label="Clear"]', {root: toolbarHandle});
   }
 }
 
@@ -187,17 +186,17 @@ export function veImpressionForNetworkPanel(options?: {newFilterBar?: boolean}) 
             'Section', 'filter-bitset',
             [
               veImpression('Item', 'all'),
-              veImpression('Item', 'FetchandXHR'),
-              veImpression('Item', 'Document'),
-              veImpression('Item', 'CSS'),
-              veImpression('Item', 'JavaScript'),
-              veImpression('Item', 'Font'),
-              veImpression('Item', 'Image'),
-              veImpression('Item', 'Media'),
-              veImpression('Item', 'Manifest'),
-              veImpression('Item', 'WebSocket'),
-              veImpression('Item', 'WebAssembly'),
-              veImpression('Item', 'Other'),
+              veImpression('Item', 'xhr'),
+              veImpression('Item', 'document'),
+              veImpression('Item', 'stylesheet'),
+              veImpression('Item', 'script'),
+              veImpression('Item', 'font'),
+              veImpression('Item', 'image'),
+              veImpression('Item', 'media'),
+              veImpression('Item', 'manifest'),
+              veImpression('Item', 'socket'),
+              veImpression('Item', 'wasm'),
+              veImpression('Item', 'other'),
             ]),
         veImpression('TextField', 'filter'),
         veImpression('Toggle', 'invert-filter'),
@@ -220,7 +219,12 @@ export function veImpressionForNetworkPanel(options?: {newFilterBar?: boolean}) 
         ]),
     veImpression('Timeline', 'network-overview'),
     veImpression('Toggle', 'network-settings'),
-    veImpression('Link', 'learn-more'),
+    veImpression(
+        'Section', 'empty-view',
+        [
+          veImpression('Action', 'inspector-main.reload'),
+          veImpression('Link', 'learn-more'),
+        ]),
     veImpression('TableHeader', 'name'),
     veImpression('TableHeader', 'status'),
     veImpression('TableHeader', 'type'),

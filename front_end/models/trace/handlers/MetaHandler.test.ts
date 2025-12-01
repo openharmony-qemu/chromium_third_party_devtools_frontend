@@ -32,7 +32,7 @@ describe('MetaHandler', function() {
         },
         pid: Trace.Types.Events.ProcessID(23456),
         tid: Trace.Types.Events.ThreadID(775),
-        ts: Trace.Types.Timing.MicroSeconds(100),
+        ts: Trace.Types.Timing.Micro(100),
         name: 'navigationStart',
       } as Trace.Types.Events.NavigationStart,
       {
@@ -48,9 +48,10 @@ describe('MetaHandler', function() {
         },
         pid: Trace.Types.Events.ProcessID(23456),
         tid: Trace.Types.Events.ThreadID(775),
-        ts: Trace.Types.Timing.MicroSeconds(800),
+        ts: Trace.Types.Timing.Micro(800),
         name: 'navigationStart',
-      } as Trace.Types.Events.NavigationStartUnreliable,
+        // Casting as NavStart, but it is ignored due to the empty documentLoaderURL
+      } as Trace.Types.Events.NavigationStart,
       {
         ...defaultTraceEvent,
         args: {
@@ -63,7 +64,7 @@ describe('MetaHandler', function() {
         },
         pid: Trace.Types.Events.ProcessID(23456),
         tid: Trace.Types.Events.ThreadID(775),
-        ts: Trace.Types.Timing.MicroSeconds(1000),
+        ts: Trace.Types.Timing.Micro(1000),
         name: 'navigationStart',
       } as Trace.Types.Events.NavigationStart,
     ];
@@ -104,7 +105,7 @@ describe('MetaHandler', function() {
       await Trace.Handlers.ModelHandlers.Meta.finalize();
       const data = Trace.Handlers.ModelHandlers.Meta.data();
       assert.strictEqual(data.topLevelRendererIds.size, 1);
-      assert.deepStrictEqual([...data.topLevelRendererIds], [Trace.Types.Events.ProcessID(8051)]);
+      assert.deepEqual([...data.topLevelRendererIds], [Trace.Types.Events.ProcessID(8051)]);
     });
   });
 
@@ -231,16 +232,16 @@ describe('MetaHandler', function() {
     await Trace.Handlers.ModelHandlers.Meta.finalize();
 
     const data = Trace.Handlers.ModelHandlers.Meta.data();
-    assert.deepStrictEqual([...data.topLevelRendererIds], [3601132]);
+    assert.deepEqual([...data.topLevelRendererIds], [3601132]);
 
     const rendererProcesses = data.rendererProcessesByFrame.get(data.mainFrameId);
     if (!rendererProcesses) {
       assert.fail('No renderer processes found');
       return;
     }
-    assert.deepStrictEqual([...rendererProcesses?.keys()], [3601132]);
+    assert.deepEqual([...rendererProcesses?.keys()], [3601132]);
     const windowMinTime = 1143381875846;
-    assert.deepStrictEqual(
+    assert.deepEqual(
         [...rendererProcesses?.values()], [[{
           frame: {
             frame: '1D148CB660D1F96ED70D78DC6A53267B',
@@ -268,7 +269,7 @@ describe('MetaHandler', function() {
     await Trace.Handlers.ModelHandlers.Meta.finalize();
 
     const data = Trace.Handlers.ModelHandlers.Meta.data();
-    assert.deepStrictEqual([...data.topLevelRendererIds], [78450, 78473, 79194]);
+    assert.deepEqual([...data.topLevelRendererIds], [78450, 78473, 79194]);
 
     const rendererProcesses = data.rendererProcessesByFrame.get(data.mainFrameId);
     if (!rendererProcesses) {
@@ -277,8 +278,8 @@ describe('MetaHandler', function() {
     }
 
     const windowMinTime = 3550807444741;
-    assert.deepStrictEqual([...rendererProcesses?.keys()], [78450, 78473, 79194]);
-    assert.deepStrictEqual([...rendererProcesses?.values()], [
+    assert.deepEqual([...rendererProcesses?.keys()], [78450, 78473, 79194]);
+    assert.deepEqual([...rendererProcesses?.values()], [
       [{
         frame: {
           frame: 'E70A9327100EBD78F1C03582BBBE8E5F',
@@ -324,7 +325,7 @@ describe('MetaHandler', function() {
     await Trace.Handlers.ModelHandlers.Meta.finalize();
 
     const data = Trace.Handlers.ModelHandlers.Meta.data();
-    assert.deepStrictEqual([...data.topLevelRendererIds], [2080]);
+    assert.deepEqual([...data.topLevelRendererIds], [2080]);
 
     const rendererProcesses = data.rendererProcessesByFrame.get(data.mainFrameId);
     if (!rendererProcesses) {
@@ -332,8 +333,8 @@ describe('MetaHandler', function() {
       return;
     }
 
-    assert.deepStrictEqual([...rendererProcesses?.keys()], [2080]);
-    assert.deepStrictEqual([...rendererProcesses?.values()], [
+    assert.deepEqual([...rendererProcesses?.keys()], [2080]);
+    assert.deepEqual([...rendererProcesses?.values()], [
       [
         {
           frame: {
@@ -603,4 +604,35 @@ describe('MetaHandler', function() {
        // But they are not in the primary page.
        assert.strictEqual(data.mainFrameId, '07B7D55F5BE0ADB8AAD6502F2D3859FF');
      });
+
+  it('will detect the final redirect URL for a main frame navigation', async function() {
+    // See crbug.com/402743677 for context.
+    const events = await TraceLoader.rawEvents(this, 'redirects-http-to-https.json.gz');
+    for (const event of events) {
+      Trace.Handlers.ModelHandlers.Meta.handleEvent(event);
+    }
+    await Trace.Handlers.ModelHandlers.Meta.finalize();
+    const data = Trace.Handlers.ModelHandlers.Meta.data();
+
+    assert.strictEqual(data.mainFrameURL, 'https://example.com/');
+    assert.strictEqual(data.mainFrameNavigations[0].args.data?.documentLoaderURL, 'http://paulirish.com/');
+    assert.deepEqual([...data.finalDisplayUrlByNavigationId], [
+      ['832038B69FE671709DE9655B8161EB9A', 'https://www.paulirish.com/'],
+    ]);
+  });
+
+  it('will detect history API navigations for the start of the trace even w/o any navigation', async function() {
+    // See crbug.com/402743677 for context.
+    const events = await TraceLoader.rawEvents(this, 'history-api-no-nav.json.gz');
+    for (const event of events) {
+      Trace.Handlers.ModelHandlers.Meta.handleEvent(event);
+    }
+    await Trace.Handlers.ModelHandlers.Meta.finalize();
+    const data = Trace.Handlers.ModelHandlers.Meta.data();
+
+    assert.strictEqual(data.mainFrameURL, 'http://localhost:10325/test.html');
+    assert.deepEqual([...data.finalDisplayUrlByNavigationId], [
+      ['', 'http://localhost:10325/testing/me?0.7574185139653986'],
+    ]);
+  });
 });

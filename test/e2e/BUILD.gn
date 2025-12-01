@@ -17,7 +17,6 @@ node_ts_library("tests") {
   deps = [
     "animations",
     "application",
-    "assertion",
     "changes",
     "console",
     "coverage",
@@ -26,11 +25,9 @@ node_ts_library("tests") {
     "elements",
     "emulation",
     "extensions",
-    "freestyler",
     "host",
     "inline_editor",
     "issues",
-    "layers",
     "lighthouse",
     "media",
     "memory",
@@ -47,8 +44,7 @@ node_ts_library("tests") {
     "settings",
     "snippets",
     "sources",
-    "targets",
-    "webaudio",
+    "throttling",
   ]
   sources = [ "mocharc.ts" ]
 }

@@ -28,6 +28,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/* eslint-disable rulesdir/no-imperative-dom-api */
+
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
@@ -150,7 +152,7 @@ const UIStrings = {
    *@description A short summary of the text at https://developer.chrome.com/docs/devtools/memory-problems/heap-snapshots#sliced-string
    */
   slicedStringSummary: 'A string which represents some of the characters from another string.',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/profiler/HeapSnapshotGridNodes.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
@@ -162,10 +164,10 @@ export class HeapSnapshotGridNode extends
   dataGridInternal: HeapSnapshotSortableDataGrid;
   instanceCount: number;
   readonly savedChildren: Map<number, HeapSnapshotGridNode>;
-  retrievedChildrenRanges: {
+  retrievedChildrenRanges: Array<{
     from: number,
     to: number,
-  }[];
+  }>;
   providerObject: ChildrenProvider|null;
   reachableFromWindow: boolean;
   populated?: boolean;
@@ -191,10 +193,6 @@ export class HeapSnapshotGridNode extends
     return undefined;
   }
 
-  heapSnapshotDataGrid(): HeapSnapshotSortableDataGrid {
-    return this.dataGridInternal;
-  }
-
   createProvider(): ChildrenProvider {
     throw new Error('Not implemented.');
   }
@@ -206,8 +204,8 @@ export class HeapSnapshotGridNode extends
   getHash(): number {
     throw new Error('Not implemented.');
   }
-  createChildNode(_item: HeapSnapshotModel.HeapSnapshotModel.Node|
-                  HeapSnapshotModel.HeapSnapshotModel.Edge): HeapSnapshotGridNode {
+  createChildNode(_item: HeapSnapshotModel.HeapSnapshotModel.Node|HeapSnapshotModel.HeapSnapshotModel.Edge):
+      HeapSnapshotGridNode {
     throw new Error('Not implemented.');
   }
 
@@ -308,8 +306,8 @@ export class HeapSnapshotGridNode extends
         const percentSpan = UI.Fragment.html`<span class="percent-column">${this.data[percentColumn]}</span>`;
         div.appendChild(percentSpan);
         div.classList.add('profile-multiple-values');
-        UI.ARIAUtils.markAsHidden(valueSpan);
-        UI.ARIAUtils.markAsHidden(percentSpan);
+        UI.ARIAUtils.setHidden(valueSpan, true);
+        UI.ARIAUtils.setHidden(percentSpan, true);
         this.setCellAccessibleName(
             i18nString(
                 UIStrings.genericStringsTwoPlaceholders, {PH1: this.data[columnId], PH2: this.data[percentColumn]}),
@@ -335,8 +333,8 @@ export class HeapSnapshotGridNode extends
     return this.provider().sortAndRewind(this.comparator());
   }
 
-  childHashForEntity(entity: HeapSnapshotModel.HeapSnapshotModel.Node|
-                     HeapSnapshotModel.HeapSnapshotModel.Edge): number {
+  childHashForEntity(entity: HeapSnapshotModel.HeapSnapshotModel.Node|HeapSnapshotModel.HeapSnapshotModel.Edge):
+      number {
     if ('edgeIndex' in entity) {
       return entity.edgeIndex;
     }
@@ -536,9 +534,9 @@ export namespace HeapSnapshotGridNode {
     /* eslint-enable @typescript-eslint/naming-convention */
   }
 
-  export type EventTypes = {
-    [Events.PopulateComplete]: void,
-  };
+  export interface EventTypes {
+    [Events.PopulateComplete]: void;
+  }
 }
 
 export abstract class HeapSnapshotGenericObjectNode extends HeapSnapshotGridNode {
@@ -582,10 +580,11 @@ export abstract class HeapSnapshotGenericObjectNode extends HeapSnapshotGridNode
     const snapshot = (dataGrid.snapshot as HeapSnapshotProxy);
     const shallowSizePercent = this.shallowSize / snapshot.totalSize * 100.0;
     const retainedSizePercent = this.retainedSize / snapshot.totalSize * 100.0;
+
     this.data = {
       distance: this.toUIDistance(this.distance),
-      shallowSize: Platform.NumberUtilities.withThousandsSeparator(this.shallowSize),
-      retainedSize: Platform.NumberUtilities.withThousandsSeparator(this.retainedSize),
+      shallowSize: i18n.ByteUtilities.formatBytesToKb(this.shallowSize),
+      retainedSize: i18n.ByteUtilities.formatBytesToKb(this.retainedSize),
       'shallowSize-percent': this.toPercentString(shallowSizePercent),
       'retainedSize-percent': this.toPercentString(retainedSizePercent),
     };
@@ -784,8 +783,7 @@ export abstract class HeapSnapshotGenericObjectNode extends HeapSnapshotGridNode
 
     if (heapProfilerModel) {
       contextMenu.revealSection().appendItem(i18nString(UIStrings.storeAsGlobalVariable), async () => {
-        const remoteObject =
-            await this.tryQueryObjectContent((heapProfilerModel as SDK.HeapProfilerModel.HeapProfilerModel), '');
+        const remoteObject = await this.tryQueryObjectContent((heapProfilerModel), '');
         if (!remoteObject) {
           Common.Console.Console.instance().error(i18nString(UIStrings.previewIsNotAvailable));
         } else {
@@ -859,8 +857,8 @@ export class HeapSnapshotObjectNode extends HeapSnapshotGenericObjectNode {
     return null;
   }
 
-  override createChildNode(item: HeapSnapshotModel.HeapSnapshotModel.Node|
-                           HeapSnapshotModel.HeapSnapshotModel.Edge): HeapSnapshotObjectNode {
+  override createChildNode(item: HeapSnapshotModel.HeapSnapshotModel.Node|HeapSnapshotModel.HeapSnapshotModel.Edge):
+      HeapSnapshotObjectNode {
     return new HeapSnapshotObjectNode(
         this.dataGridInternal, this.snapshot, (item as HeapSnapshotModel.HeapSnapshotModel.Edge), this);
   }
@@ -937,8 +935,8 @@ export class HeapSnapshotRetainingObjectNode extends HeapSnapshotObjectNode {
     return this.snapshot.createRetainingEdgesProvider(this.snapshotNodeIndex);
   }
 
-  override createChildNode(item: HeapSnapshotModel.HeapSnapshotModel.Node|
-                           HeapSnapshotModel.HeapSnapshotModel.Edge): HeapSnapshotRetainingObjectNode {
+  override createChildNode(item: HeapSnapshotModel.HeapSnapshotModel.Node|HeapSnapshotModel.HeapSnapshotModel.Edge):
+      HeapSnapshotRetainingObjectNode {
     return new HeapSnapshotRetainingObjectNode(
         this.dataGridInternal, this.snapshot, (item as HeapSnapshotModel.HeapSnapshotModel.Edge), this);
   }
@@ -1035,10 +1033,10 @@ export class HeapSnapshotInstanceNode extends HeapSnapshotGenericObjectNode {
       data['addedCount'] = '';
       data['addedSize'] = '';
       data['removedCount'] = '\u2022';
-      data['removedSize'] = Platform.NumberUtilities.withThousandsSeparator(this.shallowSize || 0);
+      data['removedSize'] = i18n.ByteUtilities.formatBytesToKb(this.shallowSize || 0);
     } else {
       data['addedCount'] = '\u2022';
-      data['addedSize'] = Platform.NumberUtilities.withThousandsSeparator(this.shallowSize || 0);
+      data['addedSize'] = i18n.ByteUtilities.formatBytesToKb(this.shallowSize || 0);
       data['removedCount'] = '';
       data['removedSize'] = '';
     }
@@ -1063,8 +1061,8 @@ export class HeapSnapshotInstanceNode extends HeapSnapshotGenericObjectNode {
     return this.baseSnapshotOrSnapshot.createEdgesProvider(this.snapshotNodeIndex);
   }
 
-  override createChildNode(item: HeapSnapshotModel.HeapSnapshotModel.Node|
-                           HeapSnapshotModel.HeapSnapshotModel.Edge): HeapSnapshotObjectNode {
+  override createChildNode(item: HeapSnapshotModel.HeapSnapshotModel.Node|HeapSnapshotModel.HeapSnapshotModel.Edge):
+      HeapSnapshotObjectNode {
     return new HeapSnapshotObjectNode(
         this.dataGridInternal, this.baseSnapshotOrSnapshot, (item as HeapSnapshotModel.HeapSnapshotModel.Edge), null);
   }
@@ -1132,8 +1130,8 @@ export class HeapSnapshotConstructorNode extends HeapSnapshotGridNode {
       object: this.nameInternal,
       count: Platform.NumberUtilities.withThousandsSeparator(this.count),
       distance: this.toUIDistance(this.distance),
-      shallowSize: Platform.NumberUtilities.withThousandsSeparator(this.shallowSize),
-      retainedSize: Platform.NumberUtilities.withThousandsSeparator(this.retainedSize),
+      shallowSize: i18n.ByteUtilities.formatBytesToKb(this.shallowSize),
+      retainedSize: i18n.ByteUtilities.formatBytesToKb(this.retainedSize),
       'shallowSize-percent': this.toPercentString(shallowSizePercent),
       'retainedSize-percent': this.toPercentString(retainedSizePercent),
     };
@@ -1145,7 +1143,7 @@ export class HeapSnapshotConstructorNode extends HeapSnapshotGridNode {
 
   override createProvider(): HeapSnapshotProviderProxy {
     return (this.dataGridInternal.snapshot as HeapSnapshotProxy)
-               .createNodesProviderForClass(this.classKey, this.nodeFilter) as HeapSnapshotProviderProxy;
+        .createNodesProviderForClass(this.classKey, this.nodeFilter);
   }
 
   async populateNodeBySnapshotObjectId(snapshotObjectId: number): Promise<HeapSnapshotGridNode[]> {
@@ -1160,7 +1158,7 @@ export class HeapSnapshotConstructorNode extends HeapSnapshotGridNode {
 
     await this.populateChildren(nodePosition, null);
 
-    const node = (this.childForPosition(nodePosition) as HeapSnapshotGridNode | null);
+    const node = (this.childForPosition(nodePosition));
     return node ? [this, node] : [];
   }
 
@@ -1176,8 +1174,8 @@ export class HeapSnapshotConstructorNode extends HeapSnapshotGridNode {
     return cell;
   }
 
-  override createChildNode(item: HeapSnapshotModel.HeapSnapshotModel.Node|
-                           HeapSnapshotModel.HeapSnapshotModel.Edge): HeapSnapshotInstanceNode {
+  override createChildNode(item: HeapSnapshotModel.HeapSnapshotModel.Node|HeapSnapshotModel.HeapSnapshotModel.Edge):
+      HeapSnapshotInstanceNode {
     return new HeapSnapshotInstanceNode(
         this.dataGridInternal, (this.dataGridInternal.snapshot as HeapSnapshotProxy),
         (item as HeapSnapshotModel.HeapSnapshotModel.Node), false);
@@ -1301,10 +1299,9 @@ export class HeapSnapshotDiffNode extends HeapSnapshotGridNode {
       removedCount: Platform.NumberUtilities.withThousandsSeparator(this.removedCount),
       countDelta: this.signForDelta(this.countDelta) +
           Platform.NumberUtilities.withThousandsSeparator(Math.abs(this.countDelta)),
-      addedSize: Platform.NumberUtilities.withThousandsSeparator(this.addedSize),
-      removedSize: Platform.NumberUtilities.withThousandsSeparator(this.removedSize),
-      sizeDelta:
-          this.signForDelta(this.sizeDelta) + Platform.NumberUtilities.withThousandsSeparator(Math.abs(this.sizeDelta)),
+      addedSize: i18n.ByteUtilities.bytesToString(this.addedSize),
+      removedSize: i18n.ByteUtilities.bytesToString(this.removedSize),
+      sizeDelta: this.signForDelta(this.sizeDelta) + i18n.ByteUtilities.bytesToString(Math.abs(this.sizeDelta)),
     };
   }
 
@@ -1314,7 +1311,7 @@ export class HeapSnapshotDiffNode extends HeapSnapshotGridNode {
 
   override createProvider(): HeapSnapshotDiffNodesProvider {
     const tree = this.dataGridInternal as HeapSnapshotDiffDataGrid;
-    if (tree.snapshot === null || tree.baseSnapshot === undefined || tree.baseSnapshot.uid === undefined) {
+    if (tree.snapshot === null || tree.baseSnapshot?.uid === undefined) {
       throw new Error('Data sources have not been set correctly');
     }
     const addedNodesProvider = tree.snapshot.createAddedNodesProvider(tree.baseSnapshot.uid, this.classKey);
@@ -1334,8 +1331,8 @@ export class HeapSnapshotDiffNode extends HeapSnapshotGridNode {
     return cell;
   }
 
-  override createChildNode(item: HeapSnapshotModel.HeapSnapshotModel.Node|
-                           HeapSnapshotModel.HeapSnapshotModel.Edge): HeapSnapshotInstanceNode {
+  override createChildNode(item: HeapSnapshotModel.HeapSnapshotModel.Node|HeapSnapshotModel.HeapSnapshotModel.Edge):
+      HeapSnapshotInstanceNode {
     const dataGrid = (this.dataGridInternal as HeapSnapshotDiffDataGrid);
     if (item.isAddedNotRemoved) {
       if (dataGrid.snapshot === null) {
@@ -1400,8 +1397,8 @@ export class AllocationGridNode extends HeapSnapshotGridNode {
     this.data = {
       liveCount: Platform.NumberUtilities.withThousandsSeparator(data.liveCount),
       count: Platform.NumberUtilities.withThousandsSeparator(data.count),
-      liveSize: Platform.NumberUtilities.withThousandsSeparator(data.liveSize),
-      size: Platform.NumberUtilities.withThousandsSeparator(data.size),
+      liveSize: i18n.ByteUtilities.bytesToString(data.liveSize),
+      size: i18n.ByteUtilities.bytesToString(data.size),
       name: data.name,
     };
   }
@@ -1420,7 +1417,7 @@ export class AllocationGridNode extends HeapSnapshotGridNode {
         await (this.dataGridInternal.snapshot as HeapSnapshotProxy).allocationNodeCallers(this.allocationNode.id);
 
     const callersChain = callers.nodesWithSingleCaller;
-    let parentNode: AllocationGridNode = (this as AllocationGridNode);
+    let parentNode: AllocationGridNode = this;
     const dataGrid = (this.dataGridInternal as AllocationDataGrid);
     for (const caller of callersChain) {
       const child = new AllocationGridNode(dataGrid, caller);

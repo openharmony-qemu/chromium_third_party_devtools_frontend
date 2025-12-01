@@ -6,12 +6,15 @@ import * as childProcess from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import yargs from 'yargs';
+import {hideBin} from 'yargs/helpers';
 
 import {asArray, commandLineArgs, DiffBehaviors} from './commandline.js';
 import {defaultChromePath, SOURCE_ROOT} from './paths.js';
 
-const yargs = require('yargs');
-const options = commandLineArgs(yargs(yargs.argv['_'])).argv;
+const argv = yargs(hideBin(process.argv)).parseSync()['_'] as string[];
+
+const options = commandLineArgs(yargs(argv)).parseSync();
 
 export const enum ServerType {
   HOSTED_MODE = 'hosted-mode',
@@ -31,6 +34,7 @@ interface Config {
   shuffle: boolean;
   mochaGrep: {invert?: boolean, grep?: string}|{invert?: boolean, fgrep?: string};
   copyScreenshotGoldens: boolean;
+  retries: number;
   configureChrome: (executablePath: string) => void;
 }
 
@@ -91,7 +95,7 @@ function configureChrome(executablePath: string) {
           path.join(SOURCE_ROOT, 'scripts', 'deps', 'set_lpac_acls.py'),
           path.dirname(executablePath),
         ],
-        {encoding: 'utf-8', stdio: 'inherit'});
+        {encoding: 'utf-8', stdio: 'inherit', shell: true});
     if (result.error || (result.status ?? 1) !== 0) {
       throw new Error('Setting permissions failed: ' + result.error?.message);
     }
@@ -114,6 +118,7 @@ export const TestConfig: Config = {
   shuffle: options['shuffle'],
   mochaGrep: mochaGrep(),
   copyScreenshotGoldens: false,
+  retries: options['retries'],
   configureChrome,
 };
 

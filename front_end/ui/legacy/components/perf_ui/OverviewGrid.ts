@@ -27,6 +27,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+/* eslint-disable rulesdir/no-imperative-dom-api */
 
 import * as Common from '../../../../core/common/common.js';
 import * as i18n from '../../../../core/i18n/i18n.js';
@@ -34,9 +35,8 @@ import * as Platform from '../../../../core/platform/platform.js';
 import * as IconButton from '../../../components/icon_button/icon_button.js';
 import * as VisualLogging from '../../../visual_logging/visual_logging.js';
 import * as UI from '../../legacy.js';
-import * as ThemeSupport from '../../theme_support/theme_support.js';
 
-import overviewGridStyles from './overviewGrid.css.legacy.js';
+import overviewGridStyles from './overviewGrid.css.js';
 import {type Calculator, TimelineGrid} from './TimelineGrid.js';
 
 const UIStrings = {
@@ -52,7 +52,7 @@ const UIStrings = {
    *@description Label for right window resizer for Overview grids
    */
   rightResizer: 'Right Resizer',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/components/perf_ui/OverviewGrid.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class OverviewGrid {
@@ -178,8 +178,8 @@ export class Window extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
   private resizeEnabled?: boolean;
   private clickHandler?: ((arg0: Event) => boolean)|null;
   private resizerParentOffsetLeft?: number;
-  #breadcrumbsEnabled: boolean = false;
-  #mouseOverGridOverview: boolean = false;
+  #breadcrumbsEnabled = false;
+  #mouseOverGridOverview = false;
   constructor(parentElement: HTMLElement, dividersLabelBarElement?: Element, calculator?: Calculator) {
     super();
     this.parentElement = parentElement;
@@ -200,13 +200,13 @@ export class Window extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
 
     this.parentElement.addEventListener('wheel', this.onMouseWheel.bind(this), true);
     this.parentElement.addEventListener('dblclick', this.resizeWindowMaximum.bind(this), true);
-    ThemeSupport.ThemeSupport.instance().appendStyle(this.parentElement, overviewGridStyles);
+    Platform.DOMUtilities.appendStyle(this.parentElement, overviewGridStyles);
 
-    this.leftResizeElement = parentElement.createChild('div', 'overview-grid-window-resizer') as HTMLElement;
+    this.leftResizeElement = parentElement.createChild('div', 'overview-grid-window-resizer');
     UI.UIUtils.installDragHandle(
         this.leftResizeElement, this.resizerElementStartDragging.bind(this), this.leftResizeElementDragging.bind(this),
         null, 'ew-resize');
-    this.rightResizeElement = (parentElement.createChild('div', 'overview-grid-window-resizer') as HTMLElement);
+    this.rightResizeElement = parentElement.createChild('div', 'overview-grid-window-resizer');
     UI.UIUtils.installDragHandle(
         this.rightResizeElement, this.resizerElementStartDragging.bind(this),
         this.rightResizeElementDragging.bind(this), null, 'ew-resize');
@@ -236,14 +236,8 @@ export class Window extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
   }
 
   enableCreateBreadcrumbsButton(): HTMLElement {
-    this.curtainsRange = (this.createBreadcrumbButton.createChild('div') as HTMLElement);
-    this.breadcrumbZoomIcon = new IconButton.Icon.Icon();
-    this.breadcrumbZoomIcon.data = {
-      iconName: 'zoom-in',
-      color: 'var(--icon-default)',
-      width: '20px',
-      height: '20px',
-    };
+    this.curtainsRange = this.createBreadcrumbButton.createChild('div');
+    this.breadcrumbZoomIcon = IconButton.Icon.create('zoom-in');
     this.createBreadcrumbButton.appendChild(this.breadcrumbZoomIcon);
     this.createBreadcrumbButton.addEventListener('click', () => {
       this.#createBreadcrumb();
@@ -405,7 +399,7 @@ export class Window extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
     delete this.overviewWindowSelector;
     const clickThreshold = 3;
     if (window.end - window.start < clickThreshold) {
-      if (this.clickHandler && this.clickHandler.call(null, event)) {
+      if (this.clickHandler?.call(null, event)) {
         return;
       }
       const middle = window.end;
@@ -708,11 +702,11 @@ export interface WindowChangedWithPositionEvent {
   rawEndValue: number;
 }
 
-export type EventTypes = {
-  [Events.WINDOW_CHANGED]: void,
-  [Events.BREADCRUMB_ADDED]: WindowChangedWithPositionEvent,
-  [Events.WINDOW_CHANGED_WITH_POSITION]: WindowChangedWithPositionEvent,
-};
+export interface EventTypes {
+  [Events.WINDOW_CHANGED]: void;
+  [Events.BREADCRUMB_ADDED]: WindowChangedWithPositionEvent;
+  [Events.WINDOW_CHANGED_WITH_POSITION]: WindowChangedWithPositionEvent;
+}
 
 export class WindowSelector {
   private startPosition: number;

@@ -67,16 +67,16 @@ export interface FrameAttributionEvent {
   frame: SDK.ResourceTreeModel.ResourceTreeFrame;
 }
 
-export type EventTypes = {
-  [Events.FRAME_ATTRIBUTION_ADDED]: FrameAttributionEvent,
-  [Events.FRAME_ATTRIBUTION_REMOVED]: FrameAttributionEvent,
-};
+export interface EventTypes {
+  [Events.FRAME_ATTRIBUTION_ADDED]: FrameAttributionEvent;
+  [Events.FRAME_ATTRIBUTION_REMOVED]: FrameAttributionEvent;
+}
 
 export class NetworkProject {
   static resolveFrame(uiSourceCode: Workspace.UISourceCode.UISourceCode, frameId: Protocol.Page.FrameId):
       SDK.ResourceTreeModel.ResourceTreeFrame|null {
     const target = NetworkProject.targetForUISourceCode(uiSourceCode);
-    const resourceTreeModel = target && target.model(SDK.ResourceTreeModel.ResourceTreeModel);
+    const resourceTreeModel = target?.model(SDK.ResourceTreeModel.ResourceTreeModel);
     return resourceTreeModel ? resourceTreeModel.frameForId(frameId) : null;
   }
 
@@ -172,12 +172,12 @@ export class NetworkProject {
   static framesForUISourceCode(uiSourceCode: Workspace.UISourceCode.UISourceCode):
       SDK.ResourceTreeModel.ResourceTreeFrame[] {
     const target = NetworkProject.targetForUISourceCode(uiSourceCode);
-    const resourceTreeModel = target && target.model(SDK.ResourceTreeModel.ResourceTreeModel);
+    const resourceTreeModel = target?.model(SDK.ResourceTreeModel.ResourceTreeModel);
     const attribution = uiSourceCodeToAttributionMap.get(uiSourceCode);
     if (!resourceTreeModel || !attribution) {
       return [];
     }
     const frames = Array.from(attribution.keys()).map(frameId => resourceTreeModel.frameForId(frameId));
-    return frames.filter(frame => Boolean(frame)) as SDK.ResourceTreeModel.ResourceTreeFrame[];
+    return frames.filter(frame => !!frame);
   }
 }

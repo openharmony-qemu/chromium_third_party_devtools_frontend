@@ -1,6 +1,7 @@
 // Copyright 2017 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-imperative-dom-api */
 
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
@@ -26,15 +27,10 @@ const UIStrings = {
    */
   durationFilter: 'Duration filter',
   /**
-   *@description Text in Events Timeline Tree View of the Performance panel
-   *@example {2} PH1
-   */
-  Dms: '{PH1} ms',
-  /**
    *@description Text for everything
    */
   all: 'All',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/timeline/EventsTimelineTreeView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class EventsTimelineTreeView extends TimelineTreeView {
@@ -70,7 +66,7 @@ export class EventsTimelineTreeView extends TimelineTreeView {
 
   private onFilterChanged(): void {
     const lastSelectedNode = this.lastSelectedNode();
-    const selectedEvent = lastSelectedNode && lastSelectedNode.event;
+    const selectedEvent = lastSelectedNode?.event;
     this.refreshTree();
     if (selectedEvent) {
       this.selectEvent(selectedEvent, false);
@@ -140,20 +136,20 @@ export class EventsTimelineTreeView extends TimelineTreeView {
     if (!traceEvent) {
       return false;
     }
-    void TimelineUIUtils.buildTraceEventDetails(parsedTrace, traceEvent, this.linkifier, false)
+    void TimelineUIUtils.buildTraceEventDetails(parsedTrace, traceEvent, this.linkifier, false, null)
         .then(fragment => this.detailsView.element.appendChild(fragment));
     return true;
   }
 
   override onHover(node: Trace.Extras.TraceTree.Node|null): void {
-    this.delegate.highlightEvent(node && node.event);
+    this.delegate.highlightEvent(node?.event ?? null);
   }
 }
 
 export class Filters extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
   private readonly categoryFilter: Category;
   private readonly durationFilter: IsLong;
-  private readonly filtersInternal: (IsLong|Category)[];
+  private readonly filtersInternal: Array<IsLong|Category>;
   constructor() {
     super();
     this.categoryFilter = new Category();
@@ -170,7 +166,7 @@ export class Filters extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
         durationFilterChanged.bind(this), i18nString(UIStrings.durationFilter), undefined, 'duration');
     for (const durationMs of Filters.durationFilterPresetsMs) {
       durationFilterUI.addOption(durationFilterUI.createOption(
-          durationMs ? `≥ ${i18nString(UIStrings.Dms, {PH1: durationMs})}` : i18nString(UIStrings.all),
+          durationMs ? `≥ ${i18n.TimeUtilities.millisToString(durationMs)}` : i18nString(UIStrings.all),
           String(durationMs)));
     }
     toolbar.appendToolbarItem(durationFilterUI);
@@ -186,7 +182,6 @@ export class Filters extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
           category.title, undefined,
           categoriesFilterChanged.bind(this, categoryName as Utils.EntryStyles.EventCategory), categoryName);
       checkbox.setChecked(true);
-      checkbox.inputElement.style.backgroundColor = category.color;
       categoryFiltersUI.set(category.name, checkbox);
       toolbar.appendToolbarItem(checkbox);
     }
@@ -194,14 +189,14 @@ export class Filters extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
     function durationFilterChanged(this: Filters): void {
       const duration = (durationFilterUI.selectedOption() as HTMLOptionElement).value;
       const minimumRecordDuration = parseInt(duration, 10);
-      this.durationFilter.setMinimumRecordDuration(Trace.Types.Timing.MilliSeconds(minimumRecordDuration));
+      this.durationFilter.setMinimumRecordDuration(Trace.Types.Timing.Milli(minimumRecordDuration));
       this.notifyFiltersChanged();
     }
 
     function categoriesFilterChanged(this: Filters, name: Utils.EntryStyles.EventCategory): void {
       const categories = Utils.EntryStyles.getCategoryStyles();
       const checkBox = categoryFiltersUI.get(name);
-      categories[name].hidden = !checkBox || !checkBox.checked();
+      categories[name].hidden = !checkBox?.checked();
       this.notifyFiltersChanged();
     }
   }
@@ -217,6 +212,6 @@ const enum Events {
   FILTER_CHANGED = 'FilterChanged',
 }
 
-type EventTypes = {
-  [Events.FILTER_CHANGED]: void,
-};
+interface EventTypes {
+  [Events.FILTER_CHANGED]: void;
+}

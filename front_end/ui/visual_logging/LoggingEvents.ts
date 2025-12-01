@@ -152,7 +152,7 @@ function contextFromKeyCodes(event: Event): string|undefined {
   return components.join('-');
 }
 
-async function contextAsNumber(context: string|undefined): Promise<number|undefined> {
+export async function contextAsNumber(context: string|undefined): Promise<number|undefined> {
   if (typeof context === 'undefined') {
     return undefined;
   }
@@ -168,4 +168,25 @@ async function contextAsNumber(context: string|undefined): Promise<number|undefi
   const data = encoder.encode(context);
   const digest = await crypto.subtle.digest('SHA-1', data);
   return new DataView(digest).getInt32(0, true);
+}
+
+export async function logSettingAccess(name: string, value: number|string|boolean): Promise<void> {
+  let numericValue: number|undefined = undefined;
+  let stringValue: string|undefined = undefined;
+  if (typeof value === 'string') {
+    stringValue = value;
+  } else if (typeof value === 'number' || typeof value === 'boolean') {
+    numericValue = Number(value);
+  }
+  const nameHash = await contextAsNumber(name);
+  if (!nameHash) {
+    return;
+  }
+  const settingAccessEvent: Host.InspectorFrontendHostAPI.SettingAccessEvent = {
+    name: nameHash,
+    numeric_value: numericValue,
+    string_value: await contextAsNumber(stringValue),
+  };
+  Host.InspectorFrontendHost.InspectorFrontendHostInstance.recordSettingAccess(settingAccessEvent);
+  processEventForDebugging('SettingAccess', null, {name, numericValue, stringValue});
 }

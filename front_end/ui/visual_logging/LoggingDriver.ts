@@ -4,7 +4,7 @@
 
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
-import * as Coordinator from '../components/render_coordinator/render_coordinator.js';
+import * as RenderCoordinator from '../components/render_coordinator/render_coordinator.js';
 
 import {processForDebugging, processStartLoggingForDebugging} from './Debugging.js';
 import {getDomState, visibleOverlap} from './DomState.js';
@@ -41,9 +41,10 @@ const documents: Document[] = [];
 const pendingResize = new Map<Element, DOMRect>();
 const pendingChange = new Set<Element>();
 
-function observeMutations(roots: Node[]): void {
+function observeMutations(roots: Array<HTMLElement|ShadowRoot>): void {
   for (const root of roots) {
     mutationObserver.observe(root, {attributes: true, childList: true, subtree: true});
+    root.querySelectorAll('[popover]')?.forEach(e => e.addEventListener('toggle', scheduleProcessing));
   }
 }
 
@@ -100,23 +101,6 @@ export async function stopLogging(): Promise<void> {
   pendingChange.clear();
 }
 
-export function pendingWorkComplete(): Promise<void> {
-  return Promise
-      .all([
-        processingThrottler,
-        keyboardLogThrottler,
-        hoverLogThrottler,
-        dragLogThrottler,
-        clickLogThrottler,
-        resizeLogThrottler,
-      ].map(async throttler => {
-        for (let i = 0; throttler.process && i < 3; ++i) {
-          await throttler.processCompleted;
-        }
-      }))
-      .then(() => {});
-}
-
 async function yieldToResize(): Promise<void> {
   while (resizeLogThrottler.process) {
     await resizeLogThrottler.processCompleted;
@@ -138,12 +122,11 @@ function flushPendingChangeEvents(): void {
   }
 }
 
-export async function scheduleProcessing(): Promise<void> {
+export function scheduleProcessing(): void {
   if (!processingThrottler) {
     return;
   }
-  void processingThrottler.schedule(
-      () => Coordinator.RenderCoordinator.RenderCoordinator.instance().read('processForLogging', process));
+  void processingThrottler.schedule(() => RenderCoordinator.read('processForLogging', process));
 }
 
 const viewportRects = new Map<Document, DOMRect>();
@@ -163,7 +146,7 @@ async function process(): Promise<void> {
   const {loggables, shadowRoots} = getDomState(documents);
   const visibleLoggables: Loggable[] = [];
   observeMutations(shadowRoots);
-  const nonDomRoots: (Loggable|undefined)[] = [undefined];
+  const nonDomRoots: Array<Loggable|undefined> = [undefined];
 
   for (const {element, parent} of loggables) {
     const loggingState = getOrCreateLoggingState(element, getLoggingConfig(element), parent);
@@ -221,7 +204,13 @@ async function process(): Promise<void> {
           loggingState.pendingChangeContext = event.inputType;
           pendingChange.add(element);
         }, {capture: true});
-        element.addEventListener('change', () => logPendingChange(element), {capture: true});
+        element.addEventListener('change', (event: Event) => {
+          const target = event?.target ?? element;
+          if (['checkbox', 'radio'].includes((target as HTMLInputElement).type)) {
+            loggingState.pendingChangeContext = (target as HTMLInputElement).checked ? 'on' : 'off';
+          }
+          logPendingChange(element);
+        }, {capture: true});
         element.addEventListener('focusout', () => {
           if (loggingState.pendingChangeContext) {
             void logPendingChange(element);
@@ -274,8 +263,11 @@ async function process(): Promise<void> {
   }
   for (let i = 0; i < nonDomRoots.length; ++i) {
     const root = nonDomRoots[i];
-    for (const {loggable, config, parent} of getNonDomLoggables(root)) {
+    for (const {loggable, config, parent, size} of getNonDomLoggables(root)) {
       const loggingState = getOrCreateLoggingState(loggable, config, parent);
+      if (size) {
+        loggingState.size = size;
+      }
       processForDebugging(loggable);
       visibleLoggables.push(loggable);
       loggingState.impressionLogged = true;
@@ -300,9 +292,6 @@ function logPendingChange(element: Element): void {
   const loggingState = getLoggingState(element);
   if (!loggingState) {
     return;
-  }
-  if (['checkbox', 'radio'].includes((element as HTMLInputElement).type)) {
-    loggingState.pendingChangeContext = (element as HTMLInputElement).checked ? 'on' : 'off';
   }
   void logChange(element);
   delete loggingState.pendingChangeContext;

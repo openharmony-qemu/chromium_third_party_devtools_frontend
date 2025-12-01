@@ -104,8 +104,8 @@ describeWithMockConnection('ResourceTreeModel', () => {
     const reloadSubframePage = sinon.spy(getResourceTreeModel(subframeTarget), 'reloadPage');
     SDK.ResourceTreeModel.ResourceTreeModel.reloadAllPages();
 
-    assert.isTrue(reloadMainFramePage.calledOnce);
-    assert.isTrue(reloadSubframePage.notCalled);
+    sinon.assert.calledOnce(reloadMainFramePage);
+    sinon.assert.notCalled(reloadSubframePage);
   });
 
   it('tags reloads with the targets loaderId', async () => {
@@ -115,8 +115,8 @@ describeWithMockConnection('ResourceTreeModel', () => {
     const reload = sinon.spy(target.pageAgent(), 'invoke_reload');
     assert.isNotNull(resourceTreeModel.mainFrame);
     resourceTreeModel.reloadPage();
-    assert.isTrue(reload.calledOnce);
-    assert.deepStrictEqual(
+    sinon.assert.calledOnce(reload);
+    assert.deepEqual(
         reload.args[0], [{ignoreCache: undefined, loaderId: LOADER_ID, scriptToEvaluateOnLoad: undefined}]);
   });
 
@@ -157,14 +157,14 @@ describeWithMockConnection('ResourceTreeModel', () => {
     assert.exists(resourceTreeModel);
 
     const primaryPageChangedEvents:
-        {frame: SDK.ResourceTreeModel.ResourceTreeFrame, type: SDK.ResourceTreeModel.PrimaryPageChangeType}[] = [];
+        Array<{frame: SDK.ResourceTreeModel.ResourceTreeFrame, type: SDK.ResourceTreeModel.PrimaryPageChangeType}> = [];
     resourceTreeModel.addEventListener(
         SDK.ResourceTreeModel.Events.PrimaryPageChanged, event => primaryPageChangedEvents.push(event.data));
 
     const frame = resourceTreeModel.frameAttached('frame_id' as Protocol.Page.FrameId, null);
     childTargetManager.targetInfoChanged({targetInfo: {...targetInfo, subtype: undefined}});
 
-    assert.strictEqual(primaryPageChangedEvents.length, 1);
+    assert.lengthOf(primaryPageChangedEvents, 1);
     assert.strictEqual(primaryPageChangedEvents[0].frame, frame);
     assert.strictEqual(primaryPageChangedEvents[0].type, SDK.ResourceTreeModel.PrimaryPageChangeType.ACTIVATION);
   });
@@ -176,7 +176,7 @@ describeWithMockConnection('ResourceTreeModel', () => {
     const prerenderTarget = createTarget({parentTarget: tabTarget, subtype: 'prerender'});
 
     const primaryPageChangedEvents:
-        {frame: SDK.ResourceTreeModel.ResourceTreeFrame, type: SDK.ResourceTreeModel.PrimaryPageChangeType}[] = [];
+        Array<{frame: SDK.ResourceTreeModel.ResourceTreeFrame, type: SDK.ResourceTreeModel.PrimaryPageChangeType}> = [];
 
     [getResourceTreeModel(mainFrameTarget), getResourceTreeModel(subframeTarget), getResourceTreeModel(prerenderTarget)]
         .forEach(resourceTreeModel => {
@@ -185,15 +185,15 @@ describeWithMockConnection('ResourceTreeModel', () => {
         });
 
     navigate(getMainFrame(mainFrameTarget));
-    assert.strictEqual(primaryPageChangedEvents.length, 1);
+    assert.lengthOf(primaryPageChangedEvents, 1);
     assert.strictEqual(primaryPageChangedEvents[0].frame.id, 'main');
     assert.strictEqual(primaryPageChangedEvents[0].type, SDK.ResourceTreeModel.PrimaryPageChangeType.NAVIGATION);
 
     navigate(getMainFrame(subframeTarget), {parentId: MAIN_FRAME_ID, id: 'child' as Protocol.Page.FrameId});
-    assert.strictEqual(primaryPageChangedEvents.length, 1);
+    assert.lengthOf(primaryPageChangedEvents, 1);
 
     navigate(getMainFrame(prerenderTarget));
-    assert.strictEqual(primaryPageChangedEvents.length, 1);
+    assert.lengthOf(primaryPageChangedEvents, 1);
   });
 
   it('rebuilds the resource tree upon bfcache-navigation', async () => {
@@ -210,9 +210,9 @@ describeWithMockConnection('ResourceTreeModel', () => {
     navigate(getMainFrame(target), {}, Protocol.Page.NavigationType.BackForwardCacheRestore);
 
     await cachedResourcesLoaded;
-    assert.isTrue(removedFromFrameManagerSpy.calledOnce);
-    assert.isTrue(addedToFrameManagerSpy.calledOnce);
-    assert.isTrue(processPendingEventsSpy.calledTwice);
+    sinon.assert.calledOnce(removedFromFrameManagerSpy);
+    sinon.assert.calledOnce(addedToFrameManagerSpy);
+    sinon.assert.calledTwice(processPendingEventsSpy);
 
     const frameAfterNav = resourceTreeModel.frames()[0];
     assert.strictEqual(

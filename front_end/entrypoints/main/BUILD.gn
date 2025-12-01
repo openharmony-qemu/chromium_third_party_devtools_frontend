@@ -28,13 +28,16 @@ devtools_module("main") {
     "../../models/issues_manager:bundle",
     "../../models/logs:bundle",
     "../../models/persistence:bundle",
+    "../../models/project_settings:bundle",
     "../../models/workspace:bundle",
     "../../panels/snippets:bundle",
     "../../panels/timeline:bundle",
+    "../../ui/components/buttons:bundle",
     "../../ui/components/icon_button:bundle",
     "../../ui/legacy:bundle",
     "../../ui/legacy/components/utils:bundle",
     "../../ui/legacy/theme_support:bundle",
+    "../../ui/lit:bundle",
     "../../ui/visual_logging:bundle",
   ]
 }

@@ -17,6 +17,7 @@ import * as Types from './types/types.js';
 export interface ParseConfig {
   metadata?: Types.File.MetaData;
   isFreshRecording?: boolean;
+  resolveSourceMap?: Types.Configuration.ParseOptions['resolveSourceMap'];
 }
 
 /**
@@ -116,6 +117,8 @@ export class Model extends EventTarget {
       await this.#processor.parse(traceEvents, {
         isFreshRecording,
         isCPUProfile,
+        metadata,
+        resolveSourceMap: config?.resolveSourceMap,
       });
       this.#storeParsedFileData(file, this.#processor.parsedTrace, this.#processor.insights);
       // We only push the file onto this.#traces here once we know it's valid
@@ -221,18 +224,18 @@ export const enum ModelUpdateType {
 
 export type ModelUpdateEventData = ModelUpdateEventComplete|ModelUpdateEventProgress;
 
-export type ModelUpdateEventComplete = {
-  type: ModelUpdateType.COMPLETE,
-  data: 'done',
-};
-export type ModelUpdateEventProgress = {
-  type: ModelUpdateType.PROGRESS_UPDATE,
-  data: TraceParseEventProgressData,
-};
+export interface ModelUpdateEventComplete {
+  type: ModelUpdateType.COMPLETE;
+  data: 'done';
+}
+export interface ModelUpdateEventProgress {
+  type: ModelUpdateType.PROGRESS_UPDATE;
+  data: TraceParseEventProgressData;
+}
 
-export type TraceParseEventProgressData = {
-  percent: number,
-};
+export interface TraceParseEventProgressData {
+  percent: number;
+}
 
 export class ModelUpdateEvent extends Event {
   static readonly eventName = 'modelupdate';
@@ -249,8 +252,4 @@ declare global {
 
 export function isModelUpdateDataComplete(eventData: ModelUpdateEventData): eventData is ModelUpdateEventComplete {
   return eventData.type === ModelUpdateType.COMPLETE;
-}
-
-export function isModelUpdateDataProgress(eventData: ModelUpdateEventData): eventData is ModelUpdateEventProgress {
-  return eventData.type === ModelUpdateType.PROGRESS_UPDATE;
 }

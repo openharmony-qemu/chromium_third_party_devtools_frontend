@@ -40,7 +40,7 @@ const UIStrings = {
    * show this phrase instead. 'unknown' would also work in this context.
    */
   anonymous: '<anonymous>',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('models/logs/NetworkLog.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
@@ -78,7 +78,7 @@ export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper<EventTypes> i
       if (!preserveLogSetting.get() && recordLogSetting.get()) {
         this.reset(true);
       }
-      this.setIsRecording((recordLogSetting.get() as boolean));
+      this.setIsRecording((recordLogSetting.get()));
     }, this);
     this.unresolvedPreflightRequests = new Map();
   }
@@ -615,12 +615,12 @@ export interface ResetEvent {
   clearIfPreserved: boolean;
 }
 
-export type EventTypes = {
-  [Events.Reset]: ResetEvent,
-  [Events.RequestAdded]: {request: SDK.NetworkRequest.NetworkRequest, preserveLog?: boolean},
-  [Events.RequestUpdated]: {request: SDK.NetworkRequest.NetworkRequest},
-  [Events.RequestRemoved]: {request: SDK.NetworkRequest.NetworkRequest},
-};
+export interface EventTypes {
+  [Events.Reset]: ResetEvent;
+  [Events.RequestAdded]: {request: SDK.NetworkRequest.NetworkRequest, preserveLog?: boolean};
+  [Events.RequestUpdated]: {request: SDK.NetworkRequest.NetworkRequest};
+  [Events.RequestRemoved]: {request: SDK.NetworkRequest.NetworkRequest};
+}
 
 export interface InitiatorData {
   info: InitiatorInfo|null;

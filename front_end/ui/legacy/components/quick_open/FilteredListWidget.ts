@@ -1,6 +1,7 @@
 // Copyright 2012 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-imperative-dom-api */
 
 import * as Common from '../../../../core/common/common.js';
 import * as i18n from '../../../../core/i18n/i18n.js';
@@ -33,7 +34,7 @@ const UIStrings = {
    * @example {5} PH3
    */
   sItemSOfS: '{PH1}, item {PH2} of {PH3}',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/components/quick_open/FilteredListWidget.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
@@ -61,6 +62,7 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin<EventTyp
 
   constructor(provider: Provider|null, promptHistory?: string[], queryChangedCallback?: ((arg0: string) => void)) {
     super(true);
+    this.registerRequiredCSS(filteredListWidgetStyles);
     this.promptHistory = promptHistory || [];
 
     this.scoringTimer = 0;
@@ -158,13 +160,6 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin<EventTyp
     this.hintElement.textContent = hint;
   }
 
-  /**
-   * Sets the text prompt's accessible title. By default, it is "Quick open prompt".
-   */
-  setPromptTitle(title: string): void {
-    UI.ARIAUtils.setLabel(this.inputBoxElement, title);
-  }
-
   showAsDialog(dialogTitle?: string): void {
     if (!dialogTitle) {
       dialogTitle = i18nString(UIStrings.quickOpen);
@@ -172,16 +167,16 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin<EventTyp
 
     this.dialog = new UI.Dialog.Dialog('quick-open');
     UI.ARIAUtils.setLabel(this.dialog.contentElement, dialogTitle);
-    this.dialog.setMaxContentSize(new UI.Geometry.Size(504, 340));
+    this.dialog.setMaxContentSize(new UI.Geometry.Size(576, 320));
     this.dialog.setSizeBehavior(UI.GlassPane.SizeBehavior.SET_EXACT_WIDTH_MAX_HEIGHT);
     this.dialog.setContentPosition(null, 22);
-    this.dialog.contentElement.style.setProperty('border-radius', '4px');
+    this.dialog.contentElement.style.setProperty('border-radius', 'var(--sys-shape-corner-medium)');
+    this.dialog.contentElement.style.setProperty('box-shadow', 'var(--sys-elevation-level3)');
     this.show(this.dialog.contentElement);
     UI.ARIAUtils.setExpanded(this.contentElement, true);
     void this.dialog.once(UI.Dialog.Events.HIDDEN).then(() => {
       this.dispatchEventToListeners(Events.HIDDEN);
     });
-    // @ts-ignore
     this.dialog.show();
   }
 
@@ -224,7 +219,7 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin<EventTyp
   }
 
   override wasShown(): void {
-    this.registerCSSFiles([filteredListWidgetStyles]);
+    super.wasShown();
     this.attachProvider();
   }
 
@@ -284,7 +279,7 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin<EventTyp
     wrapperElement.className = 'filtered-list-widget-item-wrapper';
 
     const itemElement = wrapperElement.createChild('div');
-    const renderAsTwoRows = this.provider && this.provider.renderAsTwoRows();
+    const renderAsTwoRows = this.provider?.renderAsTwoRows();
     itemElement.className = 'filtered-list-widget-item ' + (renderAsTwoRows ? 'two-rows' : 'one-row');
     const titleElement = itemElement.createChild('div', 'filtered-list-widget-title');
     const subtitleElement = itemElement.createChild('div', 'filtered-list-widget-subtitle');
@@ -370,6 +365,7 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin<EventTyp
       }
       this.inputBoxElement.focus();
       this.inputBoxElement.setText(completion);
+      this.inputBoxElement.setSuggestion('');
       this.setQuerySelectedRange(userEnteredText.length, completion.length);
       return true;
     }
@@ -534,7 +530,9 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin<EventTyp
     let handled = false;
     switch (keyboardEvent.key) {
       case Platform.KeyboardUtilities.ENTER_KEY:
-        this.onEnter(keyboardEvent);
+        if (!keyboardEvent.isComposing) {  // Ignore ENTER to confirm selection in an IME
+          this.onEnter(keyboardEvent);
+        }
         return;
       case Platform.KeyboardUtilities.TAB_KEY:
         if (keyboardEvent.shiftKey) {
@@ -588,9 +586,9 @@ export const enum Events {
   HIDDEN = 'hidden',
 }
 
-export type EventTypes = {
-  [Events.HIDDEN]: void,
-};
+export interface EventTypes {
+  [Events.HIDDEN]: void;
+}
 
 export class Provider {
   private refreshCallback!: () => void;
@@ -664,8 +662,8 @@ export function getRegisteredProviders(): ProviderRegistration[] {
 export interface ProviderRegistration {
   prefix: string;
   iconName: string;
-  iconWidth: string;
   provider: () => Promise<Provider>;
+  helpTitle: (() => string);
   titlePrefix: (() => string);
   titleSuggestion?: (() => string);
 }

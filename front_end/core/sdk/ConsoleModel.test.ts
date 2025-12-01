@@ -16,9 +16,11 @@ import {
   navigate,
 } from '../../testing/ResourceTreeHelpers.js';
 import * as Common from '../common/common.js';
-import type * as Platform from '../platform/platform.js';
+import * as Platform from '../platform/platform.js';
 
 import * as SDK from './sdk.js';
+
+const {urlString} = Platform.DevToolsPath;
 
 describeWithMockConnection('ConsoleMessage', () => {
   const scriptId1 = '1' as Protocol.Runtime.ScriptId;
@@ -64,9 +66,9 @@ describeWithMockConnection('ConsoleMessage', () => {
 
   it('compares using url', () => {
     const a = newMessage({});
-    const b = newMessage({url: 'http://a.b/c' as Platform.DevToolsPath.UrlString});
-    const c = newMessage({url: 'http://a.b/c' as Platform.DevToolsPath.UrlString});
-    const d = newMessage({url: 'http://a.b/d' as Platform.DevToolsPath.UrlString});
+    const b = newMessage({url: urlString`http://a.b/c`});
+    const c = newMessage({url: urlString`http://a.b/c`});
+    const d = newMessage({url: urlString`http://a.b/d`});
     assert.isFalse(a.isEqual(b));
     assert.isTrue(b.isEqual(c));
     assert.isFalse(c.isEqual(d));
@@ -106,11 +108,11 @@ describeWithMockConnection('ConsoleMessage', () => {
     const subframeTarget = createTarget({type: SDK.Target.Type.FRAME, parentTarget: mainFrameTarget});
     await getInitializedResourceTreeModel(subframeTarget);
     navigate(getMainFrame(subframeTarget));
-    assert.isTrue(consoleLog.notCalled);
+    sinon.assert.notCalled(consoleLog);
 
     await getInitializedResourceTreeModel(mainFrameTarget);
     navigate(getMainFrame(mainFrameTarget));
-    assert.isTrue(consoleLog.calledOnce);
+    sinon.assert.calledOnce(consoleLog);
     assert.isTrue(consoleLog.calledOnceWith(`Navigated to ${FRAME_URL}`));
   });
 
@@ -122,11 +124,11 @@ describeWithMockConnection('ConsoleMessage', () => {
     const subframeTarget = createTarget({type: SDK.Target.Type.FRAME, parentTarget: mainFrameTarget});
     await getInitializedResourceTreeModel(subframeTarget);
     navigate(getMainFrame(subframeTarget), {}, Protocol.Page.NavigationType.BackForwardCacheRestore);
-    assert.isTrue(consoleLog.notCalled);
+    sinon.assert.notCalled(consoleLog);
 
     await getInitializedResourceTreeModel(mainFrameTarget);
     navigate(getMainFrame(mainFrameTarget), {}, Protocol.Page.NavigationType.BackForwardCacheRestore);
-    assert.isTrue(consoleLog.calledOnce);
+    sinon.assert.calledOnce(consoleLog);
     assert.isTrue(consoleLog.calledOnceWith(
         `Navigation to ${FRAME_URL} was restored from back/forward cache (see https://web.dev/bfcache/)`));
   });
@@ -150,16 +152,16 @@ describeWithMockConnection('ConsoleMessage', () => {
     };
 
     runtimeModel.dispatchEventToListeners(SDK.RuntimeModel.Events.ConsoleAPICalled, consoleAPICall);
-    assert.isTrue(addMessage.calledOnce);
+    sinon.assert.calledOnce(addMessage);
     assert.isTrue(addMessage.calledOnceWith(sinon.match({messageText: 'log me'})));
 
     runtimeModel.dispatchEventToListeners(SDK.RuntimeModel.Events.ConsoleAPICalled, consoleAPICall);
-    assert.isTrue(addMessage.calledOnce);
+    sinon.assert.calledOnce(addMessage);
 
     runtimeModel.dispatchEventToListeners(
         SDK.RuntimeModel.Events.ConsoleAPICalled, {...consoleAPICall, timestamp: 123457.000});
-    assert.isTrue(addMessage.calledTwice);
-    assert.isTrue(addMessage.secondCall.calledWith(sinon.match({messageText: 'log me'})));
+    sinon.assert.calledTwice(addMessage);
+    sinon.assert.calledWith(addMessage.secondCall, sinon.match({messageText: 'log me'}));
   });
 
   it('clears when main frame global object cleared', async () => {

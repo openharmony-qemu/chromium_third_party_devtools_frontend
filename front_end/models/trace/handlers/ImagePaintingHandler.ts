@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import * as Platform from '../../../core/platform/platform.js';
 import * as Types from '../types/types.js';
 
 /**
@@ -21,27 +22,30 @@ import * as Types from '../types/types.js';
  */
 
 // Track paintImageEvents across threads.
-const paintImageEvents: Map<Types.Events.ProcessID, Map<Types.Events.ThreadID, Types.Events.PaintImage[]>> = new Map();
-const decodeLazyPixelRefEvents:
-    Map<Types.Events.ProcessID, Map<Types.Events.ThreadID, Types.Events.DecodeLazyPixelRef[]>> = new Map();
+const paintImageEvents = new Map<Types.Events.ProcessID, Map<Types.Events.ThreadID, Types.Events.PaintImage[]>>();
+const decodeLazyPixelRefEvents =
+    new Map<Types.Events.ProcessID, Map<Types.Events.ThreadID, Types.Events.DecodeLazyPixelRef[]>>();
 
 // A DrawLazyPixelRef event will contain a numerical reference in
 // args.LazyPixelRef. As we parse each DrawLazyPixelRef, we can assign it to a
 // paint event. Later we want to look up paint events by this reference, so we
 // store them in this map.
-const paintImageByLazyPixelRef: Map<number, Types.Events.PaintImage> = new Map();
+const paintImageByLazyPixelRef = new Map<number, Types.Events.PaintImage>();
 
 // When we find events that we want to tie to a particular PaintImage event, we add them to this map.
 // These are currently only DecodeImage and ResizeImage events, but the type is
 // deliberately generic as in the future we might want to add more events that
 // have a relationship to a individual PaintImage event.
-const eventToPaintImage: Map<Types.Events.Event, Types.Events.PaintImage> = new Map();
+const eventToPaintImage = new Map<Types.Events.Event, Types.Events.PaintImage>();
+
+const urlToPaintImage = new Map<string, Types.Events.PaintImage[]>();
 
 export function reset(): void {
   paintImageEvents.clear();
   decodeLazyPixelRefEvents.clear();
   paintImageByLazyPixelRef.clear();
   eventToPaintImage.clear();
+  urlToPaintImage.clear();
 }
 
 export function handleEvent(event: Types.Events.Event): void {
@@ -51,6 +55,12 @@ export function handleEvent(event: Types.Events.Event): void {
     forThread.push(event);
     forProcess.set(event.tid, forThread);
     paintImageEvents.set(event.pid, forProcess);
+
+    if (event.args.data.url) {
+      const paintsForUrl = Platform.MapUtilities.getWithDefault(urlToPaintImage, event.args.data.url, () => []);
+      paintsForUrl.push(event);
+    }
+
     return;
   }
 
@@ -100,7 +110,7 @@ export function handleEvent(event: Types.Events.Event): void {
 
     // 2. Find the last DecodeLazyPixelRef event and, if we find it, find its associated PaintImage event.
     const lastDecodeLazyPixelRef = decodeLazyPixelRefEvents.get(event.pid)?.get(event.tid)?.at(-1);
-    if (!lastDecodeLazyPixelRef || typeof lastDecodeLazyPixelRef.args?.LazyPixelRef === 'undefined') {
+    if (typeof lastDecodeLazyPixelRef?.args?.LazyPixelRef === 'undefined') {
       return;
     }
 
@@ -118,11 +128,13 @@ export async function finalize(): Promise<void> {
 export interface ImagePaintData {
   paintImageByDrawLazyPixelRef: Map<number, Types.Events.PaintImage>;
   paintImageForEvent: Map<Types.Events.Event, Types.Events.PaintImage>;
+  paintImageEventForUrl: Map<string, Types.Events.PaintImage[]>;
 }
 
 export function data(): ImagePaintData {
   return {
     paintImageByDrawLazyPixelRef: paintImageByLazyPixelRef,
     paintImageForEvent: eventToPaintImage,
+    paintImageEventForUrl: urlToPaintImage,
   };
 }

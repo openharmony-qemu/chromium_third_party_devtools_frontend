@@ -27,6 +27,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+/* eslint-disable rulesdir/no-imperative-dom-api */
 
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
@@ -66,11 +67,11 @@ export class ProfileFlameChartDataProvider implements PerfUI.FlameChart.FlameCha
   }
 
   minimumBoundary(): number {
-    throw 'Not implemented.';
+    throw new Error('Not implemented');
   }
 
   totalTime(): number {
-    throw 'Not implemented.';
+    throw new Error('Not implemented');
   }
 
   formatValue(value: number, precision?: number): string {
@@ -90,11 +91,11 @@ export class ProfileFlameChartDataProvider implements PerfUI.FlameChart.FlameCha
   }
 
   calculateTimelineData(): PerfUI.FlameChart.FlameChartTimelineData {
-    throw 'Not implemented.';
+    throw new Error('Not implemented');
   }
 
-  prepareHighlightedEntryInfo(_entryIndex: number): Element|null {
-    throw 'Not implemented.';
+  preparePopoverElement(_entryIndex: number): Element|null {
+    throw new Error('Not implemented');
   }
 
   canJumpToEntry(entryIndex: number): boolean {
@@ -112,7 +113,7 @@ export class ProfileFlameChartDataProvider implements PerfUI.FlameChart.FlameCha
   }
 
   entryHasDeoptReason(_entryIndex: number): boolean {
-    throw 'Not implemented.';
+    throw new Error('Not implemented');
   }
 
   entryColor(entryIndex: number): string {
@@ -151,7 +152,7 @@ export class ProfileFlameChart extends
   entrySelected: boolean;
   readonly dataProvider: ProfileFlameChartDataProvider;
   searchResults: number[];
-  searchResultIndex: number = -1;
+  searchResultIndex = -1;
 
   constructor(searchableView: UI.SearchableView.SearchableView, dataProvider: ProfileFlameChartDataProvider) {
     super();
@@ -325,8 +326,7 @@ export class OverviewPane extends Common.ObjectWrapper.eventMixin<OverviewPaneEv
     this.overviewCalculator = new OverviewCalculator(dataProvider.formatValue);
     this.overviewGrid = new PerfUI.OverviewGrid.OverviewGrid('cpu-profile-flame-chart', this.overviewCalculator);
     this.overviewGrid.element.classList.add('fill');
-    this.overviewCanvas =
-        (this.overviewContainer.createChild('canvas', 'cpu-profile-flame-chart-overview-canvas') as HTMLCanvasElement);
+    this.overviewCanvas = this.overviewContainer.createChild('canvas', 'cpu-profile-flame-chart-overview-canvas');
     this.overviewContainer.appendChild(this.overviewGrid.element);
     this.dataProvider = dataProvider;
     this.overviewGrid.addEventListener(
@@ -457,6 +457,6 @@ export interface OverviewPaneWindowChangedEvent {
   windowTimeRight: number;
 }
 
-export type OverviewPaneEventTypes = {
-  [OverviewPaneEvents.WINDOW_CHANGED]: OverviewPaneWindowChangedEvent,
-};
+export interface OverviewPaneEventTypes {
+  [OverviewPaneEvents.WINDOW_CHANGED]: OverviewPaneWindowChangedEvent;
+}

@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import * as fs from 'fs';
-import {join} from 'path';  // eslint-disable-line rulesdir/es_modules_import
+import {join} from 'path';
 
 import * as ts from '../../conductor/test_config.js';
 
@@ -28,9 +28,7 @@ export type Benchmark = BenchmarkMultiMeasure|BenchmarkSingleMeasure;
 // you may track the fastest time it took to run a test, and also the
 // median and max time.
 interface BenchmarkMultiMeasure extends BenchmarkBase {
-  measurements: {
-    [key: string]: SingleMeasurement[],
-  };
+  measurements: Record<string, SingleMeasurement[]>;
 }
 
 interface BenchmarkSingleMeasure extends BenchmarkBase {

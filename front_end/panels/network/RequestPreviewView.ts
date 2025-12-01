@@ -27,6 +27,9 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+/* eslint-disable rulesdir/no-imperative-dom-api */
+
+import '../../ui/legacy/legacy.js';
 
 import * as i18n from '../../core/i18n/i18n.js';
 import type * as SDK from '../../core/sdk/sdk.js';
@@ -38,7 +41,6 @@ import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 
 import * as NetworkComponents from './components/components.js';
 import {RequestHTMLView} from './RequestHTMLView.js';
-import {RequestResponseView} from './RequestResponseView.js';
 import {SignedExchangeInfoView} from './SignedExchangeInfoView.js';
 
 const UIStrings = {
@@ -50,31 +52,50 @@ const UIStrings = {
    *@description Text in Request Preview View of the Network panel
    */
   previewNotAvailable: 'Preview not available',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/network/RequestPreviewView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
-export class RequestPreviewView extends RequestResponseView {
+export class RequestPreviewView extends UI.Widget.VBox {
+  request: SDK.NetworkRequest.NetworkRequest;
+  private contentViewPromise: Promise<UI.Widget.Widget>|null;
+
   constructor(request: SDK.NetworkRequest.NetworkRequest) {
-    super(request);
+    super();
+    this.element.classList.add('request-view');
+    this.request = request;
+    this.contentViewPromise = null;
     this.element.setAttribute('jslog', `${VisualLogging.pane('preview').track({resize: true})}`);
   }
 
-  override async showPreview(): Promise<UI.Widget.Widget> {
-    const view = await super.showPreview();
+  async showPreview(): Promise<UI.Widget.Widget> {
+    const view = await this.createPreview();
+    view.show(this.element);
+    await view.updateComplete;
     if (!(view instanceof UI.View.SimpleView)) {
       return view;
     }
-    const toolbar = new UI.Toolbar.Toolbar('network-item-preview-toolbar', this.element);
+    const toolbar = this.element.createChild('devtools-toolbar', 'network-item-preview-toolbar');
     void view.toolbarItems().then(items => {
       items.map(item => toolbar.appendToolbarItem(item));
     });
     return view;
   }
 
+  override wasShown(): void {
+    void this.doShowPreview();
+  }
+
+  private doShowPreview(): Promise<UI.Widget.Widget> {
+    if (!this.contentViewPromise) {
+      this.contentViewPromise = this.showPreview();
+    }
+    return this.contentViewPromise;
+  }
+
   private async htmlPreview(): Promise<UI.Widget.Widget|null> {
     const contentData = await this.request.requestContentData();
     if (TextUtils.ContentData.ContentData.isError(contentData)) {
-      return new UI.EmptyWidget.EmptyWidget(i18nString(UIStrings.failedToLoadResponseData) + ': ' + contentData.error);
+      return new UI.EmptyWidget.EmptyWidget(i18nString(UIStrings.failedToLoadResponseData), contentData.error);
     }
 
     const allowlist = new Set<string>(['text/html', 'text/plain', 'application/xhtml+xml']);
@@ -91,7 +112,7 @@ export class RequestPreviewView extends RequestResponseView {
     return RequestHTMLView.create(contentData);
   }
 
-  override async createPreview(): Promise<UI.Widget.Widget> {
+  async createPreview(): Promise<UI.Widget.Widget> {
     if (this.request.signedExchangeInfo()) {
       return new SignedExchangeInfoView(this.request);
     }
@@ -111,6 +132,6 @@ export class RequestPreviewView extends RequestResponseView {
       return provided;
     }
 
-    return new UI.EmptyWidget.EmptyWidget(i18nString(UIStrings.previewNotAvailable));
+    return new UI.EmptyWidget.EmptyWidget(i18nString(UIStrings.previewNotAvailable), '');
   }
 }

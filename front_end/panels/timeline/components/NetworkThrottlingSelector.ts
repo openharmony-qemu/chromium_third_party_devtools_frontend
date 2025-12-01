@@ -1,6 +1,7 @@
 // Copyright 2024 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-lit-render-outside-of-view */
 
 import '../../../ui/components/menus/menus.js';
 
@@ -8,15 +9,16 @@ import * as Common from '../../../core/common/common.js';
 import * as i18n from '../../../core/i18n/i18n.js';
 import * as Platform from '../../../core/platform/platform.js';
 import * as SDK from '../../../core/sdk/sdk.js';
+import * as Buttons from '../../../ui/components/buttons/buttons.js';
 import * as ComponentHelpers from '../../../ui/components/helpers/helpers.js';
 import type * as Menus from '../../../ui/components/menus/menus.js';
-import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import * as Lit from '../../../ui/lit/lit.js';
 import * as VisualLogging from '../../../ui/visual_logging/visual_logging.js';
 import * as MobileThrottling from '../../mobile_throttling/mobile_throttling.js';
 
 import networkThrottlingSelectorStyles from './networkThrottlingSelector.css.js';
 
-const {html, nothing} = LitHtml;
+const {html, nothing} = Lit;
 
 const UIStrings = {
   /**
@@ -29,6 +31,15 @@ const UIStrings = {
    * @example {No throttling} PH1
    */
   networkThrottling: 'Network throttling: {PH1}',
+  /**
+   * @description Text label for a selection box showing that a specific option is recommended for network throttling.
+   * @example {Fast 4G} PH1
+   */
+  recommendedThrottling: '{PH1} – recommended',
+  /**
+   * @description Text for why user should change a throttling setting.
+   */
+  recommendedThrottlingReason: 'Consider changing setting to simulate real user environments',
   /**
    * @description Text label for a menu group that disables network throttling.
    */
@@ -45,7 +56,7 @@ const UIStrings = {
    * @description Text label for a menu option to add a new custom throttling preset.
    */
   add: 'Add…',
-};
+} as const;
 
 const str_ = i18n.i18n.registerUIStrings('panels/timeline/components/NetworkThrottlingSelector.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -63,6 +74,7 @@ export class NetworkThrottlingSelector extends HTMLElement {
   #customNetworkConditionsSetting: Common.Settings.Setting<SDK.NetworkManager.Conditions[]>;
   #groups: ConditionsGroup[] = [];
   #currentConditions: SDK.NetworkManager.Conditions;
+  #recommendedConditions: SDK.NetworkManager.Conditions|null = null;
 
   constructor() {
     super();
@@ -73,8 +85,12 @@ export class NetworkThrottlingSelector extends HTMLElement {
     this.#render();
   }
 
+  set recommendedConditions(recommendedConditions: SDK.NetworkManager.Conditions|null) {
+    this.#recommendedConditions = recommendedConditions;
+    void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
+  }
+
   connectedCallback(): void {
-    this.#shadow.adoptedStyleSheets = [networkThrottlingSelectorStyles];
     SDK.NetworkManager.MultitargetNetworkManager.instance().addEventListener(
         SDK.NetworkManager.MultitargetNetworkManager.Events.CONDITIONS_CHANGED, this.#onConditionsChanged, this);
 
@@ -155,31 +171,44 @@ export class NetworkThrottlingSelector extends HTMLElement {
     const selectionTitle = this.#getConditionsTitle(this.#currentConditions);
     const selectedConditionsKey = this.#keyForNetworkConditions(this.#currentConditions);
 
+    let recommendedInfoEl;
+    if (this.#recommendedConditions && this.#currentConditions === SDK.NetworkManager.NoThrottlingConditions) {
+      recommendedInfoEl = html`<devtools-button
+        title=${i18nString(UIStrings.recommendedThrottlingReason)}
+        .iconName=${'info'}
+        .variant=${Buttons.Button.Variant.ICON}
+      ></devtools-button>`;
+    }
+
     // clang-format off
     const output = html`
+      <style>${networkThrottlingSelectorStyles}</style>
       <devtools-select-menu
         @selectmenuselected=${this.#onMenuItemSelected}
         .showDivider=${true}
         .showArrow=${true}
         .sideButton=${false}
         .showSelectedItem=${true}
-        .showConnector=${false}
         .jslogContext=${'network-conditions'}
         .buttonTitle=${i18nString(UIStrings.network, {PH1: selectionTitle})}
-        title=${i18nString(UIStrings.networkThrottling, {PH1: selectionTitle})}
+        .title=${i18nString(UIStrings.networkThrottling, {PH1: selectionTitle})}
       >
         ${this.#groups.map(group => {
           return html`
-            <devtools-menu-group .name=${group.name}>
+            <devtools-menu-group .name=${group.name} .title=${group.name}>
               ${group.items.map(conditions => {
+                let title = this.#getConditionsTitle(conditions);
+                if (conditions === this.#recommendedConditions) {
+                  title = i18nString(UIStrings.recommendedThrottling, {PH1: title});
+                }
+
                 const key = this.#keyForNetworkConditions(conditions);
-                const title = this.#getConditionsTitle(conditions);
                 const jslogContext = group.jslogContext || Platform.StringUtilities.toKebabCase(conditions.i18nTitleKey || title);
                 return html`
                   <devtools-menu-item
-                    title=${title}
                     .value=${key}
                     .selected=${selectedConditionsKey === key}
+                    .title=${title}
                     jslog=${VisualLogging.item(jslogContext).track({click: true})}
                   >
                     ${title}
@@ -189,6 +218,7 @@ export class NetworkThrottlingSelector extends HTMLElement {
               ${group.showCustomAddOption ? html`
                 <devtools-menu-item
                   .value=${1 /* This won't be displayed unless it has some value. */}
+                  .title=${i18nString(UIStrings.add)}
                   jslog=${VisualLogging.action('add').track({click: true})}
                   @click=${this.#onAddClick}
                 >
@@ -199,9 +229,10 @@ export class NetworkThrottlingSelector extends HTMLElement {
           `;
         })}
       </devtools-select-menu>
+      ${recommendedInfoEl}
     `;
     // clang-format on
-    LitHtml.render(output, this.#shadow, {host: this});
+    Lit.render(output, this.#shadow, {host: this});
   };
 }
 

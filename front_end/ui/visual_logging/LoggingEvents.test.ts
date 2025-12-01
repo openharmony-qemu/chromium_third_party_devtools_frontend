@@ -30,9 +30,9 @@ describe('LoggingEvents', () => {
 
   async function assertThrottled(stub: sinon.SinonStub) {
     await new Promise(resolve => setTimeout(resolve, 0));
-    assert.isFalse(stub.called);
+    sinon.assert.notCalled(stub);
     await throttler.process?.();
-    assert.isTrue(stub.calledOnce);
+    sinon.assert.calledOnce(stub);
   }
 
   it('calls UI binding to log an impression', async () => {
@@ -41,7 +41,7 @@ describe('LoggingEvents', () => {
         'recordImpression',
     );
     await VisualLogging.LoggingEvents.logImpressions([element, parent]);
-    assert.isTrue(recordImpression.calledOnce);
+    sinon.assert.calledOnce(recordImpression);
     assert.sameDeepMembers(recordImpression.firstCall.firstArg.impressions, [
       {id: veid, type: 1, context: 42, parent: getVeId(parent), height: 0, width: 0},
       {id: getVeId(parent), type: 1, height: 0, width: 0},
@@ -53,11 +53,11 @@ describe('LoggingEvents', () => {
         Host.InspectorFrontendHost.InspectorFrontendHostInstance,
         'recordClick',
     );
-    // @ts-ignore
+    // @ts-expect-error
     const event = new MouseEvent('click', {button: 0, sourceCapabilities: new InputDeviceCapabilities()});
     VisualLogging.LoggingEvents.logClick(throttler)(element, event);
     await assertThrottled(recordClick);
-    assert.deepStrictEqual(recordClick.firstCall.firstArg, {veid, mouseButton: 0, doubleClick: false});
+    assert.deepEqual(recordClick.firstCall.firstArg, {veid, mouseButton: 0, doubleClick: false});
   });
 
   it('does not set mouse button for synthetic clicks', async () => {
@@ -68,7 +68,7 @@ describe('LoggingEvents', () => {
     const event = new MouseEvent('click', {button: 0});
     VisualLogging.LoggingEvents.logClick(throttler)(element, event);
     await assertThrottled(recordClick);
-    assert.deepStrictEqual(recordClick.firstCall.firstArg, {veid, doubleClick: false});
+    assert.deepEqual(recordClick.firstCall.firstArg, {veid, doubleClick: false});
   });
 
   it('calls UI binding to log a double click', async () => {
@@ -79,7 +79,7 @@ describe('LoggingEvents', () => {
     const event = new MouseEvent('dblclick', {button: 1});
     VisualLogging.LoggingEvents.logClick(throttler)(element, event, {doubleClick: true});
     await assertThrottled(recordClick);
-    assert.deepStrictEqual(recordClick.firstCall.firstArg, {veid, doubleClick: true});
+    assert.deepEqual(recordClick.firstCall.firstArg, {veid, doubleClick: true});
   });
 
   it('calls UI binding to log a change', async () => {
@@ -88,8 +88,8 @@ describe('LoggingEvents', () => {
         'recordChange',
     );
     await VisualLogging.LoggingEvents.logChange(element);
-    assert.isTrue(recordChange.calledOnce);
-    assert.deepStrictEqual(recordChange.firstCall.firstArg, {veid});
+    sinon.assert.calledOnce(recordChange);
+    assert.deepEqual(recordChange.firstCall.firstArg, {veid});
   });
 
   it('calls UI binding to log a change of specific type', async () => {
@@ -99,8 +99,8 @@ describe('LoggingEvents', () => {
     );
     VisualLogging.LoggingState.getLoggingState(element)!.pendingChangeContext = 'instertText';
     await VisualLogging.LoggingEvents.logChange(element);
-    assert.isTrue(recordChange.calledOnce);
-    assert.deepStrictEqual(recordChange.firstCall.firstArg, {veid, context: 296063892});
+    sinon.assert.calledOnce(recordChange);
+    assert.deepEqual(recordChange.firstCall.firstArg, {veid, context: 296063892});
   });
 
   it('calls UI binding to log a keydown with any code', async () => {
@@ -111,7 +111,7 @@ describe('LoggingEvents', () => {
     const event = new KeyboardEvent('keydown');
     void VisualLogging.LoggingEvents.logKeyDown(throttler)(element, event);
     await assertThrottled(recordKeyDown);
-    assert.deepStrictEqual(recordKeyDown.firstCall.firstArg, {veid});
+    assert.deepEqual(recordKeyDown.firstCall.firstArg, {veid});
   });
 
   it('calls UI binding to log a keydown with a matching code', async () => {
@@ -123,7 +123,7 @@ describe('LoggingEvents', () => {
     VisualLogging.LoggingState.getLoggingState(element)!.config.track = {keydown: 'Enter|Escape'};
     void VisualLogging.LoggingEvents.logKeyDown(throttler)(element, event);
     await assertThrottled(recordKeyDown);
-    assert.deepStrictEqual(recordKeyDown.firstCall.firstArg, {veid, context: 513111094});
+    assert.deepEqual(recordKeyDown.firstCall.firstArg, {veid, context: 513111094});
   });
 
   it('calls UI binding to log a keydown with a matching key', async () => {
@@ -135,7 +135,7 @@ describe('LoggingEvents', () => {
     VisualLogging.LoggingState.getLoggingState(element)!.config.track = {keydown: '>'};
     void VisualLogging.LoggingEvents.logKeyDown(throttler)(element, event);
     await assertThrottled(recordKeyDown);
-    assert.deepStrictEqual(recordKeyDown.firstCall.firstArg, {veid: getVeId(element), context: -1098575095});
+    assert.deepEqual(recordKeyDown.firstCall.firstArg, {veid: getVeId(element), context: -1098575095});
   });
 
   it('calls UI binding to log a keydown with an provided context', async () => {
@@ -146,7 +146,7 @@ describe('LoggingEvents', () => {
     const event = new KeyboardEvent('keydown', {code: 'Enter'});
     void VisualLogging.LoggingEvents.logKeyDown(throttler)(element, event, '21');
     await assertThrottled(recordKeyDown);
-    assert.deepStrictEqual(recordKeyDown.firstCall.firstArg, {veid, context: 21});
+    assert.deepEqual(recordKeyDown.firstCall.firstArg, {veid, context: 21});
   });
 
   it('throttles subsequent keydowns', async () => {
@@ -170,11 +170,11 @@ describe('LoggingEvents', () => {
     void VisualLogging.LoggingEvents.logKeyDown(throttler)(element, event, '1');
     void VisualLogging.LoggingEvents.logKeyDown(throttler)(element, event, '2');
     await new Promise(resolve => setTimeout(resolve, 0));
-    assert.isTrue(recordKeyDown.calledOnce);
+    sinon.assert.calledOnce(recordKeyDown);
     await throttler.process?.();
-    assert.isTrue(recordKeyDown.calledTwice);
-    assert.deepStrictEqual(recordKeyDown.firstCall.firstArg, {veid, context: 1});
-    assert.deepStrictEqual(recordKeyDown.secondCall.firstArg, {veid, context: 2});
+    sinon.assert.calledTwice(recordKeyDown);
+    assert.deepEqual(recordKeyDown.firstCall.firstArg, {veid, context: 1});
+    assert.deepEqual(recordKeyDown.secondCall.firstArg, {veid, context: 2});
   });
 
   it('throttles subsequent keydowns with the same context', async () => {
@@ -187,7 +187,7 @@ describe('LoggingEvents', () => {
     void VisualLogging.LoggingEvents.logKeyDown(throttler)(element, event, '1');
     void VisualLogging.LoggingEvents.logKeyDown(throttler)(element, event, '1');
     await assertThrottled(recordKeyDown);
-    assert.deepStrictEqual(recordKeyDown.firstCall.firstArg, {veid, context: 1});
+    assert.deepEqual(recordKeyDown.firstCall.firstArg, {veid, context: 1});
   });
 
   it('does not call UI binding to log a keydown with a non-matching code', async () => {
@@ -198,7 +198,7 @@ describe('LoggingEvents', () => {
     const event = new KeyboardEvent('keydown', {code: 'KeyQ'});
     VisualLogging.LoggingState.getLoggingState(element)!.config.track = {keydown: 'Enter|Escape'};
     void VisualLogging.LoggingEvents.logKeyDown(throttler)(element, event);
-    assert.isFalse(recordKeyDown.called);
+    sinon.assert.notCalled(recordKeyDown);
   });
 
   it('calls UI binding to log a hover event', async () => {
@@ -210,7 +210,7 @@ describe('LoggingEvents', () => {
     sinon.stub(event, 'currentTarget').value(element);
     void VisualLogging.LoggingEvents.logHover(new Common.Throttler.Throttler(0))(event);
     await expectCalled(recordHover);
-    assert.deepStrictEqual(recordHover.firstCall.firstArg, {veid});
+    assert.deepEqual(recordHover.firstCall.firstArg, {veid});
   });
 
   it('calls UI binding to log a drag event', async () => {
@@ -222,7 +222,7 @@ describe('LoggingEvents', () => {
     sinon.stub(event, 'currentTarget').value(element);
     void VisualLogging.LoggingEvents.logDrag(throttler)(event);
     await assertThrottled(recordDrag);
-    assert.deepStrictEqual(recordDrag.firstCall.firstArg, {veid});
+    assert.deepEqual(recordDrag.firstCall.firstArg, {veid});
   });
 
   it('calls UI binding to log a resize event', async () => {
@@ -231,7 +231,7 @@ describe('LoggingEvents', () => {
         'recordResize',
     );
     VisualLogging.LoggingEvents.logResize(element, new DOMRect(0, 0, 100, 50));
-    assert.deepStrictEqual(recordResize.firstCall.firstArg, {veid, width: 100, height: 50});
+    assert.deepEqual(recordResize.firstCall.firstArg, {veid, width: 100, height: 50});
   });
 
   it('throttles calls UI binding to log a resize event', async () => {
@@ -240,6 +240,20 @@ describe('LoggingEvents', () => {
         'recordResize',
     );
     VisualLogging.LoggingEvents.logResize(element, new DOMRect(0, 0, 100, 50));
-    assert.deepStrictEqual(recordResize.firstCall.firstArg, {veid, width: 100, height: 50});
+    assert.deepEqual(recordResize.firstCall.firstArg, {veid, width: 100, height: 50});
+  });
+
+  it('calls UI binding to log a setting access event', async () => {
+    const recordSettingAccess = sinon.stub(
+        Host.InspectorFrontendHost.InspectorFrontendHostInstance,
+        'recordSettingAccess',
+    );
+    await VisualLogging.LoggingEvents.logSettingAccess('test-setting', 'test-value');
+    assert.deepEqual(
+        recordSettingAccess.lastCall.firstArg, {name: -1361026584, numeric_value: undefined, string_value: 856719891});
+
+    await VisualLogging.LoggingEvents.logSettingAccess('test-setting', 123);
+    assert.deepEqual(
+        recordSettingAccess.lastCall.firstArg, {name: -1361026584, numeric_value: 123, string_value: undefined});
   });
 });

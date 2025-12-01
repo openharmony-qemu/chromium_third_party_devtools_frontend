@@ -5,6 +5,7 @@
 import * as Common from '../../core/common/common.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
+import {renderElementIntoDOM} from '../../testing/DOMHelpers.js';
 import {
   createTarget,
   stubNoopSettings,
@@ -55,28 +56,30 @@ const SDA_ANIMATION_PAYLOAD = {
   },
 };
 
-type AnimationDOMNodeStubs = {
-  verticalScrollRange: sinon.SinonStub,
-  horizontalScrollRange: sinon.SinonStub,
-  scrollLeft: sinon.SinonStub,
-  scrollTop: sinon.SinonStub,
-  addScrollEventListener: sinon.SinonStub,
-  removeScrollEventListener: sinon.SinonStub,
-};
+interface AnimationDOMNodeStubs {
+  verticalScrollRange: sinon.SinonStub;
+  horizontalScrollRange: sinon.SinonStub;
+  scrollLeft: sinon.SinonStub;
+  scrollTop: sinon.SinonStub;
+  addScrollEventListener: sinon.SinonStub;
+  removeScrollEventListener: sinon.SinonStub;
+}
 class ManualPromise {
   #waitPromise: Promise<void>;
-  #resolveFn!: Function;
+  #resolveFn: () => void;
   constructor() {
-    this.#waitPromise = new Promise(r => {
-      this.#resolveFn = r;
-    });
+    const {resolve, promise} = Promise.withResolvers<void>();
+
+    this.#waitPromise = promise;
+    this.#resolveFn = resolve;
   }
 
   resolve() {
     this.#resolveFn();
-    this.#waitPromise = new Promise(r => {
-      this.#resolveFn = r;
-    });
+    const {resolve, promise} = Promise.withResolvers<void>();
+
+    this.#waitPromise = promise;
+    this.#resolveFn = resolve;
   }
 
   wait() {
@@ -164,7 +167,7 @@ describeWithMockConnection('AnimationTimeline', () => {
 
     view = Animation.AnimationTimeline.AnimationTimeline.instance({forceNew: true});
     view.markAsRoot();
-    view.show(document.body);
+    renderElementIntoDOM(view);
     await new Promise<void>(resolve => setTimeout(resolve, 0));
 
     const previewContainer = (view.contentElement.querySelector('.animation-timeline-buffer') as HTMLElement);
@@ -201,7 +204,7 @@ describeWithMockConnection('AnimationTimeline', () => {
     it('updates --timeline-controls-width and calls onResize', async () => {
       view = Animation.AnimationTimeline.AnimationTimeline.instance({forceNew: true});
       view.markAsRoot();
-      view.show(document.body);
+      renderElementIntoDOM(view);
       const onResizeStub = sinon.stub(view, 'onResize');
       await new Promise<void>(resolve => setTimeout(resolve, 0));
 
@@ -229,7 +232,7 @@ describeWithMockConnection('AnimationTimeline', () => {
 
       const afterResizeWidth = view.element.style.getPropertyValue('--timeline-controls-width');
       assert.notStrictEqual(initialWidth, afterResizeWidth);
-      assert.isTrue(onResizeStub.calledOnce);
+      sinon.assert.calledOnce(onResizeStub);
     });
   });
 
@@ -244,7 +247,7 @@ describeWithMockConnection('AnimationTimeline', () => {
     beforeEach(async () => {
       view = Animation.AnimationTimeline.AnimationTimeline.instance({forceNew: true});
       view.markAsRoot();
-      view.show(document.body);
+      renderElementIntoDOM(view);
 
       sinon.stub(view, 'animationGroupSelectedForTest').callsFake(() => {
         waitForAnimationGroupSelectedPromise.resolve();
@@ -312,7 +315,7 @@ describeWithMockConnection('AnimationTimeline', () => {
         assert.isFalse(gridHeader.classList.contains('scrubber-enabled'));
         assert.isTrue(scrubber.classList.contains('hidden'));
         assert.isTrue(controlButton.disabled);
-        assert.isTrue(currentTime.textContent === '');
+        assert.strictEqual(currentTime.textContent, '');
       });
 
       it('should mark the animation node as removed in the NodeUI', async () => {
@@ -377,7 +380,7 @@ describeWithMockConnection('AnimationTimeline', () => {
 
         const currentTime = view.element.shadowRoot!.querySelector('.animation-timeline-current-time');
         assert.exists(currentTime);
-        assert.isTrue(currentTime.textContent === '');
+        assert.strictEqual(currentTime.textContent, '');
       });
     });
   });
@@ -394,7 +397,7 @@ describeWithMockConnection('AnimationTimeline', () => {
     beforeEach(async () => {
       view = Animation.AnimationTimeline.AnimationTimeline.instance({forceNew: true});
       view.markAsRoot();
-      view.show(document.body);
+      renderElementIntoDOM(view);
 
       sinon.stub(view, 'animationGroupSelectedForTest').callsFake(() => {
         waitForAnimationGroupSelectedPromise.resolve();
@@ -489,7 +492,7 @@ describeWithMockConnection('AnimationTimeline', () => {
 
       view = Animation.AnimationTimeline.AnimationTimeline.instance({forceNew: true});
       view.markAsRoot();
-      view.show(document.body);
+      renderElementIntoDOM(view);
 
       sinon.stub(view, 'animationGroupSelectedForTest').callsFake(() => {
         waitForAnimationGroupSelectedPromise.resolve();
@@ -559,7 +562,7 @@ describeWithMockConnection('AnimationTimeline', () => {
       preview.click();
       await waitForAnimationGroupSelectedPromise.wait();
 
-      const playbackRateButtons = [...view.element.shadowRoot!.querySelectorAll('.animation-playback-rate-button')!];
+      const playbackRateButtons = [...view.element.shadowRoot!.querySelectorAll('.animation-playback-rate-button')];
       assert.isTrue(
           playbackRateButtons.every(button => button.getAttribute('disabled')),
           'All the playback rate buttons are disabled');
@@ -587,7 +590,7 @@ describeWithMockConnection('AnimationTimeline', () => {
       preview.click();
       await waitForAnimationGroupSelectedPromise.wait();
 
-      const labelElements = [...view.element.shadowRoot!.querySelectorAll('.animation-timeline-grid-label')!];
+      const labelElements = [...view.element.shadowRoot!.querySelectorAll('.animation-timeline-grid-label')];
       assert.isTrue(
           labelElements.every(el => el.textContent?.includes('px')),
           'Label is expected to be a pixel value but it is not');
@@ -674,5 +677,57 @@ describeWithMockConnection('AnimationTimeline', () => {
         await waitForScheduleRedrawAfterAnimationGroupUpdated.wait();
       });
     });
+  });
+});
+
+describeWithMockConnection('AnimationTimeline', () => {
+  it('shows placeholder showing that the panel is waiting for animations', () => {
+    const view = Animation.AnimationTimeline.AnimationTimeline.instance();
+    const placeholder = view.contentElement.querySelector('.animation-timeline-buffer-hint');
+    assert.exists(placeholder);
+
+    // Render into document in order to see the computed styles.
+    view.markAsRoot();
+    renderElementIntoDOM(view);
+    assert.deepEqual(window.getComputedStyle(placeholder).display, 'flex');
+
+    assert.deepEqual(placeholder.querySelector('.empty-state-header')?.textContent, 'Currently waiting for animations');
+    assert.deepEqual(
+        placeholder.querySelector('.empty-state-description span')?.textContent,
+        'On this page you can inspect and modify animations.');
+
+    view.detach();
+  });
+
+  it('shows placeholder if no animation has been selected', async () => {
+    const target = createTarget();
+    const model = target.model(SDK.AnimationModel.AnimationModel);
+    assert.exists(model);
+
+    const dummyGroups = new Map<string, SDK.AnimationModel.AnimationGroup>();
+    sinon.stub(model, 'animationGroups').value(dummyGroups);
+    dummyGroups.set('dummy', new SDK.AnimationModel.AnimationGroup(model, 'dummy', []));
+
+    // Render into document in order to update the shown empty state.
+    const view = Animation.AnimationTimeline.AnimationTimeline.instance();
+    view.markAsRoot();
+    renderElementIntoDOM(view);
+
+    const previewUpdatePromise = new ManualPromise();
+    sinon.stub(view, 'previewsCreatedForTest').callsFake(() => {
+      previewUpdatePromise.resolve();
+    });
+
+    await previewUpdatePromise.wait();
+    const placeholder = view.contentElement.querySelector('.animation-timeline-rows-hint');
+    assert.exists(placeholder);
+
+    assert.deepEqual(window.getComputedStyle(placeholder).display, 'flex');
+    assert.deepEqual(placeholder.querySelector('.empty-state-header')?.textContent, 'No animation effect selected');
+    assert.deepEqual(
+        placeholder.querySelector('.empty-state-description span')?.textContent,
+        'Select an effect above to inspect and modify');
+
+    view.detach();
   });
 });

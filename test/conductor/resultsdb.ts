@@ -13,18 +13,15 @@ export interface TestResult {
   status?: 'PASS'|'FAIL'|'SKIP';
   summaryHtml?: string;
   duration?: string;
-  tags?: {key: string, value: string}[];
-  artifacts?: {
-    [key: string]: {
-      filePath: string,
-    },
-  };
+  tags?: Array<{key: string, value: string}>;
+  artifacts?: Record<string, {
+    filePath: string,
+  }>;
 }
 
-class SanitizedTestIdTag {
-  private sanitizedTag: (string|undefined);
-}
-export type SanitizedTestId = string&SanitizedTestIdTag;
+export type SanitizedTestId = string&{
+  _sanitizedTag?: string,
+};
 
 // ResultSink checks the testId against the regex /^[[print]]{1,512}$/:
 // https://source.chromium.org/chromium/infra/infra/+/main:go/src/go.chromium.org/luci/resultdb/pbutil/test_result.go;l=43;drc=7ba090da753a71be5a0f37785558e9102e57fa10
@@ -35,10 +32,10 @@ export function sanitizedTestId(rawTestId: string): SanitizedTestId {
   return rawTestId.replace(/[^\x20-\x7E]/g, '').substr(0, 512) as SanitizedTestId;
 }
 
-type SinkData = {
-  url: string|undefined,
-  authToken?: string,
-};
+interface SinkData {
+  url: string|undefined;
+  authToken?: string;
+}
 let resolvedSinkData: SinkData|undefined = undefined;
 
 function getSinkData(): SinkData {

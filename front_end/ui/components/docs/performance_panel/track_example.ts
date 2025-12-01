@@ -41,11 +41,11 @@ const p = document.createElement('p');
 // Expand the track by default for test.
 await renderContent(expanded === 'false' ? false : true);
 
-type FlameChartData = {
-  flameChart: PerfUI.FlameChart.FlameChart,
+interface FlameChartData {
+  flameChart: PerfUI.FlameChart.FlameChart;
   dataProvider: Timeline.TimelineFlameChartDataProvider.TimelineFlameChartDataProvider|
-              Timeline.TimelineFlameChartNetworkDataProvider.TimelineFlameChartNetworkDataProvider,
-};
+      Timeline.TimelineFlameChartNetworkDataProvider.TimelineFlameChartNetworkDataProvider;
+}
 
 async function renderContent(expanded: boolean) {
   if (darkMode) {
@@ -73,7 +73,7 @@ async function renderContent(expanded: boolean) {
     if (Timeline.CompatibilityTracksAppender.TrackNames.includes(track)) {
       const trackAppenderName = track as Timeline.CompatibilityTracksAppender.TrackAppenderName;
       flameChartData = await FrontendHelpers.getMainFlameChartWithTracks(
-          file, new Set([trackAppenderName]), expanded, additionalTrackFilter);
+          null, file, new Set([trackAppenderName]), expanded, additionalTrackFilter);
     } else if (track === 'Network') {
       flameChartData = await FrontendHelpers.getNetworkFlameChart(file, expanded);
     } else {

@@ -1,6 +1,7 @@
 // Copyright 2020 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-imperative-dom-api */
 
 import type * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
@@ -20,7 +21,7 @@ const UIStrings = {
    *@description Tooltip for the 3-dots menu in the Memory panel profiles list.
    */
   profileOptions: 'Profile options',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/profiler/ProfileSidebarTreeElement.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
@@ -99,8 +100,14 @@ export class ProfileSidebarTreeElement extends UI.TreeOutline.TreeElement {
   }
 
   editingCommitted(_container: Element, newTitle: string): void {
-    this.editing = null;
-    this.profile.setTitle(newTitle);
+    if (newTitle.trim().length === 0) {
+      if (this.editing) {
+        this.editing.cancel();
+      }
+    } else {
+      this.editing = null;
+      this.profile.setTitle(newTitle);
+    }
   }
 
   editingCancelled(): void {

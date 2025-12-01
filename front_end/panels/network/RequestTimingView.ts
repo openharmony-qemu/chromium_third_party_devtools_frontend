@@ -28,6 +28,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/* eslint-disable rulesdir/no-imperative-dom-api */
+
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
@@ -235,7 +237,7 @@ const UIStrings = {
    *@example {network} PH1
    */
   routerActualSource: 'Actual source: {PH1}',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/network/RequestTimingView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class RequestTimingView extends UI.Widget.VBox {
@@ -245,6 +247,7 @@ export class RequestTimingView extends UI.Widget.VBox {
   private tableElement?: Element;
   constructor(request: SDK.NetworkRequest.NetworkRequest, calculator: NetworkTimeCalculator) {
     super();
+    this.registerRequiredCSS(networkingTimingTableStyles);
     this.element.classList.add('resource-timing-view');
 
     this.request = request;
@@ -440,19 +443,19 @@ export class RequestTimingView extends UI.Widget.VBox {
 
     const startTimeHeader = tableElement.createChild('thead', 'network-timing-start');
     const tableHeaderRow = startTimeHeader.createChild('tr');
-    const activityHeaderCell = (tableHeaderRow.createChild('th') as HTMLTableCellElement);
+    const activityHeaderCell = tableHeaderRow.createChild('th');
     activityHeaderCell.createChild('span', 'network-timing-hidden-header').textContent = i18nString(UIStrings.label);
     activityHeaderCell.scope = 'col';
-    const waterfallHeaderCell = (tableHeaderRow.createChild('th') as HTMLTableCellElement);
+    const waterfallHeaderCell = tableHeaderRow.createChild('th');
     waterfallHeaderCell.createChild('span', 'network-timing-hidden-header').textContent =
         i18nString(UIStrings.waterfall);
     waterfallHeaderCell.scope = 'col';
-    const durationHeaderCell = (tableHeaderRow.createChild('th') as HTMLTableCellElement);
+    const durationHeaderCell = tableHeaderRow.createChild('th');
     durationHeaderCell.createChild('span', 'network-timing-hidden-header').textContent = i18nString(UIStrings.duration);
     durationHeaderCell.scope = 'col';
 
-    const queuedCell = (startTimeHeader.createChild('tr').createChild('td') as HTMLTableCellElement);
-    const startedCell = (startTimeHeader.createChild('tr').createChild('td') as HTMLTableCellElement);
+    const queuedCell = startTimeHeader.createChild('tr').createChild('td');
+    const startedCell = startTimeHeader.createChild('tr').createChild('td');
     queuedCell.colSpan = startedCell.colSpan = 3;
     UI.UIUtils.createTextChild(
         queuedCell, i18nString(UIStrings.queuedAtS, {PH1: calculator.formatValue(request.issueTime(), 2)}));
@@ -481,10 +484,8 @@ export class RequestTimingView extends UI.Widget.VBox {
         if (!serviceworkerHeader) {
           serviceworkerHeader = createHeader('Service Worker');
         }
-      } else {
-        if (!dataHeader) {
-          dataHeader = createHeader(i18nString(UIStrings.requestresponse));
-        }
+      } else if (!dataHeader) {
+        dataHeader = createHeader(i18nString(UIStrings.requestresponse));
       }
 
       const left = (scale * (range.start - startTime));
@@ -524,13 +525,13 @@ export class RequestTimingView extends UI.Widget.VBox {
     }
 
     if (!request.finished && !request.preserved) {
-      const cell = (tableElement.createChild('tr').createChild('td', 'caution') as HTMLTableCellElement);
+      const cell = tableElement.createChild('tr').createChild('td', 'caution');
       cell.colSpan = 3;
       UI.UIUtils.createTextChild(cell, i18nString(UIStrings.cautionRequestIsNotFinishedYet));
     }
 
     const footer = tableElement.createChild('tr', 'network-timing-footer');
-    const note = (footer.createChild('td') as HTMLTableCellElement);
+    const note = footer.createChild('td');
     note.colSpan = 1;
     const explanationLink = UI.XLink.XLink.create(
         'https://developer.chrome.com/docs/devtools/network/reference/#timing-explanation',
@@ -543,8 +544,7 @@ export class RequestTimingView extends UI.Widget.VBox {
 
     const lastTimingRightEdge = right === undefined ? 100 : right;
 
-    const breakElement =
-        (tableElement.createChild('tr', 'network-timing-table-header').createChild('td') as HTMLTableCellElement);
+    const breakElement = tableElement.createChild('tr', 'network-timing-table-header').createChild('td');
     breakElement.colSpan = 3;
     breakElement.createChild('hr', 'break');
 
@@ -555,7 +555,7 @@ export class RequestTimingView extends UI.Widget.VBox {
 
     if (!serverTimings) {
       const informationRow = tableElement.createChild('tr');
-      const information = (informationRow.createChild('td') as HTMLTableCellElement);
+      const information = informationRow.createChild('td');
       information.colSpan = 3;
 
       const link = UI.XLink.XLink.create(
@@ -568,22 +568,29 @@ export class RequestTimingView extends UI.Widget.VBox {
     }
 
     serverTimings.filter(item => item.metric.toLowerCase() !== 'total')
-        .forEach(item => addTiming(item, lastTimingRightEdge));
+        .forEach(item => addServerTiming(item, lastTimingRightEdge));
     serverTimings.filter(item => item.metric.toLowerCase() === 'total')
-        .forEach(item => addTiming(item, lastTimingRightEdge));
+        .forEach(item => addServerTiming(item, lastTimingRightEdge));
 
     return tableElement;
 
-    function addTiming(serverTiming: SDK.ServerTiming.ServerTiming, right: number): void {
+    function addServerTiming(serverTiming: SDK.ServerTiming.ServerTiming, right: number): void {
       const colorGenerator =
           new Common.Color.Generator({min: 0, max: 360, count: 36}, {min: 50, max: 80, count: undefined}, 80);
       const isTotal = serverTiming.metric.toLowerCase() === 'total';
       const tr = tableElement.createChild('tr', isTotal ? 'network-timing-footer' : 'server-timing-row');
-      const metric = tr.createChild('td', 'network-timing-metric');
-      const description = serverTiming.description || serverTiming.metric;
-      UI.UIUtils.createTextChild(metric, description);
-      UI.Tooltip.Tooltip.install(metric, description);
-      const row = tr.createChild('td').createChild('div', 'network-timing-row');
+      const metricEl = tr.createChild('td', 'network-timing-metric');
+      const metricDesc = [serverTiming.metric, serverTiming.description].filter(Boolean).join(' — ');
+
+      // Mark entries from a bespoke format
+      if (serverTiming.metric.startsWith('(c')) {
+        tr.classList.add('synthetic');
+      }
+
+      UI.UIUtils.createTextChild(metricEl, metricDesc);
+      UI.Tooltip.Tooltip.install(metricEl, metricDesc);
+
+      const row = tr.createChild('td', 'server-timing-cell--value-bar').createChild('div', 'network-timing-row');
 
       if (serverTiming.value === null) {
         return;
@@ -598,7 +605,8 @@ export class RequestTimingView extends UI.Widget.VBox {
           bar.style.backgroundColor = colorGenerator.colorForID(serverTiming.metric);
         }
       }
-      const label = tr.createChild('td').createChild('div', 'network-timing-bar-title');
+      const label =
+          tr.createChild('td', 'server-timing-cell--value-text').createChild('div', 'network-timing-bar-title');
       label.textContent = i18n.TimeUtilities.millisToString(serverTiming.value, true);
     }
 
@@ -779,7 +787,6 @@ export class RequestTimingView extends UI.Widget.VBox {
     this.request.addEventListener(SDK.NetworkRequest.Events.TIMING_CHANGED, this.refresh, this);
     this.request.addEventListener(SDK.NetworkRequest.Events.FINISHED_LOADING, this.refresh, this);
     this.calculator.addEventListener(Events.BOUNDARIES_CHANGED, this.boundaryChanged, this);
-    this.registerCSSFiles([networkingTimingTableStyles]);
     this.refresh();
   }
 

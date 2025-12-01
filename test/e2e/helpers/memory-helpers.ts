@@ -66,7 +66,7 @@ export async function takeAllocationTimelineProfile({recordStacks}: {recordStack
   await waitFor('.heap-snapshot-sidebar-tree-item.selected');
 }
 
-export async function takeHeapSnapshot(name: string = 'Snapshot 1') {
+export async function takeHeapSnapshot(name = 'Snapshot 1') {
   await click(NEW_HEAP_SNAPSHOT_BUTTON);
   await waitForNone('.heap-snapshot-sidebar-tree-item.wait');
   await waitForFunction(async () => {
@@ -146,7 +146,7 @@ export async function waitForSearchResultNumber(results: number) {
   const findMatch = async () => {
     const currentMatch = await waitFor('.search-results-matches');
     const currentTextContent = currentMatch && await currentMatch.evaluate(el => el.textContent);
-    if (currentTextContent && currentTextContent.endsWith(` ${results}`)) {
+    if (currentTextContent?.endsWith(` ${results}`)) {
       return currentMatch;
     }
     return undefined;
@@ -154,7 +154,7 @@ export async function waitForSearchResultNumber(results: number) {
   return await waitForFunction(findMatch);
 }
 
-export async function findSearchResult(searchResult: string, pollIntrerval: number = 500) {
+export async function findSearchResult(searchResult: string, pollIntrerval = 500) {
   const {frontend} = getBrowserAndPages();
   const match = await waitFor('#profile-views table.data');
   const matches = await waitFor(' .search-results-matches');
@@ -182,7 +182,7 @@ export async function findSearchResult(searchResult: string, pollIntrerval: numb
           setTimeout(resolve, pollIntrerval, false);
         }),
       ]);
-      return result;
+      return await result;
     });
   }
 }
@@ -211,7 +211,7 @@ interface RetainerChainEntry {
   retainerClassName: string;
 }
 
-export async function assertRetainerChainSatisfies(p: (retainerChain: Array<RetainerChainEntry>) => boolean) {
+export async function assertRetainerChainSatisfies(p: (retainerChain: RetainerChainEntry[]) => boolean) {
   // Give some time for the expansion to finish.
   const retainerGridElements = await getDataGridRows('.retaining-paths-view table.data');
   const retainerChain = [];
@@ -237,7 +237,7 @@ export async function assertRetainerChainSatisfies(p: (retainerChain: Array<Reta
   return p(retainerChain);
 }
 
-export async function waitUntilRetainerChainSatisfies(p: (retainerChain: Array<RetainerChainEntry>) => boolean) {
+export async function waitUntilRetainerChainSatisfies(p: (retainerChain: RetainerChainEntry[]) => boolean) {
   await waitForFunction(assertRetainerChainSatisfies.bind(null, p));
 }
 
@@ -266,7 +266,7 @@ export function appearsInOrder(targetArray: string[], inputArray: string[]) {
   return false;
 }
 
-export async function waitForRetainerChain(expectedRetainers: Array<string>) {
+export async function waitForRetainerChain(expectedRetainers: string[]) {
   await waitForFunction(assertRetainerChainSatisfies.bind(null, retainerChain => {
     const actual = retainerChain.map(e => e.retainerClassName);
     return appearsInOrder(actual, expectedRetainers);
@@ -313,18 +313,28 @@ export async function expandFocusedRow() {
   await waitFor('.selected.data-grid-data-grid-node.expanded');
 }
 
-function parseNumberWithSpaces(number: string): number {
-  return parseInt(number.replaceAll('\xa0', ''), 10);
+function parseByteString(str: string): number {
+  const number = parseFloat(str);
+  if (str.endsWith('kB')) {
+    return number * 1000;
+  }
+  if (str.endsWith('MB')) {
+    return number * 1000 * 1000;
+  }
+  if (str.endsWith('GB')) {
+    return number * 1000 * 1000 * 1000;
+  }
+  return number;
 }
 
 async function getSizesFromRow(row: puppeteer.ElementHandle<Element>) {
   const numericData = await $$('.numeric-column>.profile-multiple-values>span', row);
-  assert.strictEqual(numericData.length, 4);
+  assert.lengthOf(numericData, 4);
   function readNumber(e: Element): string {
     return e.textContent as string;
   }
-  const shallowSize = parseNumberWithSpaces(await numericData[0].evaluate(readNumber));
-  const retainedSize = parseNumberWithSpaces(await numericData[2].evaluate(readNumber));
+  const shallowSize = parseByteString(await numericData[0].evaluate(readNumber));
+  const retainedSize = parseByteString(await numericData[2].evaluate(readNumber));
   assert.isTrue(retainedSize >= shallowSize);
   return {shallowSize, retainedSize};
 }
@@ -334,7 +344,7 @@ export async function getSizesFromSelectedRow() {
   return await getSizesFromRow(row);
 }
 
-export async function getCategoryRow(text: string, wait: boolean = true) {
+export async function getCategoryRow(text: string, wait = true) {
   const selector = `//td[text()="${text}"]/ancestor::tr`;
   return await (wait ? waitFor(selector, undefined, undefined, 'xpath') : $(selector, undefined, 'xpath'));
 }
@@ -368,13 +378,13 @@ export async function getAddedCountFromComparisonRowWithName(text: string) {
 export async function getAddedCountFromComparisonRow(row: puppeteer.ElementHandle<Element>) {
   const addedCountCell = await waitFor('.addedCount-column', row);
   const countText = await addedCountCell.evaluate(e => e.textContent ?? '');
-  return parseNumberWithSpaces(countText);
+  return parseByteString(countText);
 }
 
 export async function getRemovedCountFromComparisonRow(row: puppeteer.ElementHandle<Element>) {
   const addedCountCell = await waitFor('.removedCount-column', row);
   const countText = await addedCountCell.evaluate(e => e.textContent ?? '');
-  return parseNumberWithSpaces(countText);
+  return parseByteString(countText);
 }
 
 export async function clickOnContextMenuForRetainer(retainerName: string, menuItem: string) {
@@ -392,7 +402,7 @@ export async function restoreIgnoredRetainers() {
 }
 
 export async function setFilterDropdown(filter: string) {
-  const select = await waitFor('select.toolbar-item[aria-label="Filter"]');
+  const select = await waitFor('devtools-toolbar select[aria-label="Filter"]');
   await select.select(filter);
 }
 

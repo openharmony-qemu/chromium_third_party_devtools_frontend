@@ -51,16 +51,6 @@ export class UserMetrics {
     }
   }
 
-  panelShownInLocation(panelName: string, location: 'main'|'drawer'): void {
-    const panelWithLocationName = `${panelName}-${location}`;
-    const panelWithLocation = PanelWithLocation[panelWithLocationName as keyof typeof PanelWithLocation] || 0;
-    InspectorFrontendHostInstance.recordEnumeratedHistogram(
-        EnumeratedHistogram.PanelShownInLocation,
-        panelWithLocation,
-        PanelWithLocation.MAX_VALUE,
-    );
-  }
-
   settingsPanelShown(settingsViewId: string): void {
     this.panelShown('settings-' + settingsViewId);
   }
@@ -182,6 +172,11 @@ export class UserMetrics {
         EnumeratedHistogram.ExperimentEnabledAtLaunch, experiment, DevtoolsExperiments.MAX_VALUE);
   }
 
+  navigationSettingAtFirstTimelineLoad(state: TimelineNavigationSetting): void {
+    InspectorFrontendHostInstance.recordEnumeratedHistogram(
+        EnumeratedHistogram.TimelineNavigationSettingState, state, TimelineNavigationSetting.MAX_VALUE);
+  }
+
   experimentDisabledAtLaunch(experimentId: string): void {
     const experiment = DevtoolsExperiments[experimentId as keyof typeof DevtoolsExperiments];
     if (experiment === undefined) {
@@ -285,18 +280,6 @@ export class UserMetrics {
         EnumeratedHistogram.RecordingCopiedToClipboard, value, RecordingCopiedToClipboard.MAX_VALUE);
   }
 
-  styleTextCopied(value: StyleTextCopied): void {
-    InspectorFrontendHostInstance.recordEnumeratedHistogram(
-        EnumeratedHistogram.StyleTextCopied, value, StyleTextCopied.MAX_VALUE);
-  }
-
-  manifestSectionSelected(sectionTitle: string): void {
-    const code =
-        ManifestSectionCodes[sectionTitle as keyof typeof ManifestSectionCodes] || ManifestSectionCodes.OtherSection;
-    InspectorFrontendHostInstance.recordEnumeratedHistogram(
-        EnumeratedHistogram.ManifestSectionSelected, code, ManifestSectionCodes.MAX_VALUE);
-  }
-
   cssHintShown(type: CSSHintType): void {
     InspectorFrontendHostInstance.recordEnumeratedHistogram(
         EnumeratedHistogram.CSSHintShown, type, CSSHintType.MAX_VALUE);
@@ -310,11 +293,6 @@ export class UserMetrics {
   lighthouseCategoryUsed(type: LighthouseCategoryUsed): void {
     InspectorFrontendHostInstance.recordEnumeratedHistogram(
         EnumeratedHistogram.LighthouseCategoryUsed, type, LighthouseCategoryUsed.MAX_VALUE);
-  }
-
-  cssPropertyDocumentation(type: CSSPropertyDocumentation): void {
-    InspectorFrontendHostInstance.recordEnumeratedHistogram(
-        EnumeratedHistogram.CSSPropertyDocumentation, type, CSSPropertyDocumentation.MAX_VALUE);
   }
 
   swatchActivated(swatch: SwatchType): void {
@@ -342,36 +320,6 @@ export class UserMetrics {
         'DevTools.VisualLogging.ProcessingTime', timeInMilliseconds);
   }
 
-  legacyResourceTypeFilterNumberOfSelectedChanged(itemCount: number): void {
-    const boundItemCount = Math.max(Math.min(itemCount, ResourceType.MAX_VALUE - 1), 1);
-    InspectorFrontendHostInstance.recordEnumeratedHistogram(
-        EnumeratedHistogram.LegacyResourceTypeFilterNumberOfSelectedChanged, boundItemCount, ResourceType.MAX_VALUE);
-  }
-
-  legacyResourceTypeFilterItemSelected(resourceTypeName: string): void {
-    const resourceType = ResourceType[resourceTypeName as keyof typeof ResourceType];
-    if (resourceType === undefined) {
-      return;
-    }
-    InspectorFrontendHostInstance.recordEnumeratedHistogram(
-        EnumeratedHistogram.LegacyResourceTypeFilterItemSelected, resourceType, ResourceType.MAX_VALUE);
-  }
-
-  resourceTypeFilterNumberOfSelectedChanged(itemCount: number): void {
-    const boundItemCount = Math.max(Math.min(itemCount, ResourceType.MAX_VALUE - 1), 1);
-    InspectorFrontendHostInstance.recordEnumeratedHistogram(
-        EnumeratedHistogram.ResourceTypeFilterNumberOfSelectedChanged, boundItemCount, ResourceType.MAX_VALUE);
-  }
-
-  resourceTypeFilterItemSelected(resourceTypeName: string): void {
-    const resourceType = ResourceType[resourceTypeName as keyof typeof ResourceType];
-    if (resourceType === undefined) {
-      return;
-    }
-    InspectorFrontendHostInstance.recordEnumeratedHistogram(
-        EnumeratedHistogram.ResourceTypeFilterItemSelected, resourceType, ResourceType.MAX_VALUE);
-  }
-
   freestylerQueryLength(numberOfCharacters: number): void {
     InspectorFrontendHostInstance.recordCountHistogram(
         'DevTools.Freestyler.QueryLength', numberOfCharacters, 0, 100_000, 100);
@@ -379,6 +327,11 @@ export class UserMetrics {
 
   freestylerEvalResponseSize(bytes: number): void {
     InspectorFrontendHostInstance.recordCountHistogram('DevTools.Freestyler.EvalResponseSize', bytes, 0, 100_000, 100);
+  }
+
+  performanceAINetworkSummaryResponseSize(bytes: number): void {
+    InspectorFrontendHostInstance.recordCountHistogram(
+        'DevTools.PerformanceAI.NetworkSummaryResponseSize', bytes, 0, 100_000, 100);
   }
 }
 
@@ -540,8 +493,8 @@ export enum Action {
   AnimationGroupSelected = 142,
   ScrollDrivenAnimationGroupSelected = 143,
   ScrollDrivenAnimationGroupScrubbed = 144,
-  FreestylerOpenedFromElementsPanel = 145,
-  FreestylerOpenedFromStylesTab = 146,
+  AiAssistanceOpenedFromElementsPanel = 145,
+  AiAssistanceOpenedFromStylesTab = 146,
   ConsoleFilterByContext = 147,
   ConsoleFilterBySource = 148,
   ConsoleFilterByUrl = 149,
@@ -564,12 +517,12 @@ export enum Action {
   InsightsReminderTeaserSettingsLinkClicked = 166,
   InsightsReminderTeaserAbortedInSettings = 167,
   GeneratingInsightWithoutDisclaimer = 168,
-  FreestylerOpenedFromElementsPanelFloatingButton = 169,
-  DrJonesOpenedFromNetworkPanel = 170,
-  DrJonesOpenedFromSourcesPanel = 171,
-  DrJonesOpenedFromSourcesPanelFloatingButton = 172,
-  DrJonesOpenedFromPerformancePanel = 173,
-  DrJonesOpenedFromNetworkPanelFloatingButton = 174,
+  AiAssistanceOpenedFromElementsPanelFloatingButton = 169,
+  AiAssistanceOpenedFromNetworkPanel = 170,
+  AiAssistanceOpenedFromSourcesPanel = 171,
+  AiAssistanceOpenedFromSourcesPanelFloatingButton = 172,
+  AiAssistanceOpenedFromPerformancePanel = 173,
+  AiAssistanceOpenedFromNetworkPanelFloatingButton = 174,
   AiAssistancePanelOpened = 175,
   AiAssistanceQuerySubmitted = 176,
   AiAssistanceAnswerReceived = 177,
@@ -577,7 +530,8 @@ export enum Action {
   AiAssistanceSideEffectConfirmed = 179,
   AiAssistanceSideEffectRejected = 180,
   AiAssistanceError = 181,
-  MAX_VALUE = 182,
+  AiAssistanceOpenedFromPerformanceInsight = 182,
+  MAX_VALUE = 183,
   /* eslint-enable @typescript-eslint/naming-convention */
 }
 
@@ -592,15 +546,15 @@ export enum PanelCodes {
   console = 8,
   layers = 9,
   'console-view' = 10,
-  'animations' = 11,
+  animations = 11,
   'network.config' = 12,
-  'rendering' = 13,
-  'sensors' = 14,
+  rendering = 13,
+  sensors = 14,
   'sources.search' = 15,
   security = 16,
   'js-profiler' = 17,
   lighthouse = 18,
-  'coverage' = 19,
+  coverage = 19,
   'protocol-monitor' = 20,
   'remote-devices' = 21,
   'web-audio' = 22,
@@ -620,7 +574,7 @@ export enum PanelCodes {
   'settings-shortcuts' = 36,
   'issues-pane' = 37,
   'settings-keybinds' = 38,
-  'cssoverview' = 39,
+  cssoverview = 39,
   'chrome-recorder' = 40,
   'trust-tokens' = 41,
   'reporting-api' = 42,
@@ -635,8 +589,8 @@ export enum PanelCodes {
   'background-service-periodic-background-sync' = 51,
   'service-workers' = 52,
   'app-manifest' = 53,
-  'storage' = 54,
-  'cookies' = 55,
+  storage = 54,
+  cookies = 55,
   'frame-details' = 56,
   'frame-resource' = 57,
   'frame-window' = 58,
@@ -645,7 +599,7 @@ export enum PanelCodes {
   'indexed-db' = 61,
   'web-sql' = 62,
   'performance-insights' = 63,
-  'preloading' = 64,
+  preloading = 64,
   'bounce-tracking-mitigations' = 65,
   'developer-resources' = 66,
   'autofill-view' = 67,
@@ -791,9 +745,9 @@ export enum PanelWithLocation {
 
 export enum ElementsSidebarTabCodes {
   /* eslint-disable @typescript-eslint/naming-convention */
-  'OtherSidebarPane' = 0,
-  'styles' = 1,
-  'computed' = 2,
+  OtherSidebarPane = 0,
+  styles = 1,
+  computed = 2,
   'elements.layout' = 3,
   'elements.event-listeners' = 4,
   'elements.dom-breakpoints' = 5,
@@ -848,8 +802,8 @@ export enum MediaTypes {
 
 export enum KeybindSetSettings {
   /* eslint-disable @typescript-eslint/naming-convention */
-  'devToolsDefault' = 0,
-  'vsCode' = 1,
+  devToolsDefault = 0,
+  vsCode = 1,
   /* eslint-enable @typescript-eslint/naming-convention */
   MAX_VALUE = 2,
 }
@@ -974,8 +928,9 @@ export enum KeyboardShortcutAction {
   'elements.refresh-event-listeners' = 115,
   'coverage.clear' = 116,
   'coverage.export' = 117,
+  'timeline.dim-third-parties' = 118,
   /* eslint-enable @typescript-eslint/naming-convention */
-  MAX_VALUE = 118,
+  MAX_VALUE = 119,
 }
 
 export const enum IssueOpener {
@@ -1002,43 +957,27 @@ export enum DevtoolsExperiments {
   'timeline-invalidation-tracking' = 26,
   'timeline-show-all-events' = 27,
   'timeline-v8-runtime-call-stats' = 28,
-  'apca' = 39,
+  apca = 39,
   'font-editor' = 41,
   'full-accessibility-tree' = 42,
   'contrast-issues' = 44,
   'experimental-cookie-features' = 45,
-  'styles-pane-css-changes' = 55,
   'instrumentation-breakpoints' = 61,
   'authored-deployed-grouping' = 63,
   'just-my-code' = 65,
   'highlight-errors-elements-panel' = 73,
   'use-source-map-scopes' = 76,
-  'network-panel-filter-bar-redesign' = 79,
-  'autofill-view' = 82,
-  'css-type-component-length-deprecate' = 85,
   'timeline-show-postmessage-events' = 86,
   'timeline-enhanced-traces' = 90,
   'timeline-compiled-sources' = 91,
   'timeline-debug-mode' = 93,
-  'perf-panel-annotations' = 94,
-  'timeline-rpp-sidebar' = 95,
-  'timeline-observations' = 96,
-  'timeline-server-timings' = 98,
-  'floating-entry-points-for-ai-assistance' = 101,
   'timeline-experimental-insights' = 102,
-  'timeline-dim-unrelated-events' = 103,
-  'timeline-alternative-navigation' = 104,
+  // 106 was historically used [https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/6230097]
+  // next experiment should be 107
   /* eslint-enable @typescript-eslint/naming-convention */
 
   // Increment this when new experiments are added.
-  MAX_VALUE = 105,
-}
-
-export const enum CSSPropertyDocumentation {
-  SHOWN = 0,
-  TOGGLED_ON = 1,
-  TOGGLED_OFF = 2,
-  MAX_VALUE = 3,
+  MAX_VALUE = 106,
 }
 
 // Update DevToolsIssuesPanelIssueExpanded from tools/metrics/histograms/enums.xml if new enum is added.
@@ -1158,8 +1097,35 @@ export enum IssueCreated {
   'CookieIssue::WarnThirdPartyPhaseout::SetCookie' = 83,
   'CookieIssue::ExcludeThirdPartyPhaseout::ReadCookie' = 84,
   'CookieIssue::ExcludeThirdPartyPhaseout::SetCookie' = 85,
+  'SelectElementAccessibilityIssue::DisallowedSelectChild' = 86,
+  'SelectElementAccessibilityIssue::DisallowedOptGroupChild' = 87,
+  'SelectElementAccessibilityIssue::NonPhrasingContentOptionChild' = 88,
+  'SelectElementAccessibilityIssue::InteractiveContentOptionChild' = 89,
+  'SelectElementAccessibilityIssue::InteractiveContentLegendChild' = 90,
+  'SRIMessageSignatureIssue::MissingSignatureHeader' = 91,
+  'SRIMessageSignatureIssue::MissingSignatureInputHeader' = 92,
+  'SRIMessageSignatureIssue::InvalidSignatureHeader' = 93,
+  'SRIMessageSignatureIssue::InvalidSignatureInputHeader' = 94,
+  'SRIMessageSignatureIssue::SignatureHeaderValueIsNotByteSequence' = 95,
+  'SRIMessageSignatureIssue::SignatureHeaderValueIsParameterized' = 96,
+  'SRIMessageSignatureIssue::SignatureHeaderValueIsIncorrectLength' = 97,
+  'SRIMessageSignatureIssue::SignatureInputHeaderMissingLabel' = 98,
+  'SRIMessageSignatureIssue::SignatureInputHeaderValueNotInnerList' = 99,
+  'SRIMessageSignatureIssue::SignatureInputHeaderValueMissingComponents' = 100,
+  'SRIMessageSignatureIssue::SignatureInputHeaderInvalidComponentType' = 101,
+  'SRIMessageSignatureIssue::SignatureInputHeaderInvalidComponentName' = 102,
+  'SRIMessageSignatureIssue::SignatureInputHeaderInvalidHeaderComponentParameter' = 103,
+  'SRIMessageSignatureIssue::SignatureInputHeaderInvalidDerivedComponentParameter' = 104,
+  'SRIMessageSignatureIssue::SignatureInputHeaderKeyIdLength' = 105,
+  'SRIMessageSignatureIssue::SignatureInputHeaderInvalidParameter' = 106,
+  'SRIMessageSignatureIssue::SignatureInputHeaderMissingRequiredParameters' = 107,
+  'SRIMessageSignatureIssue::ValidationFailedSignatureExpired' = 108,
+  'SRIMessageSignatureIssue::ValidationFailedInvalidLength' = 109,
+  'SRIMessageSignatureIssue::ValidationFailedSignatureMismatch' = 110,
+  'CorsIssue::LocalNetworkAccessPermissionDenied' = 111,
+  'SRIMessageSignatureIssue::ValidationFailedIntegrityMismatch' = 112,
   /* eslint-enable @typescript-eslint/naming-convention */
-  MAX_VALUE = 86,
+  MAX_VALUE = 113,
 }
 
 export const enum DeveloperResourceLoaded {
@@ -1187,108 +1153,90 @@ export const enum DeveloperResourceScheme {
   MAX_VALUE = 9,
 }
 
-export enum ResourceType {
-  /* eslint-disable @typescript-eslint/naming-convention -- Used by web_tests. */
-  all = 0,
-  Document = 1,
-  JavaScript = 2,
-  'Fetch and XHR' = 3,
-  CSS = 4,
-  Font = 5,
-  Image = 6,
-  Media = 7,
-  Manifest = 8,
-  WebSocket = 9,
-  WebAssembly = 10,
-  Other = 11,
-  /* eslint-enable @typescript-eslint/naming-convention */
-  MAX_VALUE = 12,
-}
-
 export enum Language {
   /* eslint-disable @typescript-eslint/naming-convention */
-  'af' = 1,
-  'am' = 2,
-  'ar' = 3,
-  'as' = 4,
-  'az' = 5,
-  'be' = 6,
-  'bg' = 7,
-  'bn' = 8,
-  'bs' = 9,
-  'ca' = 10,
-  'cs' = 11,
-  'cy' = 12,
-  'da' = 13,
-  'de' = 14,
-  'el' = 15,
+  af = 1,
+  am = 2,
+  ar = 3,
+  as = 4,
+  az = 5,
+  be = 6,
+  bg = 7,
+  bn = 8,
+  bs = 9,
+  ca = 10,
+  cs = 11,
+  cy = 12,
+  da = 13,
+  de = 14,
+  el = 15,
   'en-GB' = 16,
   'en-US' = 17,
   'es-419' = 18,
-  'es' = 19,
-  'et' = 20,
-  'eu' = 21,
-  'fa' = 22,
-  'fi' = 23,
-  'fil' = 24,
+  es = 19,
+  et = 20,
+  eu = 21,
+  fa = 22,
+  fi = 23,
+  fil = 24,
   'fr-CA' = 25,
-  'fr' = 26,
-  'gl' = 27,
-  'gu' = 28,
-  'he' = 29,
-  'hi' = 30,
-  'hr' = 31,
-  'hu' = 32,
-  'hy' = 33,
-  'id' = 34,
-  'is' = 35,
-  'it' = 36,
-  'ja' = 37,
-  'ka' = 38,
-  'kk' = 39,
-  'km' = 40,
-  'kn' = 41,
-  'ko' = 42,
-  'ky' = 43,
-  'lo' = 44,
-  'lt' = 45,
-  'lv' = 46,
-  'mk' = 47,
-  'ml' = 48,
-  'mn' = 49,
-  'mr' = 50,
-  'ms' = 51,
-  'my' = 52,
-  'ne' = 53,
-  'nl' = 54,
-  'no' = 55,
-  'or' = 56,
-  'pa' = 57,
-  'pl' = 58,
+  fr = 26,
+  gl = 27,
+  gu = 28,
+  he = 29,
+  hi = 30,
+  hr = 31,
+  hu = 32,
+  hy = 33,
+  id = 34,
+  is = 35,
+  it = 36,
+  ja = 37,
+  ka = 38,
+  kk = 39,
+  km = 40,
+  kn = 41,
+  ko = 42,
+  ky = 43,
+  lo = 44,
+  lt = 45,
+  lv = 46,
+  mk = 47,
+  ml = 48,
+  mn = 49,
+  mr = 50,
+  ms = 51,
+  my = 52,
+  ne = 53,
+  nl = 54,
+  no = 55,
+  or = 56,
+  pa = 57,
+  pl = 58,
   'pt-PT' = 59,
-  'pt' = 60,
-  'ro' = 61,
-  'ru' = 62,
-  'si' = 63,
-  'sk' = 64,
-  'sl' = 65,
-  'sq' = 66,
+  pt = 60,
+  ro = 61,
+  ru = 62,
+  si = 63,
+  sk = 64,
+  sl = 65,
+  sq = 66,
   'sr-Latn' = 67,
-  'sr' = 68,
-  'sv' = 69,
-  'sw' = 70,
-  'ta' = 71,
-  'te' = 72,
-  'th' = 73,
-  'tr' = 74,
-  'uk' = 75,
-  'ur' = 76,
-  'uz' = 77,
-  'vi' = 78,
-  'zh' = 79,
+  sr = 68,
+  sv = 69,
+  sw = 70,
+  ta = 71,
+  te = 72,
+  th = 73,
+  tr = 74,
+  uk = 75,
+  ur = 76,
+  uz = 77,
+  vi = 78,
+  zh = 79,
   'zh-HK' = 80,
   'zh-TW' = 81,
-  'zu' = 82,
+  zu = 82,
   /* eslint-enable @typescript-eslint/naming-convention */
   MAX_VALUE = 83,
 }
@@ -1378,27 +1326,13 @@ export const enum RecordingCopiedToClipboard {
   MAX_VALUE = 9,
 }
 
-export const enum StyleTextCopied {
-  DECLARATION_VIA_CHANGED_LINE = 1,
-  ALL_CHANGES_VIA_STYLES_TAB = 2,
-  DECLARATION_VIA_CONTEXT_MENU = 3,
-  PROPERTY_VIA_CONTEXT_MENU = 4,
-  VALUE_VIA_CONTEXT_MENU = 5,
-  DECLARATION_AS_JS_VIA_CONTEXT_MENU = 6,
-  RULE_VIA_CONTEXT_MENU = 7,
-  ALL_DECLARATIONS_VIA_CONTEXT_MENU = 8,
-  ALL_DECLARATINS_AS_JS_VIA_CONTEXT_MENU = 9,
-  SELECTOR_VIA_CONTEXT_MENU = 10,
-  MAX_VALUE = 11,
-}
-
 export enum ManifestSectionCodes {
   /* eslint-disable @typescript-eslint/naming-convention -- Indexed access. */
   OtherSection = 0,
-  'Identity' = 1,
-  'Presentation' = 2,
+  Identity = 1,
+  Presentation = 2,
   'Protocol Handlers' = 3,
-  'Icons' = 4,
+  Icons = 4,
   'Window Controls Overlay' = 5,
   /* eslint-enable @typescript-eslint/naming-convention */
   MAX_VALUE = 6,
@@ -1487,4 +1421,14 @@ export const enum AnimationPointDragType {
   FINISH_ENDPOINT_MOVE = 3,
   OTHER = 4,
   MAX_VALUE = 5,
+}
+
+export const enum TimelineNavigationSetting {
+  // Setting is set to classic when the first trace of the session is recorded or loaded.
+  CLASSIC_AT_SESSION_FIRST_TRACE = 0,
+  // Setting is set to modern when the first trace of the session is recorded or loaded.
+  MODERN_AT_SESSION_FIRST_TRACE = 1,
+  SWITCHED_TO_CLASSIC = 2,
+  SWITCHED_TO_MODERN = 3,
+  MAX_VALUE = 4,
 }

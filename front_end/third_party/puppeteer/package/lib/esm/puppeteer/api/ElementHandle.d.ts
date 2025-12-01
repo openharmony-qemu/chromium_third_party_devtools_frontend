@@ -196,7 +196,7 @@ export declare abstract class ElementHandle<ElementType extends Node = Element> 
      * {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors | CSS selectors}
      * can be passed as-is and a
      * {@link https://pptr.dev/guides/page-interactions#non-css-selectors | Puppeteer-specific selector syntax}
-     * allows quering by
+     * allows querying by
      * {@link https://pptr.dev/guides/page-interactions#text-selectors--p-text | text},
      * {@link https://pptr.dev/guides/page-interactions#aria-selectors--p-aria | a11y role and name},
      * and
@@ -218,7 +218,7 @@ export declare abstract class ElementHandle<ElementType extends Node = Element> 
      * {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors | CSS selectors}
      * can be passed as-is and a
      * {@link https://pptr.dev/guides/page-interactions#non-css-selectors | Puppeteer-specific selector syntax}
-     * allows quering by
+     * allows querying by
      * {@link https://pptr.dev/guides/page-interactions#text-selectors--p-text | text},
      * {@link https://pptr.dev/guides/page-interactions#aria-selectors--p-aria | a11y role and name},
      * and
@@ -256,7 +256,7 @@ export declare abstract class ElementHandle<ElementType extends Node = Element> 
      * {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors | CSS selectors}
      * can be passed as-is and a
      * {@link https://pptr.dev/guides/page-interactions#non-css-selectors | Puppeteer-specific selector syntax}
-     * allows quering by
+     * allows querying by
      * {@link https://pptr.dev/guides/page-interactions#text-selectors--p-text | text},
      * {@link https://pptr.dev/guides/page-interactions#aria-selectors--p-aria | a11y role and name},
      * and
@@ -304,7 +304,7 @@ export declare abstract class ElementHandle<ElementType extends Node = Element> 
      * {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors | CSS selectors}
      * can be passed as-is and a
      * {@link https://pptr.dev/guides/page-interactions#non-css-selectors | Puppeteer-specific selector syntax}
-     * allows quering by
+     * allows querying by
      * {@link https://pptr.dev/guides/page-interactions#text-selectors--p-text | text},
      * {@link https://pptr.dev/guides/page-interactions#aria-selectors--p-aria | a11y role and name},
      * and
@@ -629,11 +629,19 @@ export declare abstract class ElementHandle<ElementType extends Node = Element> 
      * ```
      */
     abstract autofill(data: AutofillData): Promise<void>;
+    /**
+     * When connected using Chrome DevTools Protocol, it returns a
+     * DOM.BackendNodeId for the element.
+     */
+    abstract backendNodeId(): Promise<number>;
 }
 /**
  * @public
  */
 export interface AutofillData {
+    /**
+     * See {@link https://chromedevtools.github.io/devtools-protocol/tot/Autofill/#type-CreditCard | Autofill.CreditCard}.
+     */
     creditCard: {
         number: string;
         name: string;

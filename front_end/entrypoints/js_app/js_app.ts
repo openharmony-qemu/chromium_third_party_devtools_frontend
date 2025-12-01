@@ -5,6 +5,7 @@
 import '../shell/shell.js';
 import '../../panels/js_timeline/js_timeline-meta.js';
 import '../../panels/mobile_throttling/mobile_throttling-meta.js';
+import '../../panels/network/network-meta.js';
 
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
@@ -28,7 +29,7 @@ const UIStrings = {
    *@description Command for showing the 'Scripts' tool in the Network Navigator View, which is part of the Sources tool
    */
   showNode: 'Show Scripts',
-};
+} as const;
 
 const str_ = i18n.i18n.registerUIStrings('entrypoints/js_app/js_app.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -59,7 +60,7 @@ export class JsMainImpl implements Common.Runnable.Runnable {
       const target = SDK.TargetManager.TargetManager.instance().createTarget(
           'main', i18nString(UIStrings.main), SDK.Target.Type.NODE, null);
       void target.runtimeAgent().invoke_runIfWaitingForDebugger();
-    }, Components.TargetDetachedDialog.TargetDetachedDialog.webSocketConnectionLost);
+    }, Components.TargetDetachedDialog.TargetDetachedDialog.connectionLost);
   }
 }
 

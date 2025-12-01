@@ -4,7 +4,7 @@
 
 import * as Mocha from 'mocha';
 // @ts-expect-error
-import * as commonInterface from 'mocha/lib/interfaces/common.js';  // eslint-disable-line rulesdir/es_modules_import
+import * as commonInterface from 'mocha/lib/interfaces/common.js';
 import * as Path from 'path';
 
 import {makeInstrumentedTestFunction, platform, type Platform} from './mocha-interface-helpers.js';
@@ -110,7 +110,7 @@ function devtoolsTestInterface(suite: Mocha.Suite) {
             common.test.only(mocha, createTest(iterationTitle, fn));
           }
         };
-        it.skipOnPlatforms = function(platforms: Array<Platform>, title: string, fn: Mocha.AsyncFunc) {
+        it.skipOnPlatforms = function(platforms: Platform[], title: string, fn: Mocha.AsyncFunc) {
           const shouldSkip = platforms.includes(platform);
           if (shouldSkip) {
             return context.it.skip(title);
@@ -125,8 +125,7 @@ function devtoolsTestInterface(suite: Mocha.Suite) {
           return context.it(screenshotTestTitle(title), fn);
         };
         // @ts-expect-error Custom interface.
-        context.itScreenshot.skipOnPlatforms = function(
-            platforms: Array<Platform>, title: string, fn: Mocha.AsyncFunc) {
+        context.itScreenshot.skipOnPlatforms = function(platforms: Platform[], title: string, fn: Mocha.AsyncFunc) {
           return context.it.skipOnPlatforms(platforms, screenshotTestTitle(title), fn);
         };
         // @ts-expect-error Custom interface.

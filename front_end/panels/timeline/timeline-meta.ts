@@ -62,7 +62,7 @@ const UIStrings = {
    *@description Title of a setting under the Performance category in Settings
    */
   hideChromeFrameInLayersView: 'Hide `chrome` frame in Layers view',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/timeline/timeline-meta.ts', UIStrings);
 const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined, str_);
 let loadedTimelineModule: (typeof Timeline|undefined);
@@ -320,7 +320,7 @@ Common.Settings.registerSettingExtension({
   storageType: Common.Settings.SettingStorageType.SYNCED,
   settingName: 'annotations-hidden',
   settingType: Common.Settings.SettingType.BOOLEAN,
-  defaultValue: true,
+  defaultValue: false,
 });
 
 Common.Linkifier.registerLinkifier({
@@ -364,5 +364,16 @@ Common.Revealer.registerRevealer({
   async loadRevealer() {
     const Timeline = await loadTimelineModule();
     return new Timeline.TimelinePanel.EventRevealer();
+  },
+});
+
+Common.Revealer.registerRevealer({
+  contextTypes() {
+    return maybeRetrieveContextTypes(Timeline => [Timeline.Utils.InsightAIContext.ActiveInsight]);
+  },
+  destination: Common.Revealer.RevealerDestination.TIMELINE_PANEL,
+  async loadRevealer() {
+    const Timeline = await loadTimelineModule();
+    return new Timeline.TimelinePanel.InsightRevealer();
   },
 });

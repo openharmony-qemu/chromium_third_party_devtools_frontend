@@ -1,6 +1,7 @@
 // Copyright (c) 2015 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-imperative-dom-api */
 
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
@@ -72,6 +73,10 @@ const UIStrings = {
    *@description Label for the locale relevant to a custom location.
    */
   locale: 'Locale',
+  /**
+   *@description Label for Accuracy of a GPS location.
+   */
+  accuracy: 'Accuracy',
   /**
    *@description Label the orientation of a user's device e.g. tilt in 3D-space.
    */
@@ -164,7 +169,7 @@ const UIStrings = {
    *@description Label for one dimension of device orientation that the user can override.
    */
   gamma: '\u03B3 (gamma)',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('panels/sensors/SensorsView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
@@ -179,11 +184,14 @@ export class SensorsView extends UI.Widget.VBox {
   private longitudeInput!: HTMLInputElement;
   private timezoneInput!: HTMLInputElement;
   private localeInput!: HTMLInputElement;
+  private accuracyInput!: HTMLInputElement;
   private latitudeSetter!: (arg0: string) => void;
   private longitudeSetter!: (arg0: string) => void;
   private timezoneSetter!: (arg0: string) => void;
   private localeSetter!: (arg0: string) => void;
+  private accuracySetter!: (arg0: string) => void;
   private localeError!: HTMLElement;
+  private accuracyError!: HTMLElement;
   private customLocationsGroup!: HTMLOptGroupElement;
   private readonly deviceOrientationSetting: Common.Settings.Setting<string>;
   private deviceOrientation: SDK.EmulationModel.DeviceOrientation;
@@ -205,6 +213,7 @@ export class SensorsView extends UI.Widget.VBox {
 
   constructor() {
     super(true);
+    this.registerRequiredCSS(sensorsStyles);
     this.element.setAttribute('jslog', `${VisualLogging.panel('sensors').track({resize: true})}`);
     this.contentElement.classList.add('sensors-view');
 
@@ -242,11 +251,6 @@ export class SensorsView extends UI.Widget.VBox {
     this.createPanelSeparator();
   }
 
-  override wasShown(): void {
-    super.wasShown();
-    this.registerCSSFiles([sensorsStyles]);
-  }
-
   private createPanelSeparator(): void {
     this.contentElement.createChild('div').classList.add('panel-section-separator');
   }
@@ -260,14 +264,14 @@ export class SensorsView extends UI.Widget.VBox {
     let selectedIndex = 0;
 
     const noOverrideOption = {title: i18nString(UIStrings.noOverride), location: NonPresetOptions.NoOverride};
-    this.locationSelectElement = (fields.createChild('select', 'chrome-select') as HTMLSelectElement);
+    this.locationSelectElement = fields.createChild('select');
     this.locationSelectElement.setAttribute('jslog', `${VisualLogging.dropDown().track({change: true})}`);
     UI.ARIAUtils.bindLabelToControl(geogroupTitle, this.locationSelectElement);
 
     // No override
     this.locationSelectElement.appendChild(
         UI.UIUtils.createOption(noOverrideOption.title, noOverrideOption.location, 'no-override'));
-    this.customLocationsGroup = (this.locationSelectElement.createChild('optgroup') as HTMLOptGroupElement);
+    this.customLocationsGroup = this.locationSelectElement.createChild('optgroup');
     this.customLocationsGroup.label = i18nString(UIStrings.overrides);
     const customLocations = Common.Settings.Settings.instance().moduleSetting('emulation.locations');
     const manageButton = UI.UIUtils.createTextButton(
@@ -298,14 +302,14 @@ export class SensorsView extends UI.Widget.VBox {
         UI.UIUtils.createOption(customLocationOption.title, customLocationOption.location, 'other'));
 
     // Error location.
-    const group = (this.locationSelectElement.createChild('optgroup') as HTMLOptGroupElement);
+    const group = this.locationSelectElement.createChild('optgroup');
     group.label = i18nString(UIStrings.error);
     group.appendChild(UI.UIUtils.createOption(
         i18nString(UIStrings.locationUnavailable), NonPresetOptions.Unavailable, 'unavailable'));
 
     this.locationSelectElement.selectedIndex = selectedIndex;
     this.locationSelectElement.addEventListener('change', this.#locationSelectChanged.bind(this));
-    this.fieldsetElement = (fields.createChild('fieldset') as HTMLFieldSetElement);
+    this.fieldsetElement = fields.createChild('fieldset');
     this.fieldsetElement.disabled = !this.#locationOverrideEnabled;
     this.fieldsetElement.id = 'location-override-section';
 
@@ -313,6 +317,7 @@ export class SensorsView extends UI.Widget.VBox {
     const longitudeGroup = this.fieldsetElement.createChild('div', 'latlong-group');
     const timezoneGroup = this.fieldsetElement.createChild('div', 'latlong-group');
     const localeGroup = this.fieldsetElement.createChild('div', 'latlong-group');
+    const accuracyGroup = this.fieldsetElement.createChild('div', 'latlong-group');
 
     const cmdOrCtrl = Host.Platform.isMac() ? '\u2318' : 'Ctrl';
     const modifierKeyMessage = i18nString(UIStrings.adjustWithMousewheelOrUpdownKeys, {PH1: cmdOrCtrl});
@@ -350,7 +355,7 @@ export class SensorsView extends UI.Widget.VBox {
     this.timezoneSetter(location.timezoneId);
     timezoneGroup.appendChild(
         UI.UIUtils.createLabel(i18nString(UIStrings.timezoneId), 'timezone-title', this.timezoneInput));
-    this.timezoneError = (timezoneGroup.createChild('div', 'timezone-error') as HTMLElement);
+    this.timezoneError = timezoneGroup.createChild('div', 'timezone-error');
 
     this.localeInput = UI.UIUtils.createInput('', 'text', 'locale');
     localeGroup.appendChild(this.localeInput);
@@ -359,7 +364,19 @@ export class SensorsView extends UI.Widget.VBox {
         this.localeInput, this.applyLocationUserInput.bind(this), SDK.EmulationModel.Location.localeValidator, false);
     this.localeSetter(location.locale);
     localeGroup.appendChild(UI.UIUtils.createLabel(i18nString(UIStrings.locale), 'locale-title', this.localeInput));
-    this.localeError = (localeGroup.createChild('div', 'locale-error') as HTMLElement);
+    this.localeError = localeGroup.createChild('div', 'locale-error');
+
+    this.accuracyInput = UI.UIUtils.createInput('', 'number', 'accuracy');
+    accuracyGroup.appendChild(this.accuracyInput);
+    this.accuracyInput.step = 'any';
+    this.accuracyInput.value = SDK.EmulationModel.Location.DEFAULT_ACCURACY.toString();
+    this.accuracySetter = UI.UIUtils.bindInput(
+        this.accuracyInput, this.applyLocationUserInput.bind(this),
+        (value: string) => SDK.EmulationModel.Location.accuracyValidator(value).valid, true, 1);
+    this.accuracySetter(String(location.accuracy || SDK.EmulationModel.Location.DEFAULT_ACCURACY));
+    accuracyGroup.appendChild(
+        UI.UIUtils.createLabel(i18nString(UIStrings.accuracy), 'accuracy-title', this.accuracyInput));
+    this.accuracyError = accuracyGroup.createChild('div', 'accuracy-error');
   }
 
   #locationSelectChanged(): void {
@@ -374,23 +391,26 @@ export class SensorsView extends UI.Widget.VBox {
       this.#locationOverrideEnabled = true;
       const location = SDK.EmulationModel.Location.parseUserInput(
           this.latitudeInput.value.trim(), this.longitudeInput.value.trim(), this.timezoneInput.value.trim(),
-          this.localeInput.value.trim());
+          this.localeInput.value.trim(), this.accuracyInput.value.trim());
       if (!location) {
         return;
       }
       this.#location = location;
     } else if (value === NonPresetOptions.Unavailable) {
       this.#locationOverrideEnabled = true;
-      this.#location = new SDK.EmulationModel.Location(0, 0, '', '', true);
+      this.#location =
+          new SDK.EmulationModel.Location(0, 0, '', '', SDK.EmulationModel.Location.DEFAULT_ACCURACY, true);
     } else {
       this.#locationOverrideEnabled = true;
       const coordinates = JSON.parse(value);
       this.#location = new SDK.EmulationModel.Location(
-          coordinates.lat, coordinates.long, coordinates.timezoneId, coordinates.locale, false);
+          coordinates.lat, coordinates.long, coordinates.timezoneId, coordinates.locale,
+          coordinates.accuracy || SDK.EmulationModel.Location.DEFAULT_ACCURACY, false);
       this.latitudeSetter(coordinates.lat);
       this.longitudeSetter(coordinates.long);
       this.timezoneSetter(coordinates.timezoneId);
       this.localeSetter(coordinates.locale);
+      this.accuracySetter(String(coordinates.accuracy || SDK.EmulationModel.Location.DEFAULT_ACCURACY));
     }
 
     this.applyLocation();
@@ -402,7 +422,7 @@ export class SensorsView extends UI.Widget.VBox {
   private applyLocationUserInput(): void {
     const location = SDK.EmulationModel.Location.parseUserInput(
         this.latitudeInput.value.trim(), this.longitudeInput.value.trim(), this.timezoneInput.value.trim(),
-        this.localeInput.value.trim());
+        this.localeInput.value.trim(), this.accuracyInput.value.trim());
     if (!location) {
       return;
     }
@@ -441,6 +461,7 @@ export class SensorsView extends UI.Widget.VBox {
     this.longitudeSetter('0');
     this.timezoneSetter('');
     this.localeSetter('');
+    this.accuracySetter(SDK.EmulationModel.Location.DEFAULT_ACCURACY.toString());
   }
 
   private createDeviceOrientationSection(): void {
@@ -475,7 +496,7 @@ export class SensorsView extends UI.Widget.VBox {
         {title: i18nString(UIStrings.displayDown), orientation: '[0, -180, 0]', jslogContext: 'displayUp-down'},
       ],
     }];
-    this.orientationSelectElement = (this.contentElement.createChild('select', 'chrome-select') as HTMLSelectElement);
+    this.orientationSelectElement = this.contentElement.createChild('select');
     this.orientationSelectElement.setAttribute('jslog', `${VisualLogging.dropDown().track({change: true})}`);
     UI.ARIAUtils.bindLabelToControl(orientationTitle, this.orientationSelectElement);
     this.orientationSelectElement.appendChild(UI.UIUtils.createOption(
@@ -484,7 +505,7 @@ export class SensorsView extends UI.Widget.VBox {
         UI.UIUtils.createOption(customOrientationOption.title, customOrientationOption.orientation, 'custom'));
 
     for (let i = 0; i < orientationGroups.length; ++i) {
-      const groupElement = (this.orientationSelectElement.createChild('optgroup') as HTMLOptGroupElement);
+      const groupElement = this.orientationSelectElement.createChild('optgroup');
       groupElement.label = orientationGroups[i].title;
       const group = orientationGroups[i].value;
       for (let j = 0; j < group.length; ++j) {
@@ -496,9 +517,9 @@ export class SensorsView extends UI.Widget.VBox {
     this.orientationSelectElement.addEventListener('change', this.orientationSelectChanged.bind(this));
 
     this.deviceOrientationFieldset = this.createDeviceOrientationOverrideElement(this.deviceOrientation);
-    this.stageElement = (orientationContent.createChild('div', 'orientation-stage') as HTMLElement);
+    this.stageElement = orientationContent.createChild('div', 'orientation-stage');
     this.stageElement.setAttribute('jslog', `${VisualLogging.preview().track({drag: true})}`);
-    this.orientationLayer = (this.stageElement.createChild('div', 'orientation-layer') as HTMLDivElement);
+    this.orientationLayer = this.stageElement.createChild('div', 'orientation-layer');
     this.boxElement = this.orientationLayer.createChild('section', 'orientation-box orientation-element');
 
     this.boxElement.createChild('section', 'orientation-front orientation-element');
@@ -620,10 +641,9 @@ export class SensorsView extends UI.Widget.VBox {
         {PH1: deviceOrientation.alpha, PH2: deviceOrientation.beta, PH3: deviceOrientation.gamma}));
   }
 
-  private createAxisInput(parentElement: Element, input: HTMLInputElement, label: string, validator: (arg0: string) => {
-    valid: boolean,
-    errorMessage: (string|undefined),
-  }): (arg0: string) => void {
+  private createAxisInput(
+      parentElement: Element, input: HTMLInputElement, label: string,
+      validator: (arg0: string) => boolean): (arg0: string) => void {
     const div = parentElement.createChild('div', 'orientation-axis-input-container');
     div.appendChild(input);
     div.appendChild(UI.UIUtils.createLabel(label, /* className */ '', input));

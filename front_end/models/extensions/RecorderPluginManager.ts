@@ -8,17 +8,17 @@ import type {RecorderExtensionEndpoint} from './RecorderExtensionEndpoint.js';
 
 let instance: RecorderPluginManager|null = null;
 
-export type ViewDescriptor = {
-  id: string,
-  title: string,
-  pagePath: string,
-  onShown: () => void,
-  onHidden: () => void,
-};
+export interface ViewDescriptor {
+  id: string;
+  title: string;
+  pagePath: string;
+  onShown: () => void;
+  onHidden: () => void;
+}
 
 export class RecorderPluginManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
-  #plugins: Set<RecorderExtensionEndpoint> = new Set();
-  #views: Map<string, ViewDescriptor> = new Map();
+  #plugins = new Set<RecorderExtensionEndpoint>();
+  #views = new Map<string, ViewDescriptor>();
 
   static instance(): RecorderPluginManager {
     if (!instance) {
@@ -70,9 +70,9 @@ export const enum Events {
   SHOW_VIEW_REQUESTED = 'showViewRequested',
 }
 
-export type EventTypes = {
-  [Events.PLUGIN_ADDED]: RecorderExtensionEndpoint,
-  [Events.PLUGIN_REMOVED]: RecorderExtensionEndpoint,
-  [Events.VIEW_REGISTERED]: ViewDescriptor,
-  [Events.SHOW_VIEW_REQUESTED]: ViewDescriptor,
-};
+export interface EventTypes {
+  [Events.PLUGIN_ADDED]: RecorderExtensionEndpoint;
+  [Events.PLUGIN_REMOVED]: RecorderExtensionEndpoint;
+  [Events.VIEW_REGISTERED]: ViewDescriptor;
+  [Events.SHOW_VIEW_REQUESTED]: ViewDescriptor;
+}

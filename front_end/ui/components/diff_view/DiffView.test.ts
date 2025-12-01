@@ -39,7 +39,7 @@ describeWithLocale('DiffView', () => {
   it('renders the proper content', async () => {
     const output = await simpleDiff();
     const lines = Array.from(output.querySelectorAll('.diff-line-content'));
-    assert.strictEqual(lines.length, 6);
+    assert.lengthOf(lines, 6);
     assert.strictEqual(lines.filter(l => !l.classList.contains('diff-line-addition')).map(text).join('\n'), original);
     assert.strictEqual(lines.filter(l => !l.classList.contains('diff-line-deletion')).map(text).join('\n'), updated);
   });
@@ -69,5 +69,26 @@ describeWithLocale('DiffView', () => {
     const view = await buildDiff(original, changed);
     assert.isTrue(view.querySelectorAll('.diff-line-content').length < 100);
     assert.isNotNull(view.querySelector('.diff-line-spacer'));
+  });
+
+  it('renders no-diff state when the diff is empty', async () => {
+    const view = new DiffView.DiffView.DiffView({diff: [], mimeType: ''});
+    await view.loaded;
+
+    assert.exists(view.shadowRoot?.querySelector('[data-testid="no-diff"]'));
+  });
+});
+
+describe('DiffWrapper', () => {
+  describe('lineDiff', () => {
+    it('should work with no changes', () => {
+      let diff = Diff.Diff.DiffWrapper.lineDiff([''], ['']);
+
+      assert.deepEqual(diff, []);
+
+      diff = Diff.Diff.DiffWrapper.lineDiff(['initial'], ['initial']);
+
+      assert.deepEqual(diff, []);
+    });
   });
 });

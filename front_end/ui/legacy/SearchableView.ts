@@ -1,6 +1,7 @@
 // Copyright 2021 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-imperative-dom-api */
 
 /*
  * Copyright (C) 2006, 2007, 2008 Apple Inc.  All rights reserved.
@@ -33,6 +34,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import './Toolbar.js'; // eslint-disable-line import/no-duplicates
+
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
@@ -41,11 +44,10 @@ import * as Buttons from '../components/buttons/buttons.js';
 import * as IconButton from '../components/icon_button/icon_button.js';
 
 import * as ARIAUtils from './ARIAUtils.js';
-import {HistoryInput} from './HistoryInput.js';
 import {InspectorView} from './InspectorView.js';
-import searchableViewStyles from './searchableView.css.legacy.js';
-import {Toolbar, ToolbarButton, ToolbarText, ToolbarToggle} from './Toolbar.js';
-import {createTextButton} from './UIUtils.js';
+import searchableViewStyles from './searchableView.css.js';
+import {ToolbarButton, ToolbarText, ToolbarToggle} from './Toolbar.js';  // eslint-disable-line import/no-duplicates
+import {createHistoryInput, createTextButton} from './UIUtils.js';
 import {VBox} from './Widget.js';
 
 const UIStrings = {
@@ -122,7 +124,7 @@ const UIStrings = {
    *@description Text on a button to search previous instance for the ctrl+F search bar
    */
   clearInput: 'Clear',
-};
+} as const;
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/SearchableView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
@@ -150,7 +152,7 @@ export class SearchableView extends VBox {
   private readonly footerElementContainer: HTMLElement;
   private readonly footerElement: HTMLElement;
   private replaceToggleButton: ToolbarToggle;
-  private searchInputElement: HistoryInput;
+  private searchInputElement: HTMLInputElement;
   private matchesElement: HTMLElement;
   private searchNavigationPrevElement: ToolbarButton;
   private searchNavigationNextElement: ToolbarButton;
@@ -180,7 +182,7 @@ export class SearchableView extends VBox {
     this.footerElement = this.footerElementContainer.createChild('div', 'toolbar-search');
     this.footerElement.setAttribute('jslog', `${VisualLogging.toolbar('search').track({resize: true})}`);
 
-    const replaceToggleToolbar = new Toolbar('replace-toggle-toolbar', this.footerElement);
+    const replaceToggleToolbar = this.footerElement.createChild('devtools-toolbar', 'replace-toggle-toolbar');
     this.replaceToggleButton =
         new ToolbarToggle(i18nString(UIStrings.enableFindAndReplace), 'replace', undefined, 'replace');
     ARIAUtils.setLabel(this.replaceToggleButton.element, i18nString(UIStrings.enableFindAndReplace));
@@ -193,9 +195,7 @@ export class SearchableView extends VBox {
     const searchIcon = IconButton.Icon.create('search');
     iconAndInput.appendChild(searchIcon);
 
-    this.searchInputElement = HistoryInput.create();
-    this.searchInputElement.type = 'search';
-    this.searchInputElement.classList.add('search-replace', 'search');
+    this.searchInputElement = createHistoryInput('search', 'search-replace search');
     this.searchInputElement.id = 'search-input-field';
     this.searchInputElement.autocomplete = 'off';
     this.searchInputElement.placeholder = i18nString(UIStrings.findString);
@@ -207,7 +207,7 @@ export class SearchableView extends VBox {
     iconAndInput.appendChild(this.searchInputElement);
 
     const replaceInputElements = searchInputElements.createChild('div', 'replace-element input-line');
-    this.replaceInputElement = replaceInputElements.createChild('input', 'search-replace') as HTMLInputElement;
+    this.replaceInputElement = replaceInputElements.createChild('input', 'search-replace');
     this.replaceInputElement.addEventListener('keydown', this.onReplaceKeyDown.bind(this), true);
     this.replaceInputElement.placeholder = i18nString(UIStrings.replace);
     this.replaceInputElement.setAttribute(
@@ -272,7 +272,7 @@ export class SearchableView extends VBox {
     const buttonsContainer = this.footerElement.createChild('div', 'toolbar-search-buttons');
     const firstRowButtons = buttonsContainer.createChild('div', 'first-row-buttons');
 
-    const toolbar = new Toolbar('toolbar-search-options', firstRowButtons);
+    const toolbar = firstRowButtons.createChild('devtools-toolbar', 'toolbar-search-options');
     this.searchNavigationPrevElement =
         new ToolbarButton(i18nString(UIStrings.searchPrevious), 'chevron-up', undefined, 'select-previous');
     this.searchNavigationPrevElement.addEventListener(ToolbarButton.Events.CLICK, () => this.onPrevButtonSearch());
@@ -428,10 +428,6 @@ export class SearchableView extends VBox {
     this.updateSearchMatchesCountAndCurrentMatchIndex(untypedSearchProvider.currentSearchMatches, currentMatchIndex);
   }
 
-  isSearchVisible(): boolean {
-    return Boolean(this.searchIsVisible);
-  }
-
   closeSearch(): void {
     this.cancelSearch();
     if (this.footerElementContainer.hasFocus()) {
@@ -528,7 +524,7 @@ export class SearchableView extends VBox {
     let queryCandidate;
     if (!this.searchInputElement.hasFocus()) {
       const selection = InspectorView.instance().element.window().getSelection();
-      if (selection && selection.rangeCount) {
+      if (selection?.rangeCount) {
         queryCandidate = selection.toString().replace(/\r?\n.*/, '');
       }
     }
@@ -552,8 +548,7 @@ export class SearchableView extends VBox {
     }
   }
 
-  private onSearchKeyDown(ev: Event): void {
-    const event = (ev as KeyboardEvent);
+  private onSearchKeyDown(event: KeyboardEvent): void {
     if (Platform.KeyboardUtilities.isEscKey(event)) {
       this.closeSearch();
       event.consume(true);
@@ -735,7 +730,7 @@ export class SearchConfig {
         regex = new RegExp(query.substring(1, query.length - 1), modifiers);
         fromQuery = true;
       }
-    } catch (e) {
+    } catch {
       // Silent catch.
     }
 

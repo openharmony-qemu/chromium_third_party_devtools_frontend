@@ -3,9 +3,18 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-
 import type * as puppeteer from 'puppeteer-core';
 
+import {
+  $,
+  activeElementTextContent,
+  assertNotNullOrUndefined,
+  clickElement,
+  getBrowserAndPages,
+  waitFor,
+  waitForFunction,
+  waitForMany,
+} from '../../shared/helper.js';
 import {
   addBreakpointForLine,
   getLineNumberElement,
@@ -15,17 +24,6 @@ import {
   retrieveCodeMirrorEditorContent,
 } from '../helpers/sources-helpers.js';
 
-import {
-  $,
-  assertNotNullOrUndefined,
-  waitForFunction,
-  waitFor,
-  activeElementTextContent,
-  getBrowserAndPages,
-  waitForMany,
-  clickElement,
-} from '../../shared/helper.js';
-
 const BREAKPOINT_VIEW_COMPONENT = 'devtools-breakpoint-view';
 const FIRST_BREAKPOINT_ITEM_SELECTOR = '[data-first-breakpoint]';
 const BREAKPOINT_ITEM_SELECTOR = '.breakpoint-item';
@@ -34,7 +32,7 @@ const GROUP_HEADER_TITLE_SELECTOR = '.group-header-title';
 const CODE_SNIPPET_SELECTOR = '.code-snippet';
 
 async function extractTextContentIfConnected(element: puppeteer.ElementHandle): Promise<string|null> {
-  return element.evaluate(element => element.isConnected ? element.textContent : null);
+  return await element.evaluate(element => element.isConnected ? element.textContent : null);
 }
 
 describe('The Breakpoints Sidebar', () => {
@@ -72,11 +70,10 @@ describe('The Breakpoints Sidebar', () => {
     const fileName = 'click-breakpoint.js';
 
     beforeEach(async () => {
-      const {frontend} = getBrowserAndPages();
       await openSourceCodeEditorForFile(fileName, 'click-breakpoint.html');
 
       for (const location of expectedLocations) {
-        await addBreakpointForLine(frontend, location);
+        await addBreakpointForLine(location);
       }
 
       await waitForMany(BREAKPOINT_ITEM_SELECTOR, 3);
@@ -105,15 +102,14 @@ describe('The Breakpoints Sidebar', () => {
       const sourceContent = await retrieveCodeMirrorEditorContent();
       const expectedCodeSnippets = expectedLocations.map(line => sourceContent[line - 1]);
 
-      assert.deepStrictEqual(actualCodeSnippets, expectedCodeSnippets);
+      assert.deepEqual(actualCodeSnippets, expectedCodeSnippets);
     });
   });
 
   describe('for wasm files', () => {
     it('shows the correct code snippets', async () => {
-      const {frontend} = getBrowserAndPages();
       await openSourceCodeEditorForFile('memory.wasm', 'wasm/memory.html');
-      await addBreakpointForLine(frontend, '0x037');
+      await addBreakpointForLine('0x037');
 
       const codeSnippetHandle = await waitFor(`${BREAKPOINT_ITEM_SELECTOR} ${CODE_SNIPPET_SELECTOR}`);
       const actualCodeSnippet = await extractTextContentIfConnected(codeSnippetHandle);

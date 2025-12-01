@@ -1,13 +1,12 @@
 // Copyright 2024 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable rulesdir/no-lit-render-outside-of-view */
 
-import * as LitHtml from '../../lit-html/lit-html.js';
+import {html, nothing, render} from '../../lit/lit.js';
 import * as VisualLogging from '../../visual_logging/visual_logging.js';
 
 import switchStyles from './switch.css.js';
-
-const {html} = LitHtml;
 
 export class SwitchChangeEvent extends Event {
   static readonly eventName = 'switchchange';
@@ -24,7 +23,6 @@ export class Switch extends HTMLElement {
   #jslogContext = '';
 
   connectedCallback(): void {
-    this.#shadow.adoptedStyleSheets = [switchStyles];
     this.#render();
   }
 
@@ -62,20 +60,21 @@ export class Switch extends HTMLElement {
 
   #render(): void {
     const jslog = this.#jslogContext && VisualLogging.toggle(this.#jslogContext).track({change: true});
-    /* eslint-disable rulesdir/inject_checkbox_styles */
+    /* eslint-disable rulesdir/inject-checkbox-styles */
     // clang-format off
-    LitHtml.render(html`
-    <label role="button">
+    render(html`
+    <style>${switchStyles}</style>
+    <label role="button" jslog=${jslog || nothing}>
       <input type="checkbox"
         @change=${this.#handleChange}
         ?disabled=${this.#disabled}
         .checked=${this.#checked}
-        jslog=${jslog || LitHtml.nothing}>
+      >
       <span class="slider" @click=${(ev: Event) => ev.stopPropagation()}></span>
     </label>
     `, this.#shadow, {host: this});
     // clang-format on
-    /* eslint-enable rulesdir/inject_checkbox_styles */
+    /* eslint-enable rulesdir/inject-checkbox-styles */
   }
 }
 

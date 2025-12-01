@@ -8,9 +8,11 @@ import {
 import {
   describeWithMockConnection,
 } from '../../testing/MockConnection.js';
-import type * as Platform from '../platform/platform.js';
+import * as Platform from '../platform/platform.js';
 
 import * as SDK from './sdk.js';
+
+const {urlString} = Platform.DevToolsPath;
 
 describeWithMockConnection('Target', () => {
   let tabTarget: SDK.Target.Target;
@@ -37,11 +39,11 @@ describeWithMockConnection('Target', () => {
   it('notifies about inspected URL change', () => {
     const inspectedURLChanged = sinon.spy(SDK.TargetManager.TargetManager.instance(), 'onInspectedURLChange');
 
-    subframeTarget.setInspectedURL('https://example.com/' as Platform.DevToolsPath.UrlString);
-    assert.isTrue(inspectedURLChanged.calledOnce);
+    subframeTarget.setInspectedURL(urlString`https://example.com/`);
+    sinon.assert.calledOnce(inspectedURLChanged);
 
-    mainFrameTargetUnderTab.setInspectedURL('https://example.com/' as Platform.DevToolsPath.UrlString);
-    assert.isTrue(inspectedURLChanged.calledTwice);
+    mainFrameTargetUnderTab.setInspectedURL(urlString`https://example.com/`);
+    sinon.assert.calledTwice(inspectedURLChanged);
   });
 
   it('determines outermost target', () => {
@@ -57,5 +59,39 @@ describeWithMockConnection('Target', () => {
     assert.isNull(browserTarget.outermostTarget());
     const serviceWorkerTarget = createTarget({type: SDK.Target.Type.ServiceWorker, parentTarget: browserTarget});
     assert.strictEqual(serviceWorkerTarget.outermostTarget(), serviceWorkerTarget);
+  });
+
+  it('tries to resume itself if it was crashed and is then recovered', () => {
+    const target = createTarget();
+    target.setHasCrashed(true);
+    const spy = sinon.spy(target, 'resume');
+    target.setHasCrashed(false);
+    sinon.assert.calledOnce(spy);
+  });
+
+  it('does not resume itself if it was not already crashed', async () => {
+    const target = createTarget();
+    target.setHasCrashed(true);
+    const spy = sinon.spy(target, 'resume');
+    // Call this twice, but ensure we only call the spy once.
+    target.setHasCrashed(false);
+    target.setHasCrashed(false);
+    sinon.assert.callCount(spy, 1);
+  });
+
+  it('marks a crashed target as suspended', async () => {
+    const target = createTarget();
+    target.setHasCrashed(true);
+    await target.suspend();
+    assert.isTrue(target.suspended());
+  });
+
+  it('marks a crashed, suspended target as resumed', async () => {
+    const target = createTarget();
+    target.setHasCrashed(true);
+    await target.suspend();
+    assert.isTrue(target.suspended());
+    await target.resume();
+    assert.isFalse(target.suspended());
   });
 });

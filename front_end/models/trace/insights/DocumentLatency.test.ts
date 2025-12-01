@@ -3,19 +3,15 @@
 // found in the LICENSE file.
 
 import {describeWithEnvironment} from '../../../testing/EnvironmentHelpers.js';
-import {createContextForNavigation, getFirstOrError, getInsightOrError} from '../../../testing/InsightHelpers.js';
+import {
+  createContextForNavigation,
+  getFirstOrError,
+  getInsightOrError,
+  processTrace,
+} from '../../../testing/InsightHelpers.js';
 import {TraceLoader} from '../../../testing/TraceLoader.js';
 import * as Trace from '../trace.js';
 import * as Types from '../types/types.js';
-
-export async function processTrace(testContext: Mocha.Suite|Mocha.Context|null, traceFile: string) {
-  const {parsedTrace, insights} = await TraceLoader.traceEngine(testContext, traceFile);
-  if (!insights) {
-    throw new Error('No insights');
-  }
-
-  return {data: parsedTrace, insights};
-}
 
 describeWithEnvironment('DocumentLatency', function() {
   it('reports savings for main document with redirects', async () => {
@@ -31,7 +27,7 @@ describeWithEnvironment('DocumentLatency', function() {
     const insight =
         getInsightOrError('DocumentLatency', insights, getFirstOrError(data.Meta.navigationsByNavigationId.values()));
     assert.strictEqual(insight.data?.serverResponseTime, 43);
-    assert(!insight.data?.serverResponseTooSlow);
+    assert.isTrue(insight.data?.checklist.serverResponseIsFast.value);
     assert.deepEqual(insight.metricSavings, {FCP: 0, LCP: 0} as Trace.Insights.Types.MetricSavings);
   });
 
@@ -47,7 +43,7 @@ describeWithEnvironment('DocumentLatency', function() {
       throw new Error('missing timing field');
     }
     mainRequestEvent.args.data.timing.receiveHeadersEnd =
-        Types.Timing.MilliSeconds(mainRequestEvent.args.data.timing.receiveHeadersEnd + 1000);
+        Types.Timing.Milli(mainRequestEvent.args.data.timing.receiveHeadersEnd + 1000);
     traceEvents[mainRequestEventIndex] = mainRequestEvent;
 
     await processor.parse(traceEvents, {isCPUProfile: false, isFreshRecording: true});
@@ -60,7 +56,7 @@ describeWithEnvironment('DocumentLatency', function() {
     const context = createContextForNavigation(data, navigation, data.Meta.mainFrameId);
     const insight = Trace.Insights.Models.DocumentLatency.generateInsight(data, context);
     assert.strictEqual(insight.data?.serverResponseTime, 1043);
-    assert(insight.data?.serverResponseTooSlow);
+    assert.isFalse(insight.data?.checklist.serverResponseIsFast.value);
     assert.deepEqual(insight.metricSavings, {FCP: 943, LCP: 943} as Trace.Insights.Types.MetricSavings);
   });
 
@@ -97,14 +93,15 @@ describeWithEnvironment('DocumentLatency', function() {
     assert.deepEqual(insight.metricSavings, {FCP: 0, LCP: 0} as Trace.Insights.Types.MetricSavings);
   });
 
-  it('reports savings for main document with many issues, many redirects', async () => {
+  // Flaky
+  it.skip('[crbug.com/404184366] reports savings for main document with many issues, many redirects', async () => {
     const {data, insights} = await processTrace(this, 'many-redirects.json.gz');
     const insight =
         getInsightOrError('DocumentLatency', insights, getFirstOrError(data.Meta.navigationsByNavigationId.values()));
     assert.strictEqual(insight.data?.redirectDuration, 6059);
     assert.strictEqual(insight.data?.uncompressedResponseBytes, 111506);
     assert.strictEqual(insight.data?.serverResponseTime, 2008);
-    assert(insight.data?.serverResponseTooSlow);
+    assert.isFalse(insight.data?.checklist.serverResponseIsFast.value);
     assert.deepEqual(insight.metricSavings, {FCP: 7967, LCP: 7967} as Trace.Insights.Types.MetricSavings);
   });
 });

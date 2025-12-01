@@ -14,7 +14,6 @@ import {
   waitForFunction,
   waitForNone,
 } from '../../shared/helper.js';
-
 import {elementContainsTextWithSelector} from '../helpers/network-helpers.js';
 import {openGoToLineQuickOpen} from '../helpers/quick_open-helpers.js';
 import {togglePreferenceInSettingsTab} from '../helpers/settings-helpers.js';
@@ -33,11 +32,6 @@ const PRETTY_PRINT_BUTTON = '[aria-label="Pretty print"]';
 const PRETTY_PRINTED_TOGGLE = 'devtools-text-editor.pretty-printed';
 
 describe('The Sources Tab', function() {
-  // The tests in this suite are particularly slow, as they perform a lot of actions
-  if (this.timeout() > 0) {
-    this.timeout(10000);
-  }
-
   it('can pretty-print a JavaScript file inline', async () => {
     await openSourceCodeEditorForFile('minified-sourcecode.js', 'minified-sourcecode.html');
 
@@ -110,7 +104,7 @@ describe('The Sources Tab', function() {
         '}',
       ];
       const actualPrettyText = await retrieveCodeMirrorEditorContent();
-      assert.deepStrictEqual(expectedPrettyLines, actualPrettyText);
+      assert.deepEqual(expectedPrettyLines, actualPrettyText);
     });
 
     await step('can highlight the pretty-printed text', async () => {
@@ -161,7 +155,7 @@ describe('The Sources Tab', function() {
   });
 
   it('can add breakpoint for pretty-printed file', async () => {
-    const {target, frontend} = getBrowserAndPages();
+    const {target} = getBrowserAndPages();
 
     await openSourceCodeEditorForFile('minified-sourcecode.js', 'minified-sourcecode.html');
     await click(PRETTY_PRINT_BUTTON);
@@ -169,17 +163,17 @@ describe('The Sources Tab', function() {
 
     // Set a breakpoint in line 6 of the pretty-printed view (which is the
     // line with the label "6" not the 6th line from the top).
-    await addBreakpointForLine(frontend, 6);
+    await addBreakpointForLine(6);
 
     const scriptLocation = await retrieveTopCallFrameScriptLocation('notFormattedFunction();', target);
     assert.deepEqual(scriptLocation, 'minified-sourcecode.js:6');
   });
 
   it('can add breakpoint on minified source and then break correctly on pretty-printed source', async () => {
-    const {target, frontend} = getBrowserAndPages();
+    const {target} = getBrowserAndPages();
 
     await openSourceCodeEditorForFile('minified-sourcecode.js', 'minified-sourcecode.html');
-    await addBreakpointForLine(frontend, 6);
+    await addBreakpointForLine(6);
     await click(PRETTY_PRINT_BUTTON);
     await waitFor(PRETTY_PRINTED_TOGGLE);
 
@@ -203,7 +197,7 @@ describe('The Sources Tab', function() {
   it('automatically pretty-prints minified code (by default)', async () => {
     await openSourceCodeEditorForFile('minified-sourcecode-1.min.js', 'minified-sourcecode-1.html');
     const lines = await retrieveCodeMirrorEditorContent();
-    assert.strictEqual(lines.length, 23);
+    assert.lengthOf(lines, 23);
   });
 
   it('does not automatically pretty-print minified code (when disabled via settings)', async () => {
@@ -211,13 +205,13 @@ describe('The Sources Tab', function() {
 
     await openSourceCodeEditorForFile('minified-sourcecode-1.min.js', 'minified-sourcecode-1.html');
     const lines = await retrieveCodeMirrorEditorContent();
-    assert.strictEqual(lines.length, 3);
+    assert.lengthOf(lines, 3);
   });
 
   it('does not automatically pretty-print authored code', async () => {
     await openSourceCodeEditorForFile('minified-sourcecode-1.js', 'minified-sourcecode-1.html');
     const lines = await retrieveCodeMirrorEditorContent();
-    assert.strictEqual(lines.length, 2);
+    assert.lengthOf(lines, 2);
   });
 
   it('shows execution position and inline variables in large pretty-printed minified code', async () => {
