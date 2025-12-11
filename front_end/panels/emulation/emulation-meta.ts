@@ -185,7 +185,7 @@ Common.Settings.registerSettingExtension({
 
 UI.Toolbar.registerToolbarItem({
   actionId: 'emulation.toggle-device-mode',
-  // #ifdef ARKWEB_DEVTOOLS	
+  // #ifdef ARKWEB_DEVTOOLS
   //condition: Root.Runtime.conditions.canDock,
   condition: Root.Runtime.conditions.useOrignal,
   // #endif ARKWEB_DEVTOOLS
