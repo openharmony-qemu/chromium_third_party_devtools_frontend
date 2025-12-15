@@ -81,10 +81,7 @@ UI.ActionRegistration.registerActionExtension({
     const Emulation = await loadEmulationModule();
     return new Emulation.DeviceModeWrapper.ActionDelegate();
   },
-  // #ifdef ARKWEB_DEVTOOLS
-  //condition: Root.Runtime.conditions.canDock,
-  condition: Root.Runtime.conditions.useOrignal,
-  // #endif ARKWEB_DEVTOOLS
+  condition: Root.Runtime.conditions.canDock,
   title: i18nLazyString(UIStrings.toggleDeviceToolbar),
   iconClass: UI.ActionRegistration.IconClass.LARGEICON_PHONE,
   bindings: [
