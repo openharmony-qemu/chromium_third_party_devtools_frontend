@@ -1,2 +1,6 @@
 /WATCHLISTS @ringking0
 /tsconfig.json @ringking0
+
+# CCS
+*.ts @shawshank
+*.js @shawshank
