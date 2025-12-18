@@ -503,7 +503,10 @@ export class MainImpl {
 
     this.#addMainEventListeners(document);
 
+    // #ifdef ARKWEB_DEVTOOLS
+    // const canDock = Boolean(Root.Runtime.Runtime.queryParam('can_dock'));
     const canDock = Boolean((Root.Runtime.Runtime.queryParam('can_dock') || '').toLowerCase() === 'true');
+    // #ENDIF ARKWEB_DEVTOOLS
     UI.ZoomManager.ZoomManager.instance(
         {forceNew: true, win: window, frontendHost: Host.InspectorFrontendHost.InspectorFrontendHostInstance});
     UI.ContextMenu.ContextMenu.initialize();
