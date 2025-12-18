@@ -503,7 +503,7 @@ export class MainImpl {
 
     this.#addMainEventListeners(document);
 
-    const canDock = Boolean(Root.Runtime.Runtime.queryParam('can_dock'));
+    const canDock = Boolean((Root.Runtime.Runtime.queryParam('can_dock') || '').toLowerCase() === 'true');
     UI.ZoomManager.ZoomManager.instance(
         {forceNew: true, win: window, frontendHost: Host.InspectorFrontendHost.InspectorFrontendHostInstance});
     UI.ContextMenu.ContextMenu.initialize();
