@@ -156,6 +156,10 @@ const enum ScreenStatusType {
 
 const coordinator = Coordinator.RenderCoordinator.RenderCoordinator.instance();
 
+// ARKWEB_ARKWEB_EXTENSIONS start
+const for_ohos = true;
+// ARKWEB_ARKWEB_EXTENSIONS end
+
 export class BackForwardCacheView extends LegacyWrapper.LegacyWrapper.WrappableComponent {
   readonly #shadow = this.attachShadow({mode: 'open'});
   #screenStatus = ScreenStatusType.RESULT;
@@ -257,6 +261,14 @@ export class BackForwardCacheView extends LegacyWrapper.LegacyWrapper.WrappableC
     // as the browser navigates to another unrelated page and goes back to the current page.
     // We chose "chrome://terms" because it must be cross-site.
     // Ideally, We want to have our own testing page like "chrome: //bfcache-test".
+
+    // ARKWEB_ARKWEB_EXTENSIONS start
+    if (for_ohos) {
+      // Arkweb on OHOS platform only supports "arkweb://" scheme.
+      void resourceTreeModel.navigate('arkweb://version' as Platform.DevToolsPath.UrlString);
+      return;
+    }
+    // ARKWEB_ARKWEB_EXTENSIONS end
     void resourceTreeModel.navigate('chrome://terms' as Platform.DevToolsPath.UrlString);
   }
 
