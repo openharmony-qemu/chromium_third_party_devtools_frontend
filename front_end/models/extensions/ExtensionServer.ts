@@ -55,6 +55,10 @@ import {LanguageExtensionEndpoint} from './LanguageExtensionEndpoint.js';
 import {RecorderExtensionEndpoint} from './RecorderExtensionEndpoint.js';
 import {RecorderPluginManager} from './RecorderPluginManager.js';
 
+// ARKWEB_ARKWEB_EXTENSIONS start
+const for_ohos = true;
+// ARKWEB_ARKWEB_EXTENSIONS end
+
 const extensionOrigins: WeakMap<MessagePort, Platform.DevToolsPath.UrlString> = new WeakMap();
 
 declare global {
@@ -1409,6 +1413,13 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<EventTyp
     if (kAllowedOrigins.includes(parsedURL.origin)) {
       return true;
     }
+    // ARKWEB_ARKWEB_EXTENSIONS start
+    if (for_ohos) {
+      if (parsedURL.protocol === 'arkweb:') {
+        return false;
+      }
+    }
+    // ARKWEB_ARKWEB_EXTENSIONS end
     if (parsedURL.protocol === 'chrome:' || parsedURL.protocol === 'devtools:' ||
         parsedURL.protocol === 'chrome-untrusted:' || parsedURL.protocol === 'chrome-error:' ||
         parsedURL.protocol === 'chrome-search:') {
