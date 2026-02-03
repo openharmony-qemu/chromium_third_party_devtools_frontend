@@ -382,7 +382,6 @@ input::placeholder {
 .chrome-select {
   appearance: none;
   user-select: none;
-  width: var(--sys-size-22);
   height: var(--sys-size-11);
   border: var(--sys-size-1) solid var(--sys-color-neutral-outline);
   border-radius: var(--sys-shape-corner-extra-small);
