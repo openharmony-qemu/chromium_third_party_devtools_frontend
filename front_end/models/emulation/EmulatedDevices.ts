@@ -1081,7 +1081,7 @@ const emulatedDevices = [
     'screen': {
       'horizontal': {
         'outline': {
-          // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+          // #if BUILDFLAG(ARKWEB_DEVTOOLS)
           // 'image': '@url(optimized/google-nest-hub-max-horizontal.avif)',
           'image': '@url(google-nest-hub-max-horizontal.png)',
           // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1109,7 +1109,7 @@ const emulatedDevices = [
     'screen': {
       'horizontal': {
         'outline': {
-          // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+          // #if BUILDFLAG(ARKWEB_DEVTOOLS)
           // 'image': '@url(optimized/google-nest-hub-horizontal.avif)',
           'image': '@url(google-nest-hub-horizontal.png)',
           // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1154,7 +1154,7 @@ const emulatedDevices = [
     'screen': {
       'horizontal': {
         'outline': {
-          // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+          // #if BUILDFLAG(ARKWEB_DEVTOOLS)
           // 'image': '@url(optimized/iPhone5-landscape.avif)',
           'image': '@url(iPhone5-landscape.svg)',
           // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1166,7 +1166,7 @@ const emulatedDevices = [
       'device-pixel-ratio': 2,
       'vertical': {
         'outline': {
-          // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+          // #if BUILDFLAG(ARKWEB_DEVTOOLS)
           // 'image': '@url(optimized/iPhone5-portrait.avif)',
           'image': '@url(iPhone5-portrait.svg)',
           // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1188,7 +1188,7 @@ const emulatedDevices = [
     'screen': {
       'horizontal': {
         'outline': {
-          // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+          // #if BUILDFLAG(ARKWEB_DEVTOOLS)
           // 'image': '@url(optimized/iPhone6-landscape.avif)',
           'image': '@url(iPhone6-landscape.svg)',
           // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1200,7 +1200,7 @@ const emulatedDevices = [
       'device-pixel-ratio': 2,
       'vertical': {
         'outline': {
-          // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+          // #if BUILDFLAG(ARKWEB_DEVTOOLS)
           // 'image': '@url(optimized/iPhone6-portrait.avif)',
           'image': '@url(iPhone6-portrait.svg)',
           // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1222,7 +1222,7 @@ const emulatedDevices = [
     'screen': {
       'horizontal': {
         'outline': {
-          // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+          // #if BUILDFLAG(ARKWEB_DEVTOOLS)
           // 'image': '@url(optimized/iPhone6Plus-landscape.avif)',
           'image': '@url(iPhone6Plus-landscape.svg)',
           // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1234,7 +1234,7 @@ const emulatedDevices = [
       'device-pixel-ratio': 3,
       'vertical': {
         'outline': {
-          // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+          // #if BUILDFLAG(ARKWEB_DEVTOOLS)
           // 'image': '@url(optimized/iPhone6Plus-portrait.avif)',
           'image': '@url(iPhone6Plus-portrait.svg)',
           // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1311,7 +1311,7 @@ const emulatedDevices = [
         'orientation': 'vertical',
         'insets': {'left': 0, 'top': 25, 'right': 0, 'bottom': 48},
         'image':
-            // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+            // #if BUILDFLAG(ARKWEB_DEVTOOLS)
             // '@url(optimized/google-nexus-5-vertical-default-1x.avif) 1x, @url(optimized/google-nexus-5-vertical-default-2x.avif) 2x',
             '@url(google-nexus-5-vertical-default-1x.png) 1x, @url(google-nexus-5-vertical-default-2x.png) 2x',
             // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1321,7 +1321,7 @@ const emulatedDevices = [
         'orientation': 'vertical',
         'insets': {'left': 0, 'top': 80, 'right': 0, 'bottom': 48},
         'image':
-            // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+            // #if BUILDFLAG(ARKWEB_DEVTOOLS)
             // '@url(optimized/google-nexus-5-vertical-navigation-1x.avif) 1x, @url(optimized/google-nexus-5-vertical-navigation-2x.avif) 2x',
             '@url(google-nexus-5-vertical-navigation-1x.png) 1x, @url(google-nexus-5-vertical-navigation-2x.png) 2x',
             // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1331,7 +1331,7 @@ const emulatedDevices = [
         'orientation': 'vertical',
         'insets': {'left': 0, 'top': 80, 'right': 0, 'bottom': 312},
         'image':
-            // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+            // #if BUILDFLAG(ARKWEB_DEVTOOLS)
             // '@url(optimized/google-nexus-5-vertical-keyboard-1x.avif) 1x, @url(optimized/google-nexus-5-vertical-keyboard-2x.avif) 2x',
             '@url(google-nexus-5-vertical-keyboard-1x.png) 1x, @url(google-nexus-5-vertical-keyboard-2x.png) 2x',
             // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1341,7 +1341,7 @@ const emulatedDevices = [
         'orientation': 'horizontal',
         'insets': {'left': 0, 'top': 25, 'right': 42, 'bottom': 0},
         'image':
-            // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+            // #if BUILDFLAG(ARKWEB_DEVTOOLS)
             // '@url(optimized/google-nexus-5-horizontal-default-1x.avif) 1x, @url(optimized/google-nexus-5-horizontal-default-2x.avif) 2x',
             '@url(google-nexus-5-horizontal-default-1x.png) 1x, @url(google-nexus-5-horizontal-default-2x.png) 2x',
             // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1351,7 +1351,7 @@ const emulatedDevices = [
         'orientation': 'horizontal',
         'insets': {'left': 0, 'top': 80, 'right': 42, 'bottom': 0},
         'image':
-            // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+            // #if BUILDFLAG(ARKWEB_DEVTOOLS)
             // '@url(optimized/google-nexus-5-horizontal-navigation-1x.avif) 1x, @url(optimized/google-nexus-5-horizontal-navigation-2x.avif) 2x',
             '@url(google-nexus-5-horizontal-navigation-1x.png) 1x, @url(google-nexus-5-horizontal-navigation-2x.png) 2x',
             // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1361,7 +1361,7 @@ const emulatedDevices = [
         'orientation': 'horizontal',
         'insets': {'left': 0, 'top': 80, 'right': 42, 'bottom': 202},
         'image':
-            // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+            // #if BUILDFLAG(ARKWEB_DEVTOOLS)
             // '@url(optimized/google-nexus-5-horizontal-keyboard-1x.avif) 1x, @url(optimized/google-nexus-5-horizontal-keyboard-2x.avif) 2x',
             '@url(google-nexus-5-horizontal-keyboard-1x.png) 1x, @url(google-nexus-5-horizontal-keyboard-2x.png) 2x',
             // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1381,9 +1381,9 @@ const emulatedDevices = [
       'device-pixel-ratio': 2.625,
       'vertical': {
         'outline': {
-          // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
-          // 'insets': {'left': 18, 'top': 88, 'right': 22, 'bottom': 98},
-          'image': '@url(optimized/Nexus5X-portrait.avif)',
+          // #if BUILDFLAG(ARKWEB_DEVTOOLS)
+          // 'image': '@url(optimized/Nexus5X-portrait.avif)',
+          'image': '@url(optimized/Nexus5X-portrait.svg)',
           // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
           'insets': {'left': 18, 'top': 88, 'right': 22, 'bottom': 98},
         },
@@ -1392,7 +1392,7 @@ const emulatedDevices = [
       },
       'horizontal': {
         'outline': {
-          // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+          // #if BUILDFLAG(ARKWEB_DEVTOOLS)
           // 'image': '@url(optimized/Nexus5X-landscape.avif)',
           'image': '@url(Nexus5X-landscape.svg)',
           // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1408,7 +1408,7 @@ const emulatedDevices = [
         'orientation': 'vertical',
         'insets': {'left': 0, 'top': 24, 'right': 0, 'bottom': 48},
         'image':
-            // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+            // #if BUILDFLAG(ARKWEB_DEVTOOLS)
             // '@url(optimized/google-nexus-5x-vertical-default-1x.avif) 1x, @url(optimized/google-nexus-5x-vertical-default-2x.avif) 2x',
             '@url(google-nexus-5x-vertical-default-1x.png) 1x, @url(google-nexus-5x-vertical-default-2x.png) 2x',
             // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1418,7 +1418,7 @@ const emulatedDevices = [
         'orientation': 'vertical',
         'insets': {'left': 0, 'top': 80, 'right': 0, 'bottom': 48},
         'image':
-            // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+            // #if BUILDFLAG(ARKWEB_DEVTOOLS)
             // '@url(optimized/google-nexus-5x-vertical-navigation-1x.avif) 1x, @url(optimized/google-nexus-5x-vertical-navigation-2x.avif) 2x',
             '@url(google-nexus-5x-vertical-navigation-1x.png) 1x, @url(google-nexus-5x-vertical-navigation-2x.png) 2x',
             // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1428,7 +1428,7 @@ const emulatedDevices = [
         'orientation': 'vertical',
         'insets': {'left': 0, 'top': 80, 'right': 0, 'bottom': 342},
         'image':
-            // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+            // #if BUILDFLAG(ARKWEB_DEVTOOLS)
             // '@url(optimized/google-nexus-5x-vertical-keyboard-1x.avif) 1x, @url(optimized/google-nexus-5x-vertical-keyboard-2x.avif) 2x',
             '@url(google-nexus-5x-vertical-keyboard-1x.png) 1x, @url(google-nexus-5x-vertical-keyboard-2x.png) 2x',
             // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1438,7 +1438,7 @@ const emulatedDevices = [
         'orientation': 'horizontal',
         'insets': {'left': 0, 'top': 24, 'right': 48, 'bottom': 0},
         'image':
-            // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+            // #if BUILDFLAG(ARKWEB_DEVTOOLS)
             // '@url(optimized/google-nexus-5x-horizontal-default-1x.avif) 1x, @url(optimized/google-nexus-5x-horizontal-default-2x.avif) 2x',
             '@url(google-nexus-5x-horizontal-default-1x.png) 1x, @url(google-nexus-5x-horizontal-default-2x.png) 2x',
             // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1448,7 +1448,7 @@ const emulatedDevices = [
         'orientation': 'horizontal',
         'insets': {'left': 0, 'top': 80, 'right': 48, 'bottom': 0},
         'image':
-            // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+            // #if BUILDFLAG(ARKWEB_DEVTOOLS)
             // '@url(optimized/google-nexus-5x-horizontal-navigation-1x.avif) 1x, @url(optimized/google-nexus-5x-horizontal-navigation-2x.avif) 2x',
             '@url(google-nexus-5x-horizontal-navigation-1x.png) 1x, @url(google-nexus-5x-horizontal-navigation-2x.png) 2x',
             // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1458,7 +1458,7 @@ const emulatedDevices = [
         'orientation': 'horizontal',
         'insets': {'left': 0, 'top': 80, 'right': 48, 'bottom': 222},
         'image':
-            // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+            // #if BUILDFLAG(ARKWEB_DEVTOOLS)
             // '@url(optimized/google-nexus-5x-horizontal-keyboard-1x.avif) 1x, @url(optimized/google-nexus-5x-horizontal-keyboard-2x.avif) 2x',
             '@url(google-nexus-5x-horizontal-keyboard-1x.png) 1x, @url(google-nexus-5x-horizontal-keyboard-2x.png) 2x',
             // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1486,7 +1486,7 @@ const emulatedDevices = [
     'screen': {
       'horizontal': {
         'outline': {
-          // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+          // #if BUILDFLAG(ARKWEB_DEVTOOLS)
           // 'image': '@url(optimized/Nexus6P-landscape.avif)',
           'image': '@url(Nexus6P-landscape.svg)',
           // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1498,7 +1498,7 @@ const emulatedDevices = [
       'device-pixel-ratio': 3.5,
       'vertical': {
         'outline': {
-          // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+          // #if BUILDFLAG(ARKWEB_DEVTOOLS)
           // 'image': '@url(optimized/Nexus6P-portrait.avif)',
           'image': '@url(Nexus6P-portrait.svg)',
           // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1765,7 +1765,7 @@ const emulatedDevices = [
     'screen': {
       'horizontal': {
         'outline': {
-          // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+          // #if BUILDFLAG(ARKWEB_DEVTOOLS)
           // 'image': '@url(optimized/iPad-landscape.avif)',
           'image': '@url(iPad-landscape.svg)',
           // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1777,7 +1777,7 @@ const emulatedDevices = [
       'device-pixel-ratio': 2,
       'vertical': {
         'outline': {
-          // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+          // #if BUILDFLAG(ARKWEB_DEVTOOLS)
           // 'image': '@url(optimized/iPad-portrait.avif)',
           'image': '@url(iPad-portrait.svg)',
           // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1936,7 +1936,7 @@ const emulatedDevices = [
     'screen': {
       'horizontal': {
         'outline': {
-          // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+          // #if BUILDFLAG(ARKWEB_DEVTOOLS)
           // 'image': '@url(optimized/MotoG4-landscape.avif)',
           'image': '@url(MotoG4-landscape.svg)',
           // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
@@ -1948,7 +1948,7 @@ const emulatedDevices = [
       'device-pixel-ratio': 3,
       'vertical': {
         'outline': {
-          // #if #if BUILDFLAG(ARKWEB_DEVTOOLS)
+          // #if BUILDFLAG(ARKWEB_DEVTOOLS)
           // 'image': '@url(optimized/MotoG4-portrait.avif)',
           'image': '@url(MotoG4-portrait.svg)',
           // #endif BUILDFLAG(ARKWEB_DEVTOOLS)
