@@ -403,5 +403,6 @@ export const conditions = {
   canDock: () => Boolean(Runtime.queryParam('can_dock')),
   // #ifdef ARKWEB_DEVTOOLS
   useOrignal: () => Boolean(Runtime.queryParam('use_orignal')),
+  showToolbox: () => Boolean(Runtime.queryParam('showToolbox')),
   // #endif ARKWEB_DEVTOOLS
 };
