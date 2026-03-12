@@ -221,7 +221,12 @@ export const updateStyle = (currentStyle: Map<string, {value: string, priority: 
   const ALLOWED_PROPERTY_PREFIXES = ['background', 'border', 'color', 'font', 'line', 'margin', 'padding', 'text'];
   // We only allow data URLs with the `url()` CSS function.
   // The capture group is not intended to grab the whole URL exactly, just enough so we can check the scheme.
-  const URL_REGEX = /url\([\'\"]?([^\)]*)/g;
+  // The regex also covers CSS hex-escaped variations of `url()`.
+  const URL_REGEX = new RegExp(`(?=${cssEscapeRegex('url')}\\(['"]?([^\\)]*))`, 'gi');
+  // We greedily capture all `image-set()`s to make sure that all of
+  // them properly use `url()`s to enforce the data URL check later.
+  const IMAGESET_REGEX = new RegExp(`(?=(${cssEscapeRegex('image-set')}\\(.*))`, 'gi');
+  const GOOD_IMAGESET_REGEX = /^image-set\((?:(?:(?:url|type)\("[^\\"]*"\)|[\d.]+(?:x|dpi|dpcm|dppx)),?\s*)+\)/i;
 
   currentStyle.clear();
   const buffer = document.createElement('span');
@@ -232,9 +237,15 @@ export const updateStyle = (currentStyle: Map<string, {value: string, priority: 
       continue;
     }
 
+    const value = buffer.style.getPropertyValue(property);
+    // We make sure every `image-set()` only uses `url()`s for its images.
+    // If any of them seem malformed, we skip the whole property.
+    const imageSets = [...value.matchAll(IMAGESET_REGEX)];
+    if (imageSets.some(match => !GOOD_IMAGESET_REGEX.test(match[1]))) {
+      continue;
+    }
     // There could be multiple `url()` functions, so we check them all.
     // If any of them is not a `data` URL, we skip the whole property.
-    const value = buffer.style.getPropertyValue(property);
     const potentialUrls = [...value.matchAll(URL_REGEX)].map(match => match[1]);
     if (potentialUrls.some(
             potentialUrl => !Common.ParsedURL.schemeIs(potentialUrl as Platform.DevToolsPath.UrlString, 'data:'))) {
