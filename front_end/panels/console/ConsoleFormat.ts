@@ -199,6 +199,24 @@ export const format = (fmt: string, args: SDK.RemoteObject.RemoteObject[]): {
   return {tokens, args: args.slice(argIndex)};
 };
 
+/**
+ * This function converts a string into a partial regex string that
+ * case-insensitively matches it in CSS, even if CSS escapes are used.
+ *
+ * @param cssString the target string.
+ * @returns a partial regex matching the string in CSS.
+ */
+const cssEscapeRegex = (cssString: string): string => {
+  return [...cssString]
+      .map(char => {
+        const charCodes = new Set([char.toLowerCase(), char.toUpperCase()].map(c => c.charCodeAt(0).toString(16)));
+        const charCodeRegex =
+            [...charCodes].map(charCode => `\\\\0{0,${6 - charCode.length}}${charCode}[ \\n\\t]?`).join('|');
+        return `\\\\?(?:${charCodeRegex}|${char})`;
+      })
+      .join('');
+};
+
 export const updateStyle = (currentStyle: Map<string, {value: string, priority: string}>, styleToAdd: string): void => {
   const ALLOWED_PROPERTY_PREFIXES = ['background', 'border', 'color', 'font', 'line', 'margin', 'padding', 'text'];
   // We only allow data URLs with the `url()` CSS function.
