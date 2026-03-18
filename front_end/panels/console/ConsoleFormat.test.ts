@@ -476,10 +476,10 @@ describe('ConsoleFormat', () => {
 
       const styles = new Map();
 
-      Console.ConsoleFormat.updateStyle(styles, `border-image-source:url(${dataUrl})`);
+      Console.ConsoleFormat.updateStyle(styles, `background-image:url(${dataUrl})`);
       assert.include(styles.get('background-image').value, 'data:image/png;base64');
 
-      Console.ConsoleFormat.updateStyle(styles, `border-image-source:${dataUrl}`);
+      Console.ConsoleFormat.updateStyle(styles, `border-image-source:url(${dataUrl})`);
       assert.include(styles.get('border-image-source').value, 'data:image/png;base64');
 
       Console.ConsoleFormat.updateStyle(
