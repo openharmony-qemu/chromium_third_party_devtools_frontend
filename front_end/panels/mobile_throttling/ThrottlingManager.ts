@@ -19,6 +19,10 @@ import {
   ThrottlingPresets,
 } from './ThrottlingPresets.js';
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 export interface CPUThrottlingSelectorWrapper {
   control: UI.Toolbar.ToolbarComboBox;
   updateRecommendedOption(recommendedOption: SDK.CPUThrottlingManager.CPUThrottlingOption|null): void;

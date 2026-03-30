@@ -849,7 +849,9 @@ export class UserAgentClientHintsForm extends HTMLElement {
     // clang-format on
 
     // clang-format off
-    const output = html`
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    let output = html`
       <style>${Input.checkboxStyles}</style>
       <style>${userAgentClientHintsFormStyles}</style>
       <section class="root">
@@ -904,6 +906,48 @@ export class UserAgentClientHintsForm extends HTMLElement {
         <div aria-live="polite" aria-label=${this.#useragentModifiedAriaMessage}></div>
       </section>
     `;
+    if (adaptForOhos) {
+      output = html`
+        <section class="root">
+          <div
+            class="tree-title"
+            role="button"
+            @click=${this.#handleTreeClick}
+            tabindex=${this.#isFormDisabled ? '-1' : '0'}
+            @keydown=${this.#handleTreeExpand}
+            aria-expanded=${this.#isFormOpened}
+            aria-controls="form-container"
+            aria-disabled=${this.#isFormDisabled}
+            aria-label=${i18nString(UIStrings.title)}
+            jslog=${VisualLogging.toggleSubpane().track({click: true})}
+          >
+            <devtools-icon
+              class=${this.#isFormOpened ? 'rotate-icon' : ''}
+              .data=${{
+                color: 'var(--icon-default)',
+                iconName: 'triangle-right',
+                width: '14px',
+              }}
+            ></devtools-icon>
+            ${i18nString(UIStrings.title)}
+          </div>
+          <form
+            id="form-container"
+            class="form-container ${this.#isFormOpened ? '' : 'hide-container'}"
+            @submit=${this.#handleSubmit}
+          >
+            ${useragentSection}
+            ${fullVersionListSection}
+            ${fullBrowserInput}
+            ${platformSection}
+            ${architectureInput}
+            ${deviceModelSection}
+            ${submitButton}
+          </form>
+          <div aria-live="polite" aria-label=${this.#useragentModifiedAriaMessage}></div>
+        </section>
+      `;
+    }
     // clang-format on
     Lit.render(output, this.#shadow, {host: this});
   }

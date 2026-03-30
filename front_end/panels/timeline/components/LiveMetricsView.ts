@@ -1150,7 +1150,9 @@ export class LiveMetricsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
         Platform.DevToolsPath.UrlString;
 
     // clang-format off
-    const output = html`
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    let output = html`
       <style>${liveMetricsViewStyles}</style>
       <style>${metricValueStyles}</style>
       <div class="container">
@@ -1205,6 +1207,50 @@ export class LiveMetricsView extends LegacyWrapper.LegacyWrapper.WrappableCompon
         </div>
       </div>
     `;
+    if (adaptForOhos) {
+      output = html`
+        <style>${liveMetricsViewStyles}</style>
+        <style>${metricValueStyles}</style>
+        <div class="container">
+          <div class="live-metrics-view">
+            <main class="live-metrics">
+              <h2 class="section-title">${liveMetricsTitle}</h2>
+              <div class="metric-cards"
+                ${Lit.Directives.ref(el => {
+                  if (el instanceof HTMLElement) {
+                    this.#tooltipContainerEl = el;
+                  }
+                })}
+              >
+                <div id="lcp">
+                  ${this.#renderLcpCard()}
+                </div>
+                <div id="cls">
+                  ${this.#renderClsCard()}
+                </div>
+                <div id="inp">
+                  ${this.#renderInpCard()}
+                </div>
+              </div>
+              ${this.#renderLogSection()}
+            </main>
+            <aside class="next-steps" aria-labelledby="next-steps-section-title">
+              <h2 id="next-steps-section-title" class="section-title">${i18nString(UIStrings.nextSteps)}</h2>
+              <div id="recording-settings" class="settings-card">
+                ${this.#renderRecordingSettings()}
+              </div>
+              <div id="record" class="record-action-card">
+                ${this.#renderRecordAction(this.#toggleRecordAction)}
+              </div>
+              <div id="record-page-load" class="record-action-card">
+                ${this.#renderRecordAction(this.#recordReloadAction)}
+              </div>
+            </aside>
+          </div>
+        </div>
+      `;
+    }
+    // #endif ARKWEB_DEVTOOLS
     Lit.render(output, this.#shadow, {host: this});
   };
   // clang-format on

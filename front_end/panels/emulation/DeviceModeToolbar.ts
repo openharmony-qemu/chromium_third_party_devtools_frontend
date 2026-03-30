@@ -554,9 +554,11 @@ export class DeviceModeToolbar {
         {checked: this.model.type() === EmulationModel.DeviceModeModel.Type.Responsive, jslogContext: 'responsive'});
     appendGroup.call(this, this.standardDevices());
     appendGroup.call(this, this.customDevices());
-    contextMenu.footerSection().appendItem(
-        i18nString(UIStrings.edit), this.emulatedDevicesList.revealCustomSetting.bind(this.emulatedDevicesList),
-        {jslogContext: 'edit'});
+    // #ifdef ARKWEB_DEVTOOLS
+    // contextMenu.footerSection().appendItem(
+    //     i18nString(UIStrings.edit), this.emulatedDevicesList.revealCustomSetting.bind(this.emulatedDevicesList),
+    //     {jslogContext: 'edit'});
+    // #endif ARKWEB_DEVTOOLS
 
     function appendGroup(this: DeviceModeToolbar, devices: EmulationModel.EmulatedDevices.EmulatedDevice[]): void {
       if (!devices.length) {

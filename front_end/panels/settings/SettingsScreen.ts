@@ -542,6 +542,12 @@ export class ActionDelegate implements UI.ActionRegistration.ActionDelegate {
         void SettingsScreen.showSettingsScreen({focusTabHeader: true} as ShowSettingsScreenOptions);
         return true;
       case 'settings.documentation':
+      // #ifdef ARKWEB_DEVTOOLS
+      const adaptForOhos = true;
+      if (adaptForOhos) {
+        return true;
+      }
+      // #endif ARKWEB_DEVTOOLS
         UIHelpers.openInNewTab('https://developer.chrome.com/docs/devtools/');
         return true;
       case 'settings.shortcuts':

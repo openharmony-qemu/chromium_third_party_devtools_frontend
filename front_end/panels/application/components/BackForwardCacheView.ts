@@ -49,7 +49,7 @@ const UIStrings = {
    * the back/forward cache was not used and a normal navigation occurred instead.
    */
   normalNavigation:
-      'Not served from back/forward cache: to trigger back/forward cache, use Chrome\'s back/forward buttons, or use the test button below to automatically navigate away and back.',
+      'Not served from back/forward cache: to trigger back/forward cache, use ArkWeb\'s back/forward buttons, or use the test button below to automatically navigate away and back.',
   /**
    * @description Status text for the status of the back/forward cache status indicating that
    * the back/forward cache was used to restore the page instead of reloading it.
@@ -110,7 +110,7 @@ const UIStrings = {
    * for back/forward cache.
    */
   supportPendingExplanation:
-      'Chrome support for these reasons is pending i.e. they will not prevent the page from being eligible for back/forward cache in a future version of Chrome.',
+      'ArkWeb support for these reasons is pending i.e. they will not prevent the page from being eligible for back/forward cache in a future version of ArkWeb.',
   /**
    * @description Text that precedes displaying a link to the extension which blocked the page from being eligible for back/forward cache.
    */
@@ -154,6 +154,10 @@ const enum ScreenStatusType {
   RESULT = 'Result',
 }
 
+// ARKWEB_ARKWEB_EXTENSIONS start
+const for_ohos = true;
+// ARKWEB_ARKWEB_EXTENSIONS end
+
 function renderMainFrameInformation(
     frame: SDK.ResourceTreeModel.ResourceTreeFrame|null,
     frameTreeData: {node: FrameTreeNodeData, frameCount: number, issueCount: number}|undefined,
@@ -174,6 +178,36 @@ function renderMainFrameInformation(
   // Prevent running BFCache test on the DevTools window itself via DevTools on DevTools
   const isTestingForbidden = Common.ParsedURL.schemeIs(frame.url, 'devtools:');
   // clang-format off
+  // #ifdef ARKWEB_DEVTOOLS
+  const adaptForOhos = true;
+  if (adaptForOhos) {
+    return html`
+    ${renderBackForwardCacheStatus(frame.backForwardCacheDetails.restoredFromCache)}
+    <devtools-report-key>${i18nString(UIStrings.url)}</devtools-report-key>
+    <devtools-report-value>${frame.url}</devtools-report-value>
+    ${maybeRenderFrameTree(frameTreeData)}
+    <devtools-report-section>
+      <devtools-button
+        aria-label=${i18nString(UIStrings.runTest)}
+        .disabled=${isTestRunning || isTestingForbidden}
+        .spinner=${isTestRunning}
+        .variant=${Buttons.Button.Variant.PRIMARY}
+        @click=${navigateAwayAndBack}
+        jslog=${VisualLogging.action('back-forward-cache.run-test').track({click: true})}>
+        ${isTestRunning ? html`
+          ${i18nString(UIStrings.runningTest)}`:`
+          ${i18nString(UIStrings.runTest)}
+        `}
+      </devtools-button>
+    </devtools-report-section>
+    <devtools-report-divider>
+    </devtools-report-divider>
+    ${maybeRenderExplanations(frame.backForwardCacheDetails.explanations,
+        frame.backForwardCacheDetails.explanationsTree,
+        reasonToFramesMap)}
+    `;
+  }
+  // #endif ARKWEB_DEVTOOLS
   return html`
     ${renderBackForwardCacheStatus(frame.backForwardCacheDetails.restoredFromCache)}
     <devtools-report-key>${i18nString(UIStrings.url)}</devtools-report-key>
@@ -367,6 +401,11 @@ function renderFramesPerReason(frames: string[]|undefined): LitTemplate {
 }
 
 function maybeRenderDeepLinkToUnload(explanation: Protocol.Page.BackForwardCacheNotRestoredExplanation): LitTemplate {
+  // #ifdef ARKWEB_DEVTOOLS
+  const adaptForOhos = true;
+  if (adaptForOhos) {
+    // ohos doesn't support external links
+  } else {
   if (explanation.reason === Protocol.Page.BackForwardCacheNotRestoredReason.UnloadHandlerExistsInMainFrame ||
       explanation.reason === Protocol.Page.BackForwardCacheNotRestoredReason.UnloadHandlerExistsInSubFrame) {
     return html`
@@ -377,6 +416,8 @@ function maybeRenderDeepLinkToUnload(explanation: Protocol.Page.BackForwardCache
           ${i18nString(UIStrings.neverUseUnload)}
         </x-link>`;
   }
+  }
+  // #endif ARKWEB_DEVTOOLS
   return nothing;
 }
 
@@ -562,6 +603,14 @@ export class BackForwardCacheView extends UI.Widget.Widget {
     // as the browser navigates to another unrelated page and goes back to the current page.
     // We chose "chrome://terms" because it must be cross-site.
     // Ideally, We want to have our own testing page like "chrome: //bfcache-test".
+
+    // ARKWEB_ARKWEB_EXTENSIONS start
+    if (for_ohos) {
+      // Arkweb on OHOS platform only supports "arkweb://" scheme.
+      void resourceTreeModel.navigate('arkweb://version' as Platform.DevToolsPath.UrlString);
+      return;
+    }
+    // ARKWEB_ARKWEB_EXTENSIONS end
     void resourceTreeModel.navigate('chrome://terms' as Platform.DevToolsPath.UrlString);
   }
 

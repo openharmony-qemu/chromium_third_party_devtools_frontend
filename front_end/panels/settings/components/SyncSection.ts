@@ -27,22 +27,22 @@ const UIStrings = {
    * @description Text shown to the user in the Settings UI. 'This setting' refers
    * to a checkbox that is disabled.
    */
-  syncDisabled: 'To turn this setting on, you must enable Chrome sync.',
+  syncDisabled: 'To turn this setting on, you must enable ArkWeb sync.',
   /**
    * @description Text shown to the user in the Settings UI. Explains why the checkbox
    * for saving DevTools settings to the user's Google account is inactive.
    */
-  preferencesSyncDisabled: 'You need to first enable saving `Chrome` settings in your `Google` account.',
+  preferencesSyncDisabled: 'You need to first enable saving `ArkWeb` settings in your account.',
   /**
    * @description Label for the account email address. Shown in the DevTools Settings UI in
    * front of the email address currently used for Chrome Sync.
    */
-  signedIn: 'Signed into Chrome as:',
+  signedIn: 'Signed into ArkWeb as:',
   /**
    * @description Label for the account settings. Shown in the DevTools Settings UI in
    * case the user is not logged in to Chrome.
    */
-  notSignedIn: 'You\'re not signed into Chrome.',
+  notSignedIn: 'You\'re not signed into ArkWeb.',
   /**
    * @description Label for the Google Developer Program profile status that corresponds to
    * standard plan (No subscription).

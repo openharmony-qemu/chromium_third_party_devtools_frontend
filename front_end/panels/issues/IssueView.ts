@@ -318,7 +318,8 @@ export class IssueView extends UI.TreeOutline.TreeElement {
     }
     this.#updateAffectedResourcesPositionAndSize(visibleAffectedResource);
 
-    this.#createReadMoreLinks();
+    // ARKWEB_DEVTOOLS
+    //this.#createReadMoreLinks();
     this.updateAffectedResourceVisibility();
     this.#contentCreated = true;
   }

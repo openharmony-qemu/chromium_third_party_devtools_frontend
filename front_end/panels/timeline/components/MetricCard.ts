@@ -611,7 +611,9 @@ export class MetricCard extends HTMLElement {
     const fieldValueEl = renderMetricValue(this.#getMetricValueLogContext(false), fieldValue, thresholds, formatFn);
 
     // clang-format off
-    const output = html`
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    let output = html`
       <style>${metricCardStyles}</style>
       <style>${metricValueStyles}</style>
       <div class="metric-card">
@@ -674,6 +676,65 @@ export class MetricCard extends HTMLElement {
         <slot name="extra-info"></slot>
       </div>
     `;
+    if (adaptForOhos) {
+      output = html`
+        <style>${metricCardStyles}</style>
+        <style>${metricValueStyles}</style>
+        <div class="metric-card">
+          <h3 class="title">
+            ${this.#getTitle()}
+          </h3>
+          <div tabindex="0" class="metric-values-section"
+            @mouseenter=${() => this.#showTooltip(500)}
+            @mouseleave=${this.#hideTooltipOnMouseLeave}
+            @focusin=${this.#showTooltip}
+            @focusout=${this.#hideTooltipOnFocusOut}
+            aria-describedby="tooltip"
+          >
+            <div class="metric-source-block">
+              <div class="metric-source-value" id="local-value">${localValueEl}</div>
+              ${fieldEnabled ? html`<div class="metric-source-label">${i18nString(UIStrings.localValue)}</div>` : nothing}
+            </div>
+            ${fieldEnabled ? html`
+              <div class="metric-source-block">
+                <div class="metric-source-value" id="field-value">${fieldValueEl}</div>
+                <div class="metric-source-label">${i18nString(UIStrings.field75thPercentile)}</div>
+              </div>
+            `: nothing}
+            <div
+              id="tooltip"
+              class="tooltip"
+              role="tooltip"
+              aria-label=${i18nString(UIStrings.viewCardDetails)}
+              ${Lit.Directives.ref(el => {
+                if (el instanceof HTMLElement) {
+                  this.#tooltipEl = el as HTMLElement;
+                }
+              })}
+            >
+              <div class="tooltip-scroll">
+                <div class="tooltip-contents">
+                  <div>
+                    ${this.#renderDetailedCompareString()}
+                    <hr class="divider">
+                    ${this.#renderFieldHistogram()}
+                    ${localValue && this.#data.phases ? this.#renderPhaseTable(this.#data.phases) : nothing}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          ${fieldEnabled ? html`<hr class="divider">` : nothing}
+          ${this.#renderCompareString()}
+          ${this.#data.warnings?.map(warning => html`
+            <div class="warning">${warning}</div>
+          `)}
+          ${this.#renderEnvironmentRecommendations()}
+          <slot name="extra-info"></slot>
+        </div>
+      `;
+    }
+    // #endif ARKWEB_DEVTOOLS
     Lit.render(output, this.#shadow, {host: this});
   };
   // clang-format on
