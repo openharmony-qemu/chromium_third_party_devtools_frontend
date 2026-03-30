@@ -224,6 +224,11 @@ export class ServiceWorkersView extends UI.Widget.VBox implements
     othersView.setHeaderVisible(false);
     othersView.show(othersDiv);
     const othersSection = othersView.appendSection(i18nString(UIStrings.serviceWorkersFromOtherOrigins));
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
     const othersSectionRow = othersSection.appendRow();
     const seeOthers =
         UI.Fragment
@@ -237,6 +242,8 @@ export class ServiceWorkersView extends UI.Widget.VBox implements
       event.consume(true);
     });
     othersSectionRow.appendChild(seeOthers);
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     this.toolbar.appendToolbarItem(
         MobileThrottling.ThrottlingManager.throttlingManager().createOfflineToolbarCheckbox());

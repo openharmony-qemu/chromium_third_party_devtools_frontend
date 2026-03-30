@@ -49,7 +49,10 @@ devtools_ui_module("emulation") {
   ]
 
   public_deps =
-      [ "../../emulated_devices/optimized:optimized_emulated_devices" ]
+#if BUILDFLAG(ARKWEB_DEVTOOLS)
+      # [ "../../emulated_devices/optimized:optimized_emulated_devices" ]
+      [ "../../emulated_devices:emulated_devices" ]
+#endif BUILDFLAG(ARKWEB_DEVTOOLS)
 }
 
 devtools_entrypoint("bundle") {

@@ -49,7 +49,14 @@ export class ServiceWorkerCacheTreeElement extends ExpandableApplicationPanelTre
         resourcesPanel, i18nString(UIStrings.cacheStorage), i18nString(UIStrings.noCacheStorage),
         i18nString(UIStrings.cacheStorageDescription), 'cache-storage');
     const icon = createIcon('database');
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
     this.setLink('https://developer.chrome.com/docs/devtools/storage/cache/' as Platform.DevToolsPath.UrlString);
+    }
+    // #endif ARKWEB_DEVTOOLS
     this.setLeadingIcons([icon]);
     this.swCacheModels = new Set();
     this.swCacheTreeElements = new Set();

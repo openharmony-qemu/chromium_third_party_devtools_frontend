@@ -173,6 +173,105 @@ export const DEFAULT_VIEW = (input: ViewInput, output: ViewOutput, target: HTMLE
   ]);
 
   // clang-format off
+  // #ifdef ARKWEB_DEVTOOLS
+  const adaptForOhos = true;
+  if (adaptForOhos) {
+    Lit.render(
+      html`
+        <style>${createRecordingViewStyles}</style>
+        <style>${Input.textInputStyles}</style>
+        <style>${Input.checkboxStyles}</style>
+        <div class="wrapper" jslog=${VisualLogging.section('create-recording-view')}>
+          <div class="header-wrapper">
+            <h1>${i18nString(UIStrings.createRecording)}</h1>
+            <devtools-button
+              title=${i18nString(UIStrings.cancelRecording)}
+              jslog=${VisualLogging.close().track({click: true})}
+              .data=${
+                {
+                  variant: Buttons.Button.Variant.ICON,
+                  size: Buttons.Button.Size.SMALL,
+                  iconName: 'cross',
+                } as Buttons.Button.ButtonData
+              }
+              @click=${onRecordingCancelled}
+            ></devtools-button>
+          </div>
+          <label class="row-label" for="user-flow-name">${i18nString(
+            UIStrings.recordingName,
+          )}</label>
+          <input
+            value=${name}
+            @focus=${() => nameInputRef.value?.select()}
+            @keydown=${onKeyDown}
+            jslog=${VisualLogging.textField('user-flow-name').track({change: true})}
+            class="devtools-text-input"
+            id="user-flow-name"
+            ${ref(nameInputRef)}
+            @input=${(e:Event) => onUpdate({
+              name: (e.target as HTMLInputElement).value.trim()
+            })}
+          />
+          <label class="row-label" for="selector-attribute">
+            <span>${i18nString(UIStrings.selectorAttribute)}</span>
+          </label>
+          <input
+            value=${selectorAttribute}
+            placeholder="data-testid"
+            @keydown=${onKeyDown}
+            jslog=${VisualLogging.textField('selector-attribute').track({change: true})}
+            class="devtools-text-input"
+            id="selector-attribute"
+            @input=${(e:Event) => onUpdate({
+              selectorAttribute: (e.target as HTMLInputElement).value.trim()
+            })}
+          />
+          <label class="row-label">
+            <span>${i18nString(UIStrings.selectorTypes)}</span>
+          </label>
+          <div class="checkbox-container">
+            ${repeat(selectorTypes, item => {
+              return html`
+                <label class="checkbox-label selector-type">
+                  <input
+                    @keydown=${onKeyDown}
+                    .value=${item.selectorType}
+                    jslog=${VisualLogging.toggle().track({click: true}).context(`selector-${item.selectorType}`)}
+                    ?checked=${item.checked}
+                    type="checkbox"
+                    @change=${(e:Event) => onUpdate({
+                      selectorType: item.selectorType,
+                      checked: (e.target as HTMLInputElement).checked
+                    })}
+                  />
+                  ${selectorTypeToLabel.get(item.selectorType) || item.selectorType}
+                </label>
+              `;
+            })}
+          </div>
+          ${
+            error &&
+            html` <div class="error" role="alert"> ${error.message} </div>`
+          }
+        </div>
+        <div class="footer">
+          <div class="controls">
+            <devtools-control-button
+              @click=${onRecordingStarted}
+              .label=${i18nString(UIStrings.startRecording)}
+              .shape=${'circle'}
+              jslog=${VisualLogging.action(Actions.RecorderActions.START_RECORDING).track({click: true})}
+              title=${Models.Tooltip.getTooltipForActions(
+                i18nString(UIStrings.startRecording),
+                Actions.RecorderActions.START_RECORDING,
+              )}
+            ></devtools-control-button>
+          </div>
+        </div>
+      `,
+      target,
+    );
+  } else {
   Lit.render(
     html`
       <style>${createRecordingViewStyles}</style>
@@ -282,6 +381,8 @@ export const DEFAULT_VIEW = (input: ViewInput, output: ViewOutput, target: HTMLE
     `,
     target,
   );
+  }
+  // #endif ARKWEB_DEVTOOLS
   // clang-format on
 };
 

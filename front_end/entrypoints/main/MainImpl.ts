@@ -313,11 +313,21 @@ export class MainImpl {
   }
 
   #initializeExperiments(): void {
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    // #endif ARKWEB_DEVTOOLS
     Root.Runtime.experiments.register('capture-node-creation-stacks', 'Capture node creation stacks');
     Root.Runtime.experiments.register('live-heap-profile', 'Live heap profile', true);
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      Root.Runtime.experiments.register(
+        'protocol-monitor', 'Protocol Monitor');
+    } else {
     Root.Runtime.experiments.register(
         'protocol-monitor', 'Protocol Monitor', undefined,
         'https://developer.chrome.com/blog/new-in-devtools-92/#protocol-monitor');
+    }
+    // #endif ARKWEB_DEVTOOLS
     Root.Runtime.experiments.register('sampling-heap-profiler-timeline', 'Sampling heap profiler timeline', true);
     Root.Runtime.experiments.register(
         'show-option-tp-expose-internals-in-heap-snapshot', 'Show option to expose internals in heap snapshots');
@@ -337,9 +347,29 @@ export class MainImpl {
     Root.Runtime.experiments.register('use-source-map-scopes', 'Use scope information from source maps', true);
 
     // Advanced Perceptual Contrast Algorithm.
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      Root.Runtime.experiments.register(
+        'apca',
+        'Enable new Advanced Perceptual Contrast Algorithm (APCA) \
+        replacing previous contrast ratio and AA/AAA guidelines');
+
+    // Full Accessibility Tree
+    Root.Runtime.experiments.register(
+        'full-accessibility-tree', 'Enable full accessibility tree view in the Elements panel');
+
+    // Font Editor
+    Root.Runtime.experiments.register(
+        'font-editor', 'Enable new font editor within the Styles tab');
+
+    // Contrast issues reported via the Issues panel.
+    Root.Runtime.experiments.register(
+        'contrast-issues', 'Enable automatic contrast issue reporting via the Issues panel');
+    } else {
     Root.Runtime.experiments.register(
         'apca',
-        'Enable new Advanced Perceptual Contrast Algorithm (APCA) replacing previous contrast ratio and AA/AAA guidelines',
+          'Enable new Advanced Perceptual Contrast Algorithm (APCA) \
+          replacing previous contrast ratio and AA/AAA guidelines',
         undefined, 'https://developer.chrome.com/blog/new-in-devtools-89/#apca');
 
     // Full Accessibility Tree
@@ -357,6 +387,8 @@ export class MainImpl {
     Root.Runtime.experiments.register(
         'contrast-issues', 'Enable automatic contrast issue reporting via the Issues panel', undefined,
         'https://developer.chrome.com/blog/new-in-devtools-90/#low-contrast');
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     // New cookie features.
     Root.Runtime.experiments.register('experimental-cookie-features', 'Enable experimental cookie features');
@@ -425,7 +457,10 @@ export class MainImpl {
 
     this.#addMainEventListeners(document);
 
-    const canDock = Boolean(Root.Runtime.Runtime.queryParam('can_dock'));
+    // #ifdef ARKWEB_DEVTOOLS
+    // const canDock = Boolean(Root.Runtime.Runtime.queryParam('can_dock'));
+    const canDock = Boolean((Root.Runtime.Runtime.queryParam('can_dock') || '').toLowerCase() === 'true');
+    // #endif ARKWEB_DEVTOOLS
     UI.ZoomManager.ZoomManager.instance(
         {forceNew: true, win: window, frontendHost: Host.InspectorFrontendHost.InspectorFrontendHostInstance});
     UI.ContextMenu.ContextMenu.initialize();
@@ -986,8 +1021,15 @@ export class MainMenuItem implements UI.Toolbar.Provider {
       }, {additionalElement, isPreviewFeature: viewExtension.isPreviewFeature(), jslogContext: id});
     }
 
+    // #if BUILDFLAG(ARKWEB_DEVTOOLS)
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support this
+    } else {
     const helpSubMenu = contextMenu.footerSection().appendSubMenuItem(i18nString(UIStrings.help), false, 'help');
     helpSubMenu.appendItemsAtLocation('mainMenuHelp');
+  }
+    // #endif // ARKWEB_DEVTOOLS
   }
 }
 

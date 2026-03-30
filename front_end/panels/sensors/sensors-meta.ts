@@ -130,6 +130,11 @@ async function loadEmulationModule(): Promise<typeof Sensors> {
   return loadedSensorsModule;
 }
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+if (adaptForOhos) {
+  // arkweb does't support network request blocking.
+} else {
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
   commandPrompt: i18nLazyString(UIStrings.showSensors),
@@ -150,6 +155,8 @@ UI.ViewManager.registerViewExtension({
     i18nLazyString(UIStrings.deviceOrientation),
   ],
 });
+}
+// #endif ARKWEB_DEVTOOLS
 
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.SETTINGS_VIEW,

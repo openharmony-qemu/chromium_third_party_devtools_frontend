@@ -530,6 +530,11 @@ UI.ViewManager.registerViewExtension({
   },
 });
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+if (adaptForOhos) {
+  // arkweb does't support network request blocking.
+} else {
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
   id: 'sources.quick',
@@ -542,6 +547,8 @@ UI.ViewManager.registerViewExtension({
     return new Sources.SourcesPanel.QuickSourceView();
   },
 });
+}
+// #endif ARKWEB_DEVTOOLS
 
 UI.ViewManager.registerViewExtension({
   id: 'sources.threads',

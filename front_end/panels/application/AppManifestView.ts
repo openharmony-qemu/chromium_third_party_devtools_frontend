@@ -264,7 +264,7 @@ const UIStrings = {
    * @example {https://developer.chrome.com/blog/improved-pwa-offline-detection} PH1
    */
   pageDoesNotWorkOfflineThePage:
-      'Page does not work offline. Starting in Chrome 93, the installability criteria are changing, and this site will not be installable. See {PH1} for more information.',
+      'Page does not work offline. Starting in ArkWeb 93, the installability criteria are changing, and this site will not be installable. See {PH1} for more information.',
   /**
    * @description Text to indicate the source of an image
    * @example {example.com} PH1
@@ -496,7 +496,14 @@ export class AppManifestView extends Common.ObjectWrapper.eventMixin<EventTypes,
     this.contentElement.classList.add('manifest-container');
 
     this.emptyView = emptyView;
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
     this.emptyView.link = 'https://web.dev/add-manifest/' as Platform.DevToolsPath.UrlString;
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     this.emptyView.show(this.contentElement);
     this.emptyView.hideWidget();
@@ -681,10 +688,17 @@ export class AppManifestView extends Common.ObjectWrapper.eventMixin<EventTypes,
       helpIcon.setAttribute('jslog', `${VisualLogging.action('help').track({hover: true})}`);
       appIdField.appendChild(helpIcon);
 
+      // #ifdef ARKWEB_DEVTOOLS
+      const adaptForOhos = true;
+      if (adaptForOhos) {
+        // ohos doesn't support external links
+      } else {
       const learnMoreLink = UI.XLink.XLink.create(
           'https://developer.chrome.com/blog/pwa-manifest-id/', i18nString(UIStrings.learnMore), undefined, undefined,
           'learn-more');
       appIdField.appendChild(learnMoreLink);
+      }
+      // #endif ARKWEB_DEVTOOLS
 
       if (!stringProperty('id')) {
         const suggestedIdNote = appIdField.createChild('div', 'multiline-value');
@@ -779,11 +793,18 @@ export class AppManifestView extends Common.ObjectWrapper.eventMixin<EventTypes,
       this.iconsSection.setIconMasked(setIconMaskedCheckbox.checked);
     });
     this.iconsSection.appendRow().appendChild(setIconMaskedCheckbox);
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
     const documentationLink = UI.XLink.XLink.create(
         'https://web.dev/maskable-icon/', i18nString(UIStrings.documentationOnMaskableIcons), undefined, undefined,
         'learn-more');
     this.iconsSection.appendRow().appendChild(
         uiI18n.getFormatLocalizedString(str_, UIStrings.needHelpReadOurS, {PH1: documentationLink}));
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     let squareSizedIconAvailable = false;
     for (const icon of icons) {

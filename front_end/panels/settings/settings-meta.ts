@@ -11,6 +11,10 @@ import * as UI from '../../ui/legacy/legacy.js';
 
 import type * as Settings from './settings.js';
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 const UIStrings = {
   /**
    * @description Text for keyboard shortcuts
@@ -167,6 +171,10 @@ UI.ViewManager.registerViewExtension({
   iconName: 'keyboard',
 });
 
+// #ifdef ARKWEB_DEVTOOLS
+if (adaptForOhos) {
+  // arkweb does't support settings.
+} else {
 UI.ActionRegistration.registerActionExtension({
   category: UI.ActionRegistration.ActionCategory.SETTINGS,
   actionId: 'settings.show',
@@ -202,6 +210,8 @@ UI.ActionRegistration.registerActionExtension({
     },
   ],
 });
+}
+// #endif ARKWEB_DEVTOOLS
 
 UI.ActionRegistration.registerActionExtension({
   category: UI.ActionRegistration.ActionCategory.SETTINGS,
@@ -213,6 +223,10 @@ UI.ActionRegistration.registerActionExtension({
   },
 });
 
+// #ifdef ARKWEB_DEVTOOLS
+if (adaptForOhos) {
+  // arkweb does't support settings.
+} else {
 UI.ActionRegistration.registerActionExtension({
   category: UI.ActionRegistration.ActionCategory.SETTINGS,
   actionId: 'settings.shortcuts',
@@ -238,6 +252,8 @@ UI.ActionRegistration.registerActionExtension({
     },
   ],
 });
+}
+// #endif ARKWEB_DEVTOOLS
 
 UI.ViewManager.registerLocationResolver({
   name: UI.ViewManager.ViewLocationValues.SETTINGS_VIEW,
@@ -262,11 +278,17 @@ Common.Revealer.registerRevealer({
   },
 });
 
+// #ifdef ARKWEB_DEVTOOLS
+if (adaptForOhos) {
+  // arkweb does't support settings.
+} else {
 UI.ContextMenu.registerItem({
   location: UI.ContextMenu.ItemLocation.MAIN_MENU_FOOTER,
   actionId: 'settings.shortcuts',
   order: undefined,
 });
+}
+// #endif ARKWEB_DEVTOOLS
 
 UI.ContextMenu.registerItem({
   location: UI.ContextMenu.ItemLocation.MAIN_MENU_HELP_DEFAULT,

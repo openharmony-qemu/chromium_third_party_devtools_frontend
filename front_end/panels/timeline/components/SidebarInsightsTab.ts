@@ -157,7 +157,9 @@ export class SidebarInsightsTab extends HTMLElement {
     const hasMultipleInsightSets = insights.size > 1;
     const labels = Utils.Helpers.createUrlLabels([...insights.values()].map(({url}) => url));
 
-    const contents =
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    let contents =
         // clang-format off
      html`
       <style>${sidebarInsightsTabStyles}</style>
@@ -198,6 +200,48 @@ export class SidebarInsightsTab extends HTMLElement {
         })}
       </div>
     `;
+    if (adaptForOhos) {
+      contents = html`
+        <style>${sidebarInsightsTabStyles}</style>
+        <div class="insight-sets-wrapper">
+          ${[...insights.values()].map(({id, url}, index) => {
+            const data: SidebarSingleInsightSetData = {
+              insightSetKey: id,
+              activeCategory: this.#selectedCategory,
+              activeInsight: this.#activeInsight,
+              parsedTrace: this.#parsedTrace,
+            };
+
+            const contents = html`
+              <devtools-performance-sidebar-single-navigation
+                data-insight-set-key=${id}
+                .data=${data}>
+              </devtools-performance-sidebar-single-navigation>
+            `;
+
+            if (hasMultipleInsightSets) {
+              return html`<details
+                ?open=${id === this.#selectedInsightSetKey}
+              >
+                <summary
+                  @click=${() => this.#insightSetToggled(id)}
+                  @mouseenter=${() => this.#insightSetHovered(id)}
+                  @mouseleave=${() => this.#insightSetUnhovered()}
+                  title=${url.href}>
+                  ${this.#renderDropdownIcon(id === this.#selectedInsightSetKey)}
+                  <span>${labels[index]}</span>
+                  <span class='zoom-button' @click=${(event: Event) => this.#onZoomClick(event, id)}>${this.#renderZoomButton(id === this.#selectedInsightSetKey)}</span>
+                </summary>
+                ${contents}
+              </details>`;
+            }
+
+            return contents;
+          })}
+        </div>
+      `;
+    }
+    // #endif ARKWEB_DEVTOOLS
     // clang-format on
 
     // Insight components contain state, so to prevent insights from previous trace loads breaking things we use the parsedTrace

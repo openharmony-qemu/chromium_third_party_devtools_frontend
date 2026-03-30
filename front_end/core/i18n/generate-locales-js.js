@@ -38,19 +38,34 @@ const yargsObject = yargs(hideBin(process.argv))
 
 const remoteLocaleList = yargsObject['remote-locales'].map(locale => `\n  '${locale}',`).join('');
 const bundledLocaleList = yargsObject['bundled-locales'].map(locale => `\n  '${locale}',`).join('');
-const allLocales = `[${remoteLocaleList}${bundledLocaleList}\n]`;
 const bundledLocales = `[${bundledLocaleList}\n]`;
 
-const content = `
-export const LOCALES = ${allLocales};
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+if (adaptForOhos) {
+  const allLocales = `[${bundledLocaleList}\n]`;
+  const content = `
+  export const LOCALES = ${allLocales};
+  export const BUNDLED_LOCALES = ${bundledLocales};
+  export const DEFAULT_LOCALE = '${yargsObject['default-locale']}';
+  export const REMOTE_FETCH_PATTERN = '${yargsObject['remote-fetch-pattern']}';
+  export const LOCAL_FETCH_PATTERN = '${yargsObject['local-fetch-pattern']}';
+  `;
+  writeIfChanged(path.join(yargsObject['target-gen-dir'], 'locales.js'), content);
+} else {
+  const allLocales = `[${remoteLocaleList}${bundledLocaleList}\n]`;
+  const content = `
+  export const LOCALES = ${allLocales};
 
-export const BUNDLED_LOCALES = ${bundledLocales};
+  export const BUNDLED_LOCALES = ${bundledLocales};
 
-export const DEFAULT_LOCALE = '${yargsObject['default-locale']}';
+  export const DEFAULT_LOCALE = '${yargsObject['default-locale']}';
 
-export const REMOTE_FETCH_PATTERN = '${yargsObject['remote-fetch-pattern']}';
+  export const REMOTE_FETCH_PATTERN = '${yargsObject['remote-fetch-pattern']}';
 
-export const LOCAL_FETCH_PATTERN = '${yargsObject['local-fetch-pattern']}';
-`;
+  export const LOCAL_FETCH_PATTERN = '${yargsObject['local-fetch-pattern']}';
+  `;
 
-writeIfChanged(path.join(yargsObject['target-gen-dir'], 'locales.js'), content);
+  writeIfChanged(path.join(yargsObject['target-gen-dir'], 'locales.js'), content);
+}
+// #endif ARKWEB_DEVTOOLS
