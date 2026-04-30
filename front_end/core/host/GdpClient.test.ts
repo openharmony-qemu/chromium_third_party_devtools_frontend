@@ -3,11 +3,15 @@
 // found in the LICENSE file.
 
 import {updateHostConfig} from '../../testing/EnvironmentHelpers.js';
+import {setupLocaleHooks} from '../../testing/LocaleHelpers.js';
+import {setupRuntimeHooks} from '../../testing/RuntimeHelpers.js';
 import * as Root from '../root/root.js';
 
 import * as Host from './host.js';
 
 describe('GdpClient', () => {
+  setupLocaleHooks();
+  setupRuntimeHooks();
   let dispatchHttpRequestStub:
       sinon.SinonStub<Parameters<typeof Host.InspectorFrontendHost.InspectorFrontendHostInstance.dispatchHttpRequest>>;
   beforeEach(() => {

@@ -126,7 +126,7 @@ sinon.assert.calledOnceWithMatch(emulateSpy, {
 ### DOM Globals (`ReferenceError: FileReader is not defined`)
 Foundation tests run in Node.js where `window`, `FileReader`, and certain DOM string encodings don't exist.
 - **Fix**: Use isomorphic equivalents (e.g. `btoa()`, `Uint8Array`).
-- **Last Resort**: Skip the test with `it.skip()` if it explicitly tests browser quirks (e.g. legacy charset decoding).
+- **Fix**: Abstract the APIs that are different between Node.js and Browser via `front_end/core/platform/api/HostRuntime.ts`.
 
 ### Initialization Order Lockups
 If a test times out (5000ms exceeded), it is usually an unhandled promise caused by a missing singleton. Double-check the constructor of the failing manager to see which `instance()` it listens to, and ensure that dependent singleton was created *first*.

@@ -82,4 +82,14 @@ export const HOST_RUNTIME: Api.HostRuntime.HostRuntime = {
     return new NodeWorker(url);
   },
   workerScope: new NodeWorkerScope(),
+  getOnLine(): boolean {
+    return true;
+  },
+  getUserAgent(): string {
+    return 'Node.js';
+  },
+  getLocalStorage(): Storage |
+      undefined {
+        return undefined;
+      },
 };

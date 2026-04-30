@@ -9,6 +9,9 @@
 export interface HostRuntime {
   createWorker(url: string): Worker;
   workerScope: WorkerScope;
+  getOnLine(): boolean;
+  getUserAgent(): string;
+  getLocalStorage(): Storage|undefined;
 }
 
 /**

@@ -74,4 +74,14 @@ export const HOST_RUNTIME: Api.HostRuntime.HostRuntime = {
     return new WebWorker(url);
   },
   workerScope: new WebWorkerScope(),
+  getOnLine(): boolean {
+    return navigator.onLine;
+  },
+  getUserAgent(): string {
+    return navigator.userAgent;
+  },
+  getLocalStorage(): Storage |
+      undefined {
+        return 'localStorage' in globalThis ? globalThis.localStorage : undefined;
+      },
 };

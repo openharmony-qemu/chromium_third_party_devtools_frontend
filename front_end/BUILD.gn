@@ -114,8 +114,6 @@ group("unittests") {
   deps = [
     ":foundation_unittests",
     "Images:optimize_images",
-    "core/host:unittests",
-    "core/protocol_client:unittests",
     "core/sdk:unittests",
     "entrypoints/inspector_main:unittests",
     "entrypoints/main:unittests",
@@ -274,6 +272,7 @@ group("unittests") {
 group("foundation_unittests") {
   deps = [
     "core/common:foundation_unittests",
+    "core/host:foundation_unittests",
     "core/i18n:foundation_unittests",
     "core/platform:unittests",
     "core/protocol_client:unittests",
