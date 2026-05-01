@@ -435,6 +435,7 @@ export interface UserChatMessage {
   entity: ChatMessageEntity.USER;
   text: string;
   imageInput?: Host.AidaClient.Part;
+  id: string;
 }
 
 export interface ModelChatMessage {
@@ -442,6 +443,7 @@ export interface ModelChatMessage {
   parts: ModelMessagePart[];
   error?: AiAssistanceModel.AiAgent.ErrorType;
   rpcId?: Host.AidaClient.RpcGlobalId;
+  id: string;
 }
 
 export type Message = UserChatMessage|ModelChatMessage;
@@ -740,7 +742,7 @@ function renderWalkthroughSidebarButton(
   }
 
   const hasOneStepWithWidget = steps.some(step => step.widgets?.length);
-  const isExpanded = walkthrough.isExpanded && input.message === input.walkthrough.activeSidebarMessage;
+  const isExpanded = walkthrough.isExpanded && input.message.id === input.walkthrough.activeSidebarMessage?.id;
   const title = isExpanded ? walkthroughCloseTitle({hasWidgets: hasOneStepWithWidget}) : walkthroughTitle({
     isLoading: input.isLoading,
     hasWidgets: hasOneStepWithWidget,
@@ -781,7 +783,7 @@ function renderWalkthroughSidebarButton(
         .jslogContext=${walkthrough.isExpanded ? 'ai-hide-walkthrough-sidebar' : 'ai-show-walkthrough-sidebar'}
         data-show-walkthrough
         @click=${() => {
-          if(walkthrough.activeSidebarMessage === input.message && walkthrough.isExpanded) {
+          if(walkthrough.activeSidebarMessage?.id === input.message.id && walkthrough.isExpanded) {
             walkthrough.onToggle(false, message as ModelChatMessage);
           } else {
             // Can't just toggle the visibility here; we need to ensure we
@@ -816,8 +818,8 @@ function renderWalkthroughUI(input: ChatMessageViewInput, steps: Step[]): Lit.Li
   // open and it is specifically targeting this message. This is necessary
   // because the walkthrough state is shared across all messages in the chat.
   const isExpanded = input.walkthrough.isInlined ?
-      input.walkthrough.inlineExpandedMessages.includes(input.message as ModelChatMessage) :
-      (input.walkthrough.isExpanded && input.walkthrough.activeSidebarMessage === input.message);
+      input.walkthrough.inlineExpandedMessages.some(m => m.id === input.message.id) :
+      (input.walkthrough.isExpanded && input.walkthrough.activeSidebarMessage?.id === input.message.id);
 
   // clang-format off
   const walkthroughInline = input.walkthrough.isInlined ? html`
@@ -1775,7 +1777,7 @@ function renderActions(input: ChatMessageViewInput, output: ViewOutput): Lit.Lit
 }
 
 export class ChatMessage extends UI.Widget.Widget {
-  message: Message = {entity: ChatMessageEntity.USER, text: ''};
+  message: Message = {entity: ChatMessageEntity.USER, text: '', id: ''};
   isLoading = false;
   isReadOnly = false;
   prompt = '';

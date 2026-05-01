@@ -17,7 +17,8 @@ import {
   createAiAssistancePanel,
   createNetworkRequest,
   mockAidaClient,
-  openHistoryContextMenu
+  openHistoryContextMenu,
+  stripId
 } from '../../testing/AiAssistanceHelpers.js';
 import {findMenuItemWithLabel} from '../../testing/ContextMenuHelpers.js';
 import {
@@ -753,7 +754,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
       nextInput = await view.nextInput;
       assert(nextInput.state === AiAssistancePanel.ViewState.CHAT_VIEW);
 
-      assert.deepEqual(nextInput.props.messages, [
+      assert.deepEqual(nextInput.props.messages.map(stripId), [
         {
           entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
           text: 'test',
@@ -794,7 +795,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
 
       let nextInput = await view.nextInput;
       assert(nextInput.state === AiAssistancePanel.ViewState.CHAT_VIEW);
-      assert.deepEqual(nextInput.props.messages, [
+      assert.deepEqual(nextInput.props.messages.map(stripId), [
         {
           entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
           text: 'test',
@@ -843,7 +844,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
              new Timeline.TimelinePanel.SelectedInsight({} as unknown as TimelineComponents.Sidebar.ActiveInsight));
 
          assert(view.input.state === AiAssistancePanel.ViewState.CHAT_VIEW);
-         assert.deepEqual(view.input.props.messages, [
+         assert.deepEqual(view.input.props.messages.map(stripId), [
            {
              entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
              text: 'test',
@@ -887,7 +888,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
 
       nextInput = await view.nextInput;
       assert(nextInput.state === AiAssistancePanel.ViewState.CHAT_VIEW);
-      assert.deepEqual(nextInput.props.messages, [
+      assert.deepEqual(nextInput.props.messages.map(stripId), [
         {
           entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
           text: 'User question to Freestyler?',
@@ -910,7 +911,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
 
       nextInput = await view.nextInput;
       assert(nextInput.state === AiAssistancePanel.ViewState.CHAT_VIEW);
-      assert.deepEqual(nextInput.props.messages, [
+      assert.deepEqual(nextInput.props.messages.map(stripId), [
         {
           entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
           text: 'User question to DrJones?',
@@ -932,7 +933,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
       nextInput = await view.nextInput;
       assert(nextInput.state === AiAssistancePanel.ViewState.CHAT_VIEW);
       assert.isTrue(nextInput.props.isReadOnly);
-      assert.deepEqual(nextInput.props.messages, [
+      assert.deepEqual(nextInput.props.messages.map(stripId), [
         {
           entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
           text: 'User question to Freestyler?',
@@ -981,7 +982,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
       nextInput.props.onTextSubmit('Second question to Freestyler?');
       nextInput = await view.nextInput;
       assert(nextInput.state === AiAssistancePanel.ViewState.CHAT_VIEW);
-      assert.deepEqual(nextInput.props.messages, [
+      assert.deepEqual(nextInput.props.messages.map(stripId), [
         {
           entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
           text: 'User question to Freestyler?',
@@ -1034,7 +1035,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
         await panel.handleAction('freestyler.element-panel-context', {prompt: 'Tell me more'});
         const nextInput = await view.nextInput;
         assert(nextInput.state === AiAssistancePanel.ViewState.CHAT_VIEW);
-        assert.deepEqual(nextInput.props.messages, [
+        assert.deepEqual(nextInput.props.messages.map(stripId), [
           {
             entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
             text: 'Tell me more',
@@ -1137,7 +1138,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
       assert.isTrue(currentView.isLoading);
 
       assert(currentView.state === AiAssistancePanel.ViewState.CHAT_VIEW);
-      assert.deepEqual(currentView.props.messages, [
+      assert.deepEqual(currentView.props.messages.map(stripId), [
         {
           entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
           text: 'first question',
@@ -1158,7 +1159,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
 
       currentView = await view.nextInput;
       assert(currentView.state === AiAssistancePanel.ViewState.CHAT_VIEW);
-      assert.deepEqual(currentView.props.messages, [
+      assert.deepEqual(currentView.props.messages.map(stripId), [
         {
           entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
           text: 'first question',
@@ -1312,7 +1313,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
 
       nextInput = await view.nextInput;
       assert(nextInput.state === AiAssistancePanel.ViewState.CHAT_VIEW);
-      assert.deepEqual(nextInput.props.messages, [
+      assert.deepEqual(nextInput.props.messages.map(stripId), [
         {
           entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
           text: 'test',
@@ -1348,7 +1349,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
       nextInput.props.onTextSubmit('test');
       nextInput = await view.nextInput;
       assert(nextInput.state === AiAssistancePanel.ViewState.CHAT_VIEW);
-      assert.deepEqual(nextInput.props.messages, [
+      assert.deepEqual(nextInput.props.messages.map(stripId), [
         {
           entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
           text: 'test',
@@ -1380,7 +1381,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
       nextInput.props.onTextSubmit('User question to Freestyler?');
       nextInput = await view.nextInput;
       assert(nextInput.state === AiAssistancePanel.ViewState.CHAT_VIEW);
-      assert.deepEqual(nextInput.props.messages, [
+      assert.deepEqual(nextInput.props.messages.map(stripId), [
         {
           entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
           text: 'User question to Freestyler?',
@@ -1402,7 +1403,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
       nextInput.props.onTextSubmit('User question to DrJones?');
       nextInput = await view.nextInput;
       assert(nextInput.state === AiAssistancePanel.ViewState.CHAT_VIEW);
-      assert.deepEqual(nextInput.props.messages, [
+      assert.deepEqual(nextInput.props.messages.map(stripId), [
         {
           entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
           text: 'User question to DrJones?',
@@ -1445,7 +1446,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
       view.input.props.onTextSubmit('User question to Freestyler?');
       const nextInput = await view.nextInput;
       assert(nextInput.state === AiAssistancePanel.ViewState.CHAT_VIEW);
-      assert.deepEqual(nextInput.props.messages, [
+      assert.deepEqual(nextInput.props.messages.map(stripId), [
         {
           entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
           text: 'User question to Freestyler?',
@@ -1529,7 +1530,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
 
       let nextInput = await view.nextInput;
       assert(nextInput.state === AiAssistancePanel.ViewState.CHAT_VIEW);
-      assert.deepEqual(nextInput.props.messages, [
+      assert.deepEqual(nextInput.props.messages.map(stripId), [
         {
           entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
           text: 'test',
@@ -1554,7 +1555,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
       nextInput = await view.nextInput;
       assert(nextInput.state === AiAssistancePanel.ViewState.CHAT_VIEW);
       assert.isFalse(nextInput.props.isReadOnly);
-      assert.deepEqual(nextInput.props.messages, [
+      assert.deepEqual(nextInput.props.messages.map(stripId), [
         {
           entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
           text: 'test',
@@ -1669,6 +1670,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
       const {view} = await createAiAssistancePanel();
       const modelMessage: AiAssistancePanel.ChatMessage.ModelChatMessage = {
         entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.MODEL,
+        id: '1',
         parts: [{
           type: 'answer',
           text: 'test',
@@ -1889,7 +1891,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
 
     const nextInput = await view.nextInput;
     assert(nextInput.state === AiAssistancePanel.ViewState.CHAT_VIEW);
-    assert.deepEqual(nextInput.props.messages, [
+    assert.deepEqual(nextInput.props.messages.map(stripId), [
       {
         entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.USER,
         text: 'test',
@@ -2213,6 +2215,7 @@ describeWithMockConnection('AI Assistance Panel', () => {
     it('should generate correct markdown from a message object', function() {
       const message: AiAssistancePanel.ChatMessage.ModelChatMessage = {
         entity: AiAssistancePanel.ChatMessage.ChatMessageEntity.MODEL,
+        id: '1',
         parts: [
           {
             type: 'step',

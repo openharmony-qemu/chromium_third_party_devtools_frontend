@@ -27,6 +27,7 @@ describeWithEnvironment('ChatMessage', () => {
         entity: AiAssistance.ChatMessage.ChatMessageEntity.MODEL,
         parts: [],
         rpcId: 99,
+        id: '1',
       },
       isLoading: false,
       isReadOnly: false,
@@ -80,6 +81,7 @@ describeWithEnvironment('ChatMessage', () => {
             entity: AiAssistance.ChatMessage.ChatMessageEntity.MODEL,
             parts: [],
             rpcId: 99,
+            id: '1',
           },
           isLoading: false,
           isReadOnly: false,
@@ -158,6 +160,7 @@ describeWithEnvironment('ChatMessage', () => {
             },
           },
         ],
+        id: '1',
       } as AiAssistance.ChatMessage.ModelChatMessage;
       const deduplicated = AiAssistance.ChatMessage.getDeduplicatedWidgetsMessage(message);
       assert.lengthOf(deduplicated.parts, 2);
@@ -363,6 +366,7 @@ describeWithEnvironment('ChatMessage', () => {
       message: {
         entity: AiAssistance.ChatMessage.ChatMessageEntity.MODEL,
         parts: [],
+        id: '1',
       },
     });
 
@@ -402,6 +406,7 @@ describeWithEnvironment('ChatMessage', () => {
           },
         ],
         rpcId: 99,
+        id: '1',
       },
       isLastMessage: false,
     });
@@ -422,6 +427,7 @@ describeWithEnvironment('ChatMessage', () => {
           },
         ],
         rpcId: 99,
+        id: '1',
       },
       isLastMessage: true,
     });
@@ -446,6 +452,7 @@ describeWithEnvironment('ChatMessage', () => {
         },
       }],
       rpcId: 99,
+      id: '1',
     };
 
     it('renders "Show thinking" button when there are steps and not inline', () => {
@@ -504,6 +511,7 @@ describeWithEnvironment('ChatMessage', () => {
           },
         }],
         rpcId: 99,
+        id: '1',
       };
 
       const target = renderView({
@@ -531,6 +539,7 @@ describeWithEnvironment('ChatMessage', () => {
           },
         }],
         rpcId: 99,
+        id: '1',
       };
       const target = renderView({
         isLoading: true,
@@ -556,6 +565,7 @@ describeWithEnvironment('ChatMessage', () => {
           },
         }],
         rpcId: 99,
+        id: '1',
       };
       const target = renderView({
         isLoading: true,
@@ -609,6 +619,7 @@ describeWithEnvironment('ChatMessage', () => {
           },
         }],
         rpcId: 99,
+        id: '1',
       };
       const target = renderView({
         isLoading: true,
@@ -647,6 +658,7 @@ describeWithEnvironment('ChatMessage', () => {
           },
         }],
         rpcId: 99,
+        id: '1',
       };
       const target = renderView({
         isLoading: false,
@@ -674,6 +686,7 @@ describeWithEnvironment('ChatMessage', () => {
           },
         }],
         rpcId: 99,
+        id: '1',
       };
       const target = renderView({
         isLoading: false,
@@ -731,6 +744,7 @@ describeWithEnvironment('ChatMessage', () => {
           },
         }],
         rpcId: 99,
+        id: '1',
       };
 
       // Test closed state
@@ -777,6 +791,7 @@ describeWithEnvironment('ChatMessage', () => {
           },
         }],
         rpcId: 99,
+        id: '1',
       };
 
       // Test closed state
@@ -830,6 +845,7 @@ describeWithEnvironment('ChatMessage', () => {
           },
         ],
         rpcId: 99,
+        id: '1',
       };
 
       const target = renderView({
@@ -870,6 +886,7 @@ describeWithEnvironment('ChatMessage', () => {
           },
         }],
         rpcId: 99,
+        id: '1',
       };
 
       const target = renderView({
@@ -907,6 +924,7 @@ describeWithEnvironment('ChatMessage', () => {
           }],
         }],
         rpcId: 99,
+        id: '1',
       };
 
       // We need to mock the widget maker to return a name
@@ -969,6 +987,7 @@ describeWithEnvironment('ChatMessage', () => {
                },
              ],
              rpcId: 99,
+             id: '1',
            },
          });
 
@@ -1073,6 +1092,7 @@ describeWithEnvironment('ChatMessage', () => {
               entity: AiAssistance.ChatMessage.ChatMessageEntity.MODEL,
               parts: [],
               rpcId: 99,
+              id: '1',
             },
             isLoading: false,
             isReadOnly: false,
@@ -1111,6 +1131,7 @@ describeWithEnvironment('ChatMessage', () => {
             message: {
               entity: AiAssistance.ChatMessage.ChatMessageEntity.USER,
               text: 'Can you help me fix specific CSS rules?',
+              id: '1',
             },
             isLoading: false,
             isReadOnly: false,
@@ -1148,6 +1169,7 @@ describeWithEnvironment('ChatMessage', () => {
             message: {
               entity: AiAssistance.ChatMessage.ChatMessageEntity.USER,
               text: 'First user message',
+              id: '1',
             },
             isLoading: false,
             isReadOnly: false,
@@ -1184,6 +1206,7 @@ describeWithEnvironment('ChatMessage', () => {
             message: {
               entity: AiAssistance.ChatMessage.ChatMessageEntity.MODEL,
               parts: [],
+              id: '1',
             },
             isLoading: false,
             isReadOnly: false,

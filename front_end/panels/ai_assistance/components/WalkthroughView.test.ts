@@ -50,6 +50,7 @@ describeWithEnvironment('WalkthroughView', () => {
   it('renders empty state when there is a message but it has no steps', async () => {
     const emptyMessage: AiAssistance.ChatMessage.ModelChatMessage = {
       entity: AiAssistance.ChatMessage.ChatMessageEntity.MODEL,
+      id: '1',
       parts: [],
     };
     const view = await makeWalkthrough({
@@ -67,6 +68,7 @@ describeWithEnvironment('WalkthroughView', () => {
   it('can render a step correctly when expanded', async () => {
     const message: AiAssistance.ChatMessage.ModelChatMessage = {
       entity: AiAssistance.ChatMessage.ChatMessageEntity.MODEL,
+      id: '1',
       parts: [{
         type: 'step',
         step: {
@@ -92,6 +94,7 @@ describeWithEnvironment('WalkthroughView', () => {
   it('does not render steps that require approval', async () => {
     const message: AiAssistance.ChatMessage.ModelChatMessage = {
       entity: AiAssistance.ChatMessage.ChatMessageEntity.MODEL,
+      id: '1',
       parts: [
         {
           type: 'step',
@@ -129,6 +132,7 @@ describeWithEnvironment('WalkthroughView', () => {
   it('uses the title of the last step (even if it requires approval) for the walkthrough header', async () => {
     const message: AiAssistance.ChatMessage.ModelChatMessage = {
       entity: AiAssistance.ChatMessage.ChatMessageEntity.MODEL,
+      id: '1',
       parts: [
         {
           type: 'step',
@@ -165,6 +169,7 @@ describeWithEnvironment('WalkthroughView', () => {
   it('renders the details/summary in inline mode', async () => {
     const message: AiAssistance.ChatMessage.ModelChatMessage = {
       entity: AiAssistance.ChatMessage.ChatMessageEntity.MODEL,
+      id: '1',
       parts: [{
         type: 'step',
         step: {
@@ -191,6 +196,7 @@ describeWithEnvironment('WalkthroughView', () => {
   it('renders spinner with aria-label when loading', async () => {
     const message: AiAssistance.ChatMessage.ModelChatMessage = {
       entity: AiAssistance.ChatMessage.ChatMessageEntity.MODEL,
+      id: '1',
       parts: [{
         type: 'step',
         step: {
@@ -218,6 +224,7 @@ describeWithEnvironment('WalkthroughView', () => {
   it('renders the titlebar in sidebar mode', async () => {
     const message: AiAssistance.ChatMessage.ModelChatMessage = {
       entity: AiAssistance.ChatMessage.ChatMessageEntity.MODEL,
+      id: '1',
       parts: [{
         type: 'step',
         step: {
@@ -240,6 +247,7 @@ describeWithEnvironment('WalkthroughView', () => {
   it('calls scrollIntoView on the last step when it is loading', async () => {
     const message: AiAssistance.ChatMessage.ModelChatMessage = {
       entity: AiAssistance.ChatMessage.ChatMessageEntity.MODEL,
+      id: '1',
       parts: [
         {
           type: 'step',
@@ -289,6 +297,7 @@ describeWithEnvironment('WalkthroughView', () => {
   it('does not call scrollIntoView on the last step when it is not loading', async () => {
     const message: AiAssistance.ChatMessage.ModelChatMessage = {
       entity: AiAssistance.ChatMessage.ChatMessageEntity.MODEL,
+      id: '1',
       parts: [
         {type: 'step', step: {isLoading: false, title: 'Step 1', widgets: []}},
       ],
