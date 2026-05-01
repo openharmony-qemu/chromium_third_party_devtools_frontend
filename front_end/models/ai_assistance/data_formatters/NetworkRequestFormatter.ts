@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import type * as SDK from '../../../core/sdk/sdk.js';
-import type * as Protocol from '../../../generated/protocol.js';
+import * as Protocol from '../../../generated/protocol.js';
 import * as Annotations from '../../annotations/annotations.js';
 import * as Logs from '../../logs/logs.js';
 import * as NetworkTimeCalculator from '../../network_time_calculator/network_time_calculator.js';
@@ -115,7 +115,11 @@ export class NetworkRequestFormatter {
   }): string {
     const lines = [];
     if (reasons.blockedReason) {
-      lines.push(`Blocked reason: ${reasons.blockedReason}`);
+      if (reasons.blockedReason === Protocol.Network.BlockedReason.Inspector) {
+        lines.push('Blocked reason: a custom network condition in DevTools is blocking this request');
+      } else {
+        lines.push(`Blocked reason: ${reasons.blockedReason}`);
+      }
     }
     if (reasons.corsErrorStatus) {
       lines.push(`CORS error: ${reasons.corsErrorStatus.corsError} ${reasons.corsErrorStatus.failedParameter}`);
