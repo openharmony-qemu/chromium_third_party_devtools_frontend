@@ -299,6 +299,15 @@ describe('The Memory Panel', function() {
     await devToolsPage.waitFor('.source-code', el);
 
     await setSearchFilter('system / descriptorarray', devToolsPage);
+    // Explicitly wait for the search to complete and results to be updated
+    await devToolsPage.waitForFunction(async () => {
+      const selectedRow = await devToolsPage.$('.data-grid-data-grid-node.selected');
+      if (!selectedRow) {
+        return false;
+      }
+      const text = await selectedRow.evaluate(el => el.textContent);
+      return text?.includes('system / DescriptorArray');
+    });
     // Find the first one as these are system
     await findSearchResult('system / DescriptorArray', /1 of/, devToolsPage);
     await devToolsPage.hover('.selected.data-grid-data-grid-node span.object-value-null');
