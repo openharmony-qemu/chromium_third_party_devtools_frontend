@@ -27,7 +27,7 @@ vars = {
   'chromium_browser_protocol_revision' : '1f344c5922432c73b3db8100c1f15163fdf8b530',
 
   'clang_format_url': 'https://chromium.googlesource.com/external/github.com/llvm/llvm-project/clang/tools/clang-format.git',
-  'clang_format_revision': '08cce2b81a4d9801ebeaa8cdb43b241475a4d521',
+  'clang_format_revision': '3a7d02771bc49448ca6a3d5d9bc0d8a0a0489250',
 
   'emscripten_tag': 'ade9d780ff17c88d81aa13860361743e3c1e1396',
 
