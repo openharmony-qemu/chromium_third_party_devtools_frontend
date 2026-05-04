@@ -3,12 +3,13 @@
 // found in the LICENSE file.
 
 import * as Protocol from '../../generated/protocol.js';
-import {createTarget, describeWithEnvironment} from '../../testing/EnvironmentHelpers.js';
+import {createTarget} from '../../testing/EnvironmentHelpers.js';
 import {MockCDPConnection} from '../../testing/MockCDPConnection.js';
+import {describeWithMockConnection} from '../../testing/MockConnection.js';
 
 import * as SDK from './sdk.js';
 
-describeWithEnvironment('CPUThrottlingManager', () => {
+describeWithMockConnection('CPUThrottlingManager', () => {
   it('can get the current hardwareConcurrency.', async () => {
     const connection = new MockCDPConnection();
     connection.setHandler('Runtime.evaluate', ({expression}) => {
