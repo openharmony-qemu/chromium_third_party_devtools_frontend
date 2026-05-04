@@ -185,11 +185,25 @@ def fixChaiExports():
 
 
 def apply_patches():
-    cmd = [
-        "git", "apply", "scripts/deps/node_module_patches/karma-mocha.patch"
-    ]
+    patch_path = "scripts/deps/node_module_patches/karma-mocha.patch"
 
-    return exec_command(cmd)
+    cwd = devtools_paths.devtools_root_path()
+    env = os.environ.copy()
+
+    # Check if the patch can be applied.
+    check_cmd = ["git", "apply", "--check", patch_path]
+    if subprocess.run(check_cmd, cwd=cwd, env=env,
+                      capture_output=True).returncode == 0:
+        return exec_command(["git", "apply", patch_path])
+
+    # If it cannot be applied, check if it is already applied.
+    reverse_check_cmd = ["git", "apply", "--reverse", "--check", patch_path]
+    if subprocess.run(reverse_check_cmd, cwd=cwd, env=env,
+                      capture_output=True).returncode == 0:
+        return False
+
+    # If it's neither applicable nor already applied, run it for real to report the error.
+    return exec_command(["git", "apply", patch_path])
 
 
 def run_npm_command():
