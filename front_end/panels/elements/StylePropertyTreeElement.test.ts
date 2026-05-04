@@ -2364,7 +2364,8 @@ describeWithMockConnection('StylePropertyTreeElement', () => {
          stylePropertyTreeElement.renderActiveAiSuggestion({name: 'color', value: 'red'});
 
          sinon.assert.calledOnce(applySuggestionSpy);
-         assert.deepEqual(applySuggestionSpy.firstCall.args, [{text: 'color'}, true]);
+         assert.deepEqual(
+             applySuggestionSpy.firstCall.args, [{text: 'color', disableAcceptSuggestionOnStopCharacters: true}, true]);
          const valueGhostElement = stylePropertyTreeElement.listItemElement.querySelector('.ghost-value-prediction');
          assert.exists(valueGhostElement);
          assert.strictEqual(valueGhostElement.textContent, 'red');
@@ -2382,7 +2383,8 @@ describeWithMockConnection('StylePropertyTreeElement', () => {
       stylePropertyTreeElement.renderActiveAiSuggestion({name: 'color', value: 'purple'});
 
       sinon.assert.calledOnce(applySuggestionSpy);
-      assert.deepEqual(applySuggestionSpy.firstCall.args, [{text: 'purple'}, true]);
+      assert.deepEqual(
+          applySuggestionSpy.firstCall.args, [{text: 'purple', disableAcceptSuggestionOnStopCharacters: true}, true]);
     });
 
     it('clearActiveAiSuggestion removes ghost text', async () => {

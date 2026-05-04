@@ -598,7 +598,8 @@ export class TextPrompt extends Common.ObjectWrapper.ObjectWrapper<EventTypes> i
 
   private acceptSuggestionOnStopCharacters(key: string): boolean {
     if (!this.currentSuggestion || !this.queryRange || key.length !== 1 ||
-        !this.completionStopCharacters?.includes(key)) {
+        !this.completionStopCharacters?.includes(key) ||
+        this.currentSuggestion.disableAcceptSuggestionOnStopCharacters) {
       return false;
     }
 
