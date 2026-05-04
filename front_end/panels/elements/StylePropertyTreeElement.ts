@@ -3515,7 +3515,7 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
     if (this.prompt) {
       this.prompt.detach();
       this.prompt = null;
-      this.#clearGhostTextInValue();
+      this.section().activeAiSuggestion = undefined;
     }
   }
 
