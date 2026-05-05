@@ -103,6 +103,7 @@ ts_library("unittests") {
   testonly = true
 
   sources = [
+    "MockCDPConnection.test.ts",
     "MockScopeChain.test.ts",
     "MutationHelpers.test.ts",
     "SnapshotTester.test.ts",
