@@ -52,14 +52,12 @@ export function setMockResourceTree(shouldMock: boolean) {
 }
 
 export function mockResourceTree(connection: MockCDPConnection) {
-  connection.setHandler('Page.getResourceTree', () => ({
-                                                  result: {
-                                                    frameTree: {
-                                                      frame: MAIN_FRAME,
-                                                      resources: [],
-                                                    }
-                                                  }
-                                                }));
+  connection.setSuccessHandler('Page.getResourceTree', () => ({
+                                                         frameTree: {
+                                                           frame: MAIN_FRAME,
+                                                           resources: [],
+                                                         }
+                                                       }));
 }
 
 export async function getInitializedResourceTreeModel(target: SDK.Target.Target):

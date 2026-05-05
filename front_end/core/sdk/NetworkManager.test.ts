@@ -61,12 +61,10 @@ describe('NetworkManager', () => {
       const expectedPostData = 'a=1&b=hello+world';
       const compressedPostData = await Common.Gzip.compress(expectedPostData);
       const encodedPostData = btoa(String.fromCharCode(...new Uint8Array(compressedPostData)));
-      connection.setHandler('Network.getRequestPostData', () => ({
-                                                            result: {
-                                                              postData: encodedPostData,
-                                                              base64Encoded: true,
-                                                            }
-                                                          }));
+      connection.setSuccessHandler('Network.getRequestPostData', () => ({
+                                                                   postData: encodedPostData,
+                                                                   base64Encoded: true,
+                                                                 }));
 
       const request = await createPostRequestWithHeaders(
           {
@@ -1316,9 +1314,9 @@ describe('MultitargetNetworkManager', () => {
         SDK.NetworkManager.MultitargetNetworkManager.instance({forceNew: true, targetManager: universe.targetManager});
 
     const rules: Protocol.Network.EmulateNetworkConditionsByRuleRequest[] = [];
-    connection.setHandler('Network.emulateNetworkConditionsByRule', request => {
+    connection.setSuccessHandler('Network.emulateNetworkConditionsByRule', request => {
       rules.push(request);
-      return {result: {ruleIds: []}};
+      return {ruleIds: []};
     });
 
     manager.setNetworkConditions(SDK.NetworkManager.Slow4GConditions);

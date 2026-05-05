@@ -27,11 +27,11 @@ describe('DebuggerModel', () => {
     it('deactivates breakpoints on construction with inactive breakpoints', async () => {
       const connection = new MockCDPConnection();
       let breakpointsDeactivated = false;
-      connection.setHandler('Debugger.setBreakpointsActive', request => {
+      connection.setSuccessHandler('Debugger.setBreakpointsActive', request => {
         if (request.active === false) {
           breakpointsDeactivated = true;
         }
-        return {result: {}};
+        return {};
       });
       Common.Settings.Settings.instance().moduleSetting('breakpoints-active').set(false);
       createTarget({connection});
@@ -41,11 +41,11 @@ describe('DebuggerModel', () => {
     it('deactivates breakpoints for suspended target', async () => {
       const connection = new MockCDPConnection();
       let breakpointsDeactivated = false;
-      connection.setHandler('Debugger.setBreakpointsActive', request => {
+      connection.setSuccessHandler('Debugger.setBreakpointsActive', request => {
         if (request.active === false) {
           breakpointsDeactivated = true;
         }
-        return {result: {}};
+        return {};
       });
 
       const target = createTarget({connection});
@@ -69,13 +69,13 @@ describe('DebuggerModel', () => {
       const connection = new MockCDPConnection();
       let breakpointsDeactivated = false;
       let breakpointsActivated = false;
-      connection.setHandler('Debugger.setBreakpointsActive', request => {
+      connection.setSuccessHandler('Debugger.setBreakpointsActive', request => {
         if (request.active) {
           breakpointsActivated = true;
         } else {
           breakpointsDeactivated = true;
         }
-        return {result: {}};
+        return {};
       });
 
       // Deactivate breakpoints befroe the target is created.
@@ -145,20 +145,16 @@ describe('DebuggerModel', () => {
   describe('setBreakpointByURL', () => {
     it('correctly sets only a single breakpoint in Node.js internal scripts', async () => {
       const connection = new MockCDPConnection();
-      connection.setHandler('Debugger.setBreakpointByUrl', ({url}) => {
+      connection.setSuccessHandler('Debugger.setBreakpointByUrl', ({url}) => {
         if (url === 'fs.js') {
           return {
-            result: {
-              breakpointId: breakpointId1,
-              locations: [],
-            }
+            breakpointId: breakpointId1,
+            locations: [],
           };
         }
         return {
-          result: {
-            breakpointId: breakpointId2,
-            locations: [],
-          }
+          breakpointId: breakpointId2,
+          locations: [],
         };
       });
 
@@ -286,9 +282,9 @@ describe('DebuggerModel', () => {
       const target =
           createTarget({id: 'main' as Protocol.Target.TargetID, name: 'main', type: SDK.Target.Type.FRAME, connection});
       const stepIntoRequestPromise = new Promise<void>(resolve => {
-        connection.setHandler('Debugger.stepInto', () => {
+        connection.setSuccessHandler('Debugger.stepInto', () => {
           resolve();
-          return {result: {}};
+          return {};
         });
       });
 

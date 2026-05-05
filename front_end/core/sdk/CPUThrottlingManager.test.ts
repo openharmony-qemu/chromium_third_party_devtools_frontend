@@ -12,9 +12,9 @@ import * as SDK from './sdk.js';
 describeWithMockConnection('CPUThrottlingManager', () => {
   it('can get the current hardwareConcurrency.', async () => {
     const connection = new MockCDPConnection();
-    connection.setHandler('Runtime.evaluate', ({expression}) => {
+    connection.setSuccessHandler('Runtime.evaluate', ({expression}) => {
       assert.strictEqual(expression, 'navigator.hardwareConcurrency');
-      return {result: {result: {value: 42, type: Protocol.Runtime.RemoteObjectType.Number}}};
+      return {result: {value: 42, type: Protocol.Runtime.RemoteObjectType.Number}};
     });
     createTarget({connection});
 
