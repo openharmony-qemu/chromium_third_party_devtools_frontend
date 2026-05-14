@@ -37,8 +37,8 @@ import '../../panels/timeline/timeline-meta.js';
 import '../../panels/layer_viewer/layer_viewer-meta.js';
 // #ifdef ARKWEB_DEVTOOLS
 //import '../../panels/recorder/recorder-meta.js';
+//import '../../panels/whats_new/whats_new-meta.js';
 // #endif ARKWEB_DEVTOOLS
-import '../../panels/whats_new/whats_new-meta.js';
 
 import * as Root from '../../core/root/root.js';
 import * as Main from '../main/main.js';
