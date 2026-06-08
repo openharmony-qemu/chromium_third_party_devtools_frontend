@@ -14,8 +14,8 @@ import '../../panels/network/network-meta.js';
 import '../../panels/emulation/emulation-meta.js';
 import '../../panels/sensors/sensors-meta.js';
 import '../../panels/accessibility/accessibility-meta.js';
+import '../../panels/animation/animation-meta.js';
 // #ifdef ARKWEB_DEVTOOLS
-//import '../../panels/animation/animation-meta.js';
 //import '../../panels/developer_resources/developer_resources-meta.js';
 //import '../../panels/autofill/autofill-meta.js';
 // #endif ARKWEB_DEVTOOLS
