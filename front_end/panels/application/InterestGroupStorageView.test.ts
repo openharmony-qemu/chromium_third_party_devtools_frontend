@@ -6,7 +6,6 @@ import * as Protocol from '../../generated/protocol.js';
 import {raf} from '../../testing/DOMHelpers.js';
 import {expectCall} from '../../testing/ExpectStubCall.js';
 import {describeWithMockConnection} from '../../testing/MockConnection.js';
-import * as UI from '../../ui/legacy/legacy.js';
 
 import * as Resources from './application.js';
 
@@ -67,7 +66,7 @@ describeWithMockConnection('InterestGroupStorageView', () => {
 
   it('initially has placeholder sidebar', () => {
     const view = new View.InterestGroupStorageView(new InterestGroupDetailsGetter());
-    assert.notInstanceOf(view.sidebarWidget(), UI.SearchableView.SearchableView);
+    assert.notDeepEqual(view.sidebarWidget()?.constructor.name, 'SearchableView');
 
     const placeholder = view.sidebarWidget()?.contentElement;
     assert.deepEqual(
@@ -87,7 +86,7 @@ describeWithMockConnection('InterestGroupStorageView', () => {
         grid.dispatchEvent(new CustomEvent('select', {detail: events[0]}));
         await raf();
         sinon.assert.calledOnce(spy);
-        assert.instanceOf(view.sidebarWidget(), UI.SearchableView.SearchableView);
+        assert.deepEqual(view.sidebarWidget()?.constructor.name, 'SearchableView');
       });
 
   it('Clears sidebarWidget upon receiving cellFocusedEvent on an additionalBid-type events', async function() {
@@ -110,7 +109,7 @@ describeWithMockConnection('InterestGroupStorageView', () => {
       grid.dispatchEvent(new CustomEvent('select', {detail: {...events[0], type: eventType}}));
       await sideBarUpdateDone;
       sinon.assert.calledOnce(spy);
-      assert.notInstanceOf(view.sidebarWidget(), UI.SearchableView.SearchableView);
+      assert.notDeepEqual(view.sidebarWidget()?.constructor.name, 'SearchableView');
       assert.isTrue(view.sidebarWidget()?.contentElement.firstChild?.textContent?.includes('No details'));
     }
   });
@@ -131,7 +130,7 @@ describeWithMockConnection('InterestGroupStorageView', () => {
        grid.dispatchEvent(new CustomEvent('select', {detail: events[0]}));
        await raf();
        sinon.assert.calledOnce(spy);
-       assert.notInstanceOf(view.sidebarWidget(), UI.SearchableView.SearchableView);
+       assert.notDeepEqual(view.sidebarWidget()?.constructor.name, 'SearchableView');
        assert.isTrue(view.sidebarWidget()?.contentElement.firstChild?.textContent?.includes('No details'));
      });
 
@@ -146,10 +145,10 @@ describeWithMockConnection('InterestGroupStorageView', () => {
     grid.dispatchEvent(new CustomEvent('select', {detail: events[0]}));
     await raf();
     sinon.assert.calledOnce(spy);
-    assert.instanceOf(view.sidebarWidget(), UI.SearchableView.SearchableView);
+    assert.deepEqual(view.sidebarWidget()?.constructor.name, 'SearchableView');
     view.clearEvents();
     sinon.assert.calledTwice(spy);
-    assert.notInstanceOf(view.sidebarWidget(), UI.SearchableView.SearchableView);
+    assert.notDeepEqual(view.sidebarWidget()?.constructor.name, 'SearchableView');
     assert.isTrue(view.sidebarWidget()?.contentElement.textContent?.includes(
         'No interest group selectedSelect any interest group event to display the group\'s current state'));
   });
