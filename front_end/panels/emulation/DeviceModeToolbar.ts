@@ -351,7 +351,9 @@ export class DeviceModeToolbar {
         MobileThrottling.ThrottlingManager.throttlingManager().createMobileThrottlingButton();
     this.throttlingConditionsItem.turnShrinkable();
     toolbar.appendToolbarItem(this.throttlingConditionsItem);
-    toolbar.appendToolbarItem(MobileThrottling.ThrottlingManager.throttlingManager().createSaveDataOverrideSelector());
+    // #if BUILDFLAG(ARKWEB_DEVTOOLS)
+    // toolbar.appendToolbarItem(MobileThrottling.ThrottlingManager.throttlingManager().createSaveDataOverrideSelector());
+    // #endif //BUILDFLAG(ARKWEB_DEVTOOLS)
   }
 
   private appendDevicePositionItems(toolbar: UI.Toolbar.Toolbar): void {
