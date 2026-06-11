@@ -104,6 +104,9 @@ export class ChildTargetManager extends SDKModel<EventTypes> implements Protocol
           resourceTreeModel.primaryPageChanged(resourceTreeModel.mainFrame, PrimaryPageChangeType.ACTIVATION);
         }
         target.setName(i18nString(UIStrings.main));
+        // #ifdef ARKWEB_DEVTOOLS
+        this.#targetManager.onInspectedURLChange(target);
+        // #endif ARKWEB_DEVTOOLS
       } else {
         target.updateTargetInfo(targetInfo);
       }
