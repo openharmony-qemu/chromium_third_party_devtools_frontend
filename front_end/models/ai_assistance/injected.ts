@@ -9,6 +9,10 @@
  * They need remain isolated for importing other function so
  * bundling them for production does not create issues.
  */
+/* eslint-disable @devtools/no-adopted-style-sheets --
+ * The scripts in this file aren't executed as part of DevTools front-end,
+ * but are injected into the page.
+ **/
 
 export const AI_ASSISTANCE_CSS_CLASS_NAME = 'ai-style-change';
 export const FREESTYLER_WORLD_NAME = 'DevTools AI Assistance';
@@ -96,9 +100,19 @@ export const PAGE_EXPOSED_FUNCTIONS = ['setElementStyles'];
 /**
  * Please see fileoverview
  */
-const setupSetElementStyles = `function setupSetElementStyles(prefix) {
-  const global = globalThis;
-  async function setElementStyles(el, styles) {
+function setupSetElementStyles(prefix: typeof AI_ASSISTANCE_CSS_CLASS_NAME): void {
+  // Executed in another world
+  const global = globalThis as unknown as {
+    freestyler: FreestylerBinding,
+    setElementStyles: unknown,
+  };
+  async function setElementStyles(
+      el: HTMLElement&{
+        // eslint-disable-next-line
+        __freestylerClassName?: `${typeof AI_ASSISTANCE_CSS_CLASS_NAME}-${number}`,
+      },
+      styles: Record<string, string>,
+      ): Promise<void> {
     let selector = el.tagName.toLowerCase();
     if (el.id) {
       selector = '#' + el.id;
@@ -117,7 +131,7 @@ const setupSetElementStyles = `function setupSetElementStyles(prefix) {
 
     // __freestylerClassName is not exposed to the page due to this being
     // run in the isolated world.
-    const className = el.__freestylerClassName ?? \`\${prefix}-\${global.freestyler.id}\`;
+    const className = el.__freestylerClassName ?? `${prefix}-${global.freestyler.id}`;
     el.__freestylerClassName = className;
     el.classList.add(className);
 
@@ -126,6 +140,7 @@ const setupSetElementStyles = `function setupSetElementStyles(prefix) {
       // if it's kebab case.
       el.style.removeProperty(key);
       // If it's camel case.
+      // @ts-expect-error this won't throw if wrong
       el.style[key] = '';
     }
 
@@ -153,7 +168,7 @@ const setupSetElementStyles = `function setupSetElementStyles(prefix) {
             continue;
           }
 
-          hasAiStyleChange = rule.selectorText.startsWith(\`.\${prefix}\`);
+          hasAiStyleChange = rule.selectorText.startsWith(`.${prefix}`);
           if (hasAiStyleChange) {
             stylesheet = sheet;
             break;
@@ -168,6 +183,6 @@ const setupSetElementStyles = `function setupSetElementStyles(prefix) {
   }
 
   global.setElementStyles = setElementStyles;
-}`;
+}
 
-export const injectedFunctions = `(${setupSetElementStyles})('${AI_ASSISTANCE_CSS_CLASS_NAME}')`;
+export const injectedFunctions = `(${String(setupSetElementStyles)})('${AI_ASSISTANCE_CSS_CLASS_NAME}')`;

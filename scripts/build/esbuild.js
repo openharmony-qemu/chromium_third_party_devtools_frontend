@@ -25,9 +25,7 @@ const esbuild = require('esbuild');
 
 const entryPoints = [process.argv[2]];
 const outfile = process.argv[3];
-const additionalArgs = process.argv.slice(4);
-const useSourceMaps = additionalArgs.includes('--configSourcemaps');
-const minify = additionalArgs.includes('--minify');
+const useSourceMaps = process.argv.slice(4).includes('--configSourcemaps');
 
 const outdir = path.dirname(outfile);
 
@@ -48,7 +46,6 @@ esbuild
       platform: 'browser',
       plugins: [plugin],
       sourcemap: useSourceMaps,
-      minify,
     })
     .catch(err => {
       console.error('Failed to run esbuild:', err);

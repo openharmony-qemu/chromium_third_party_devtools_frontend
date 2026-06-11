@@ -5,7 +5,6 @@
 import * as Protocol from '../../generated/protocol.js';
 import {raf} from '../../testing/DOMHelpers.js';
 import {describeWithMockConnection} from '../../testing/MockConnection.js';
-import * as UI from '../../ui/legacy/legacy.js';
 
 import * as Resources from './application.js';
 
@@ -179,7 +178,7 @@ describeWithMockConnection('SharedStorageEventsView', () => {
 
   it('initially has placeholder sidebar', () => {
     const view = new View.SharedStorageEventsView();
-    assert.notInstanceOf(view.sidebarWidget(), UI.SearchableView.SearchableView);
+    assert.notDeepEqual(view.sidebarWidget()?.constructor.name, 'SearchableView');
     assert.deepEqual(view.sidebarWidget()?.contentElement.firstChild?.textContent, 'No shared storage event selected');
   });
 
@@ -197,7 +196,7 @@ describeWithMockConnection('SharedStorageEventsView', () => {
     grid.onSelect(EVENTS[0]);
     await raf();
     sinon.assert.calledOnce(spy);
-    assert.instanceOf(view.sidebarWidget(), UI.SearchableView.SearchableView);
+    assert.deepEqual(view.sidebarWidget()?.constructor.name, 'SearchableView');
   });
 
   it('clears sidebarWidget upon clearEvents', async () => {
@@ -214,10 +213,10 @@ describeWithMockConnection('SharedStorageEventsView', () => {
     grid.onSelect(EVENTS[0]);
     await raf();
     sinon.assert.calledOnce(spy);
-    assert.instanceOf(view.sidebarWidget(), UI.SearchableView.SearchableView);
+    assert.deepEqual(view.sidebarWidget()?.constructor.name, 'SearchableView');
     view.clearEvents();
     sinon.assert.calledTwice(spy);
-    assert.notInstanceOf(view.sidebarWidget(), UI.SearchableView.SearchableView);
+    assert.notDeepEqual(view.sidebarWidget()?.constructor.name, 'SearchableView');
     assert.deepEqual(view.sidebarWidget()?.contentElement.firstChild?.textContent, 'No shared storage event selected');
   });
 

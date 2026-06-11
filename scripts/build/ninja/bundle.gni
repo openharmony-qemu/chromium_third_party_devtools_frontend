@@ -10,37 +10,72 @@ template("bundle") {
   assert(defined(invoker.entrypoint),
          "You must define the 'entrypoint' for a bundle target")
 
-  node_action(target_name) {
-    script = "scripts/build/esbuild.js"
-    forward_variables_from(invoker,
-                           [
-                             "visibility",
-                             "deps",
-                             "public_deps",
-                           ])
+  _fast_bundle = is_debug || devtools_skip_typecheck
+  assert(!is_official_build || !_fast_bundle,
+         "Fast bundling is disallowed for official builds.")
 
-    inputs = [
-      invoker.entrypoint,
-      devtools_location_prepend + "scripts/build/devtools_plugin.js",
-      devtools_location_prepend + "scripts/devtools_paths.js",
-    ]
+  if (_fast_bundle) {
+    node_action(target_name) {
+      script = "scripts/build/esbuild.js"
+      forward_variables_from(invoker,
+                             [
+                               "visibility",
+                               "deps",
+                               "public_deps",
+                             ])
 
-    _esbuild = devtools_location_prepend + "third_party/esbuild/esbuild"
-    if (host_os == "win") {
-      inputs += [ _esbuild + ".exe" ]
-    } else {
-      inputs += [ _esbuild ]
+      inputs = [
+        invoker.entrypoint,
+        devtools_location_prepend + "scripts/build/devtools_plugin.js",
+        devtools_location_prepend + "scripts/devtools_paths.js",
+      ]
+
+      _esbuild = devtools_location_prepend + "third_party/esbuild/esbuild"
+      if (host_os == "win") {
+        inputs += [ _esbuild + ".exe" ]
+      } else {
+        inputs += [ _esbuild ]
+      }
+
+      args = [
+        rebase_path(invoker.entrypoint, root_build_dir),
+        rebase_path(invoker.output_file_location, root_build_dir),
+        "--configSourcemaps",
+      ]
+
+      outputs = [ invoker.output_file_location ]
     }
-    args = [
-      rebase_path(invoker.entrypoint, root_build_dir),
-      rebase_path(invoker.output_file_location, root_build_dir),
-      "--configSourcemaps",
-    ]
+  } else {
+    node_action(target_name) {
+      script = "node_modules/@rollup/wasm-node/dist/bin/rollup"
 
-    if (!is_debug) {
-      args += [ "--minify" ]
+      forward_variables_from(invoker,
+                             [
+                               "visibility",
+                               "deps",
+                               "public_deps",
+                             ])
+
+      inputs = [
+        invoker.entrypoint,
+        devtools_location_prepend + "scripts/build/rollup.config.mjs",
+        devtools_location_prepend + "scripts/build/devtools_plugin.js",
+        devtools_location_prepend + "scripts/devtools_paths.js",
+      ]
+
+      args = [
+        "--config",
+        rebase_path(
+            devtools_location_prepend + "scripts/build/rollup.config.mjs",
+            root_build_dir),
+        "--input",
+        rebase_path(invoker.entrypoint, root_build_dir),
+        "--file",
+        rebase_path(invoker.output_file_location, root_build_dir),
+        "--configSourcemaps",
+      ]
+
+      outputs = [ invoker.output_file_location ]
     }
-
-    outputs = [ invoker.output_file_location ]
   }
 }
