@@ -141,6 +141,20 @@ iframe.widget {
   display: none !important; /* stylelint-disable-line declaration-no-important */
 }
 
+/* #ifdef ARKWEB_DEVTOOLS */
+x-link[href^="https://web.dev"] {
+    display: none!important
+}
+
+x-link[href^="https://developer.chrome"] {
+    display: none!important
+}
+
+x-link[href^="https://developers.google"] {
+    display: none!important
+}
+/* #endif ARKWEB_DEVTOOLS */
+
 .highlighted-search-result,:host::highlight(highlighted-search-result) {
   border-radius: 1px;
   background-color: var(--sys-color-yellow-container);
