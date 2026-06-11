@@ -61,6 +61,10 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('panels/timeline/components/NetworkThrottlingSelector.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 interface ConditionsGroup {
   name: string;
   items: SDK.NetworkManager.Conditions[];
@@ -127,6 +131,11 @@ export class NetworkThrottlingSelector extends HTMLElement {
         jslogContext: 'custom-network-throttling-item',
       },
     ];
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      this.#groups = this.#groups.filter(group => !group.showCustomAddOption);
+    }
+    // #endif ARKWEB_DEVTOOLS
   }
 
   #onConditionsChanged(): void {
