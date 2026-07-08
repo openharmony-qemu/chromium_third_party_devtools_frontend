@@ -530,3 +530,10 @@
 .tabbed-pane-header-tab.ai .ai-icon devtools-icon {
   color: var(--sys-color-on-primary);
 }
+
+/* For ArkWeb */
+.tabbed-pane-header-tabs-drop-down-container {
+  &[aria-haspopup='true'][aria-expanded='true'] {
+    pointer-events: none;
+  }
+}
