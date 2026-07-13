@@ -394,9 +394,16 @@ export class MainImpl {
     Root.Runtime.experiments.register('experimental-cookie-features', 'Enable experimental cookie features');
 
     // Change grouping of sources panel to use Authored/Deployed trees
-    Root.Runtime.experiments.register(
-        Root.Runtime.ExperimentName.AUTHORED_DEPLOYED_GROUPING, 'Group sources into authored and deployed trees',
-        undefined, 'https://goo.gle/authored-deployed', 'https://goo.gle/authored-deployed-feedback');
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      Root.Runtime.experiments.register(
+        Root.Runtime.ExperimentName.AUTHORED_DEPLOYED_GROUPING, 'Group sources into authored and deployed trees');
+    } else {
+      Root.Runtime.experiments.register(
+          Root.Runtime.ExperimentName.AUTHORED_DEPLOYED_GROUPING, 'Group sources into authored and deployed trees',
+          undefined, 'https://goo.gle/authored-deployed', 'https://goo.gle/authored-deployed-feedback');
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     // Hide third party code (as determined by ignore lists or source maps)
     Root.Runtime.experiments.register(

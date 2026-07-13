@@ -23,6 +23,10 @@ import * as PanelUtils from '../utils/utils.js';
 
 import requestConditionsDrawerStyles from './requestConditionsDrawer.css.js';
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 const {ref} = Directives;
 const {widgetConfig} = UI.Widget;
 
@@ -408,7 +412,14 @@ export class RequestConditionsDrawer extends UI.Widget.VBox implements
       void {
     const toggle = (e: Event): void => {
       if (editable) {
-        e.consume(true);
+        // #ifdef ARKWEB_DEVTOOLS
+        // checkbox 点击, 只阻止冒泡，不阻止默认行为
+        if (adaptForOhos && e.target instanceof HTMLInputElement && e.target.type === 'checkbox') {
+          e.stopPropagation();
+        } else {
+          e.consume(true);
+        }
+        // #endif ARKWEB_DEVTOOLS
         condition.enabled = !condition.enabled;
       }
     };
@@ -676,6 +687,10 @@ export class RequestConditionsDrawer extends UI.Widget.VBox implements
   override wasShown(): void {
     UI.Context.Context.instance().setFlavor(RequestConditionsDrawer, this);
     super.wasShown();
+    // #ifdef ARKWEB_DEVTOOLS
+    // 确保视图显示时checkbox状态与conditionsEnabled同步
+    this.update();
+    // #endif ARKWEB_DEVTOOLS
   }
 
   override willHide(): void {
