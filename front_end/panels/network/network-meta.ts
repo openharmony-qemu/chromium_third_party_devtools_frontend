@@ -192,11 +192,6 @@ UI.ViewManager.registerViewExtension({
 
 const individualThrottlingEnabled = (): boolean =>
     Boolean(Root.Runtime.hostConfig.devToolsIndividualRequestThrottling?.enabled);
-// #ifdef ARKWEB_DEVTOOLS
-const adaptForOhos = true;
-if (adaptForOhos) {
-  // arkweb does't support network request blocking.
-} else {
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
   id: 'network.blocked-urls',
@@ -211,8 +206,6 @@ UI.ViewManager.registerViewExtension({
     return new Network.RequestConditionsDrawer.RequestConditionsDrawer();
   },
 });
-}
-// #endif ARKWEB_DEVTOOLS
 
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
