@@ -867,6 +867,15 @@ grd_files_bundled_sources = [
   "front_end/worker_app.html",
 ]
 
+#if ARKWEB_DEVTOOLS
+grd_files_bundled_sources -= [
+  "front_end/Images/cssoverview_icons_2x.avif",
+]
+grd_files_bundled_sources += [
+  "front_end/Images/cssoverview_icons_2x.png",
+]
+#endif ARKWEB_DEVTOOLS
+
 grd_files_unbundled_sources = [
   "front_end/core/common/App.js",
   "front_end/core/common/AppProvider.js",

@@ -30,10 +30,6 @@ import {
 } from './TabbedEditorContainer.js';
 import {Events as UISourceCodeFrameEvents, UISourceCodeFrame} from './UISourceCodeFrame.js';
 
-// #ifdef ARKWEB_DEVTOOLS
-const adaptForOhos = true;
-// #endif ARKWEB_DEVTOOLS
-
 const UIStrings = {
   /**
    * @description Text to open a file
@@ -165,14 +161,6 @@ export class SourcesView extends Common.ObjectWrapper.eventMixin<EventTypes, typ
       {actionId: 'quick-open.show', description: i18nString(UIStrings.openFile)},
       {actionId: 'quick-open.show-command-menu', description: i18nString(UIStrings.runCommand)},
     ];
-
-    // #ifdef ARKWEB_DEVTOOLS
-    if (adaptForOhos) {
-      shortcuts = [
-        {actionId: 'quick-open.show', description: i18nString(UIStrings.openFile)},
-      ];
-    }
-    // #endif ARKWEB_DEVTOOLS
 
     const list = placeholder.createChild('div', 'shortcuts-list');
     list.classList.add('tabbed-pane-placeholder-row');

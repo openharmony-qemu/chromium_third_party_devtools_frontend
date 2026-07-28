@@ -20,6 +20,10 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('ui/components/panel_feedback/FeedbackButton.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 export interface FeedbackButtonData {
   feedbackUrl: Platform.DevToolsPath.UrlString;
 }
@@ -43,6 +47,13 @@ export class FeedbackButton extends HTMLElement {
     if (!ComponentHelpers.ScheduledRender.isScheduledRender(this)) {
       throw new Error('FeedbackButton render was not scheduled');
     }
+
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      // Feedback is not supported.
+      return;
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     // clang-format off
     render(html`

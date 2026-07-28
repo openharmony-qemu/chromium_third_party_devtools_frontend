@@ -22,6 +22,15 @@ devtools_image_files = [
   "gdp-logo-dark.png",
 ]
 
+#if ARKWEB_DEVTOOLS
+devtools_image_files -= [
+  "cssoverview_icons_2x.avif",
+]
+devtools_image_files += [
+  "cssoverview_icons_2x.png",
+]
+#endif ARKWEB_DEVTOOLS
+
 devtools_svg_sources = [
   "3d-center.svg",
   "3d-pan.svg",

@@ -7,10 +7,6 @@ import * as UI from '../../../../ui/legacy/legacy.js';
 
 import type * as QuickOpen from './quick_open.js';
 
-// #ifdef ARKWEB_DEVTOOLS
-const adaptForOhos = true;
-// #endif ARKWEB_DEVTOOLS
-
 const UIStrings = {
   /**
    * @description Title of action that opens a file
@@ -33,10 +29,6 @@ async function loadQuickOpenModule(): Promise<typeof QuickOpen> {
   return loadedQuickOpenModule;
 }
 
-// #ifdef ARKWEB_DEVTOOLS
-if (adaptForOhos) {
-  // arkweb doesn't support command.
-} else {
 UI.ActionRegistration.registerActionExtension({
   actionId: 'quick-open.show-command-menu',
   category: UI.ActionRegistration.ActionCategory.GLOBAL,
@@ -70,8 +62,6 @@ UI.ActionRegistration.registerActionExtension({
     },
   ],
 });
-}
-// #endif ARKWEB_DEVTOOLS
 
 UI.ActionRegistration.registerActionExtension({
   actionId: 'quick-open.show',
@@ -118,17 +108,11 @@ UI.ActionRegistration.registerActionExtension({
   ],
 });
 
-// #ifdef ARKWEB_DEVTOOLS
-if (adaptForOhos) {
-  // arkweb doesn't support command.
-} else {
 UI.ContextMenu.registerItem({
   location: UI.ContextMenu.ItemLocation.MAIN_MENU_DEFAULT,
   actionId: 'quick-open.show-command-menu',
   order: undefined,
 });
-}
-// #endif ARKWEB_DEVTOOLS
 
 UI.ContextMenu.registerItem({
   location: UI.ContextMenu.ItemLocation.MAIN_MENU_DEFAULT,
