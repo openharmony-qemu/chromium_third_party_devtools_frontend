@@ -11,8 +11,8 @@ import * as AiAssistance from '../ai_assistance.js';
 
 function mockConversationContext(): AiAssistance.AiAgent.ConversationContext<unknown> {
   return new (class extends AiAssistance.AiAgent.ConversationContext<unknown>{
-    override getOrigin(): string {
-      return 'origin';
+    override getURL(): string {
+      return 'https://origin.test';
     }
 
     override getItem(): unknown {
@@ -373,7 +373,7 @@ describeWithEnvironment('AiAgent', () => {
         override getTitle(): string {
           throw new Error('Method not implemented.');
         }
-        override getOrigin(): string {
+        override getURL(): string {
           return origin;
         }
         override getItem(): undefined {
