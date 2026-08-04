@@ -12,6 +12,7 @@ devtools_module("ai_assistance") {
     "AgentProject.ts",
     "AiConversation.ts",
     "AiHistoryStorage.ts",
+    "AiOrigins.ts",
     "AiUtils.ts",
     "BuiltInAi.ts",
     "ChangeManager.ts",
@@ -82,6 +83,7 @@ ts_library("unittests") {
   sources = [
     "AgentProject.test.ts",
     "AiHistoryStorage.test.ts",
+    "AiOrigins.test.ts",
     "BuiltInAi.test.ts",
     "ChangeManager.test.ts",
     "ConversationHandler.test.ts",
