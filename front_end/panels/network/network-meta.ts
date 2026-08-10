@@ -399,7 +399,9 @@ Common.Settings.registerSettingExtension({
     },
   ],
   learnMore: {
-    url: 'https://goo.gle/devtools-export-hars' as Platform.DevToolsPath.UrlString,
+    // #ifdef ARKWEB_DEVTOOLS
+    // url: 'https://goo.gle/devtools-export-hars' as Platform.DevToolsPath.UrlString,
+    // #endif ARKWEB_DEVTOOLS
     tooltip: i18nLazyString(UIStrings.allowToGenerateHarWithSensitiveDataDocumentation),
   },
 });
