@@ -220,11 +220,17 @@ const UIStrings = {
    * @description Label of a checkbox under the Appearance category in Settings. Allows developers
    * to opt-in / opt-out of syncing DevTools' color theme with Chrome's color theme.
    */
-  matchChromeColorScheme: 'Match Chrome color scheme',
+  // #ifdef ARKWEB_DEVTOOLS
+  // matchChromeColorScheme: 'Match Chrome color scheme',
+  matchChromeColorScheme: 'Match color scheme',
+  // #endif ARKWEB_DEVTOOLS
   /**
    * @description Tooltip for the learn more link of the Match Chrome color scheme Setting.
    */
-  matchChromeColorSchemeDocumentation: 'Match DevTools colors to your customized Chrome theme (when enabled)',
+  // #ifdef ARKWEB_DEVTOOLS
+  //matchChromeColorSchemeDocumentation: 'Match DevTools colors to your customized Chrome theme (when enabled)',
+  matchChromeColorSchemeDocumentation: 'Match DevTools colors to your customized theme (when enabled)',
+  // #endif ARKWEB_DEVTOOLS
   /**
    * @description Command to turn the browser color scheme matching on through the command menu.
    */
@@ -669,7 +675,9 @@ Common.Settings.registerSettingExtension({
   ],
   reloadRequired: true,
   learnMore: {
-    url: 'https://goo.gle/devtools-customize-theme' as Platform.DevToolsPath.UrlString,
+    // #ifdef ARKWEB_DEVTOOLS
+    // url: 'https://goo.gle/devtools-customize-theme' as Platform.DevToolsPath.UrlString,
+    // #endif ARKWEB_DEVTOOLS
     tooltip: i18nLazyString(UIStrings.matchChromeColorSchemeDocumentation),
   },
 });
