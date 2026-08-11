@@ -5,18 +5,28 @@
 import {assert} from 'chai';
 import * as sinon from 'sinon';
 
+import * as Tracing from '../../../services/tracing/tracing.js';
 import {
   assertIsError,
   assertIsResult,
-  initializePersistenceImplForTests,
+  makeFakeParsedTrace,
 } from '../../../testing/AiAssistanceHelpers.js';
-import {describeWithEnvironment} from '../../../testing/EnvironmentHelpers.js';
+import {setupLocaleHooks} from '../../../testing/LocaleHelpers.js';
+import {setupRuntimeHooks} from '../../../testing/RuntimeHelpers.js';
+import {setupSettingsHooks} from '../../../testing/SettingsHelpers.js';
+import {TestUniverse} from '../../../testing/TestUniverse.js';
 import type * as Trace from '../../trace/trace.js';
 import * as AiAssistance from '../ai_assistance.js';
 
-describeWithEnvironment('GetTraceEventByKeyTool', () => {
+describe('GetTraceEventByKeyTool', () => {
+  setupLocaleHooks();
+  setupSettingsHooks();
+  setupRuntimeHooks();
+
+  let universe: TestUniverse;
+
   beforeEach(() => {
-    initializePersistenceImplForTests();
+    universe = new TestUniverse();
   });
 
   const GetTraceEventByKeyTool = AiAssistance.GetTraceEventByKey.GetTraceEventByKeyTool;
@@ -41,19 +51,14 @@ describeWithEnvironment('GetTraceEventByKeyTool', () => {
   });
 
   it('returns error when event cannot be found', async () => {
-    const parsedTrace = {
-      insights: new Map(),
-      metadata: {},
-      data: {
-        Meta: {
-          mainFrameNavigations: [],
-          traceBounds: {min: 0, max: 100},
-          mainFrameURL: 'https://example.com',
-        },
-      },
-    } as unknown as Trace.TraceModel.ParsedTrace;
+    const parsedTrace = makeFakeParsedTrace();
 
-    const traceContext = AiAssistance.PerformanceTraceContext.PerformanceTraceContext.fromParsedTrace(parsedTrace);
+    const traceContext = AiAssistance.PerformanceTraceContext.PerformanceTraceContext.fromParsedTrace(
+        parsedTrace,
+        universe.targetManager,
+        new Tracing.FreshRecording.Tracker(),
+        universe.debuggerWorkspaceBinding,
+    );
     const focus = traceContext.getItem();
     sinon.stub(focus, 'lookupEvent').returns(null);
 
@@ -69,19 +74,14 @@ describeWithEnvironment('GetTraceEventByKeyTool', () => {
   });
 
   it('returns formatted event details and TIMELINE_EVENT_SUMMARY widget on success', async () => {
-    const parsedTrace = {
-      insights: new Map(),
-      metadata: {},
-      data: {
-        Meta: {
-          mainFrameNavigations: [],
-          traceBounds: {min: 0, max: 100},
-          mainFrameURL: 'https://example.com',
-        },
-      },
-    } as unknown as Trace.TraceModel.ParsedTrace;
+    const parsedTrace = makeFakeParsedTrace();
 
-    const traceContext = AiAssistance.PerformanceTraceContext.PerformanceTraceContext.fromParsedTrace(parsedTrace);
+    const traceContext = AiAssistance.PerformanceTraceContext.PerformanceTraceContext.fromParsedTrace(
+        parsedTrace,
+        universe.targetManager,
+        new Tracing.FreshRecording.Tracker(),
+        universe.debuggerWorkspaceBinding,
+    );
     const focus = traceContext.getItem();
     const mockEvent = {
       name: 'some-event',
