@@ -687,6 +687,10 @@ export class RequestConditionsDrawer extends UI.Widget.VBox implements
   override wasShown(): void {
     UI.Context.Context.instance().setFlavor(RequestConditionsDrawer, this);
     super.wasShown();
+    // #ifdef ARKWEB_DEVTOOLS
+    // 确保视图显示时checkbox状态与conditionsEnabled同步
+    this.update();
+    // #endif ARKWEB_DEVTOOLS
   }
 
   override willHide(): void {
