@@ -12,7 +12,6 @@ import * as PerformanceAnnotationsAgent from './agents/PerformanceAnnotationsAge
 import * as StylingAgent from './agents/StylingAgent.js';
 import * as AiConversation from './AiConversation.js';
 import * as AiHistoryStorage from './AiHistoryStorage.js';
-import * as AiOrigins from './AiOrigins.js';
 import * as AiUtils from './AiUtils.js';
 import * as BuiltInAi from './BuiltInAi.js';
 import * as ChangeManager from './ChangeManager.js';
@@ -37,7 +36,6 @@ export {
   AIContext,
   AiConversation,
   AiHistoryStorage,
-  AiOrigins,
   AIQueries,
   AiUtils,
   BuiltInAi,

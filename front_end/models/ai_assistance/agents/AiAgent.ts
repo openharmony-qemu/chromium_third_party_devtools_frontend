@@ -4,7 +4,6 @@
 
 import * as Host from '../../../core/host/host.js';
 import * as Root from '../../../core/root/root.js';
-import {areOriginsEquivalent, extractContextOrigin, isOpaqueOrigin} from '../AiOrigins.js';
 import {debugLog, isStructuredLogEnabled} from '../debug.js';
 
 export const enum ResponseType {
@@ -171,23 +170,19 @@ export interface ExternalRequestError {
 export type ExternalRequestResponse = ExternalRequestAnswer|ExternalRequestNotification|ExternalRequestError;
 
 export abstract class ConversationContext<T> {
-  abstract getURL(): string;
+  abstract getOrigin(): string;
   abstract getItem(): T;
   abstract getTitle(): string;
 
-  getOrigin(): string {
-    return extractContextOrigin(this.getURL());
-  }
-
-  isOriginAllowed(establishedOrigin: string|undefined): boolean {
-    const origin = this.getOrigin();
-    // If no origin is established yet, this context will be the one to lock the conversation.
-    // Opaque origins are never allowed to be used as context.
-    if (!establishedOrigin) {
-      return !isOpaqueOrigin(origin);
+  isOriginAllowed(agentOrigin: string|undefined): boolean {
+    if (!agentOrigin) {
+      return true;
     }
-    // Only allow data that matches the origin the conversation is already locked to.
-    return areOriginsEquivalent(origin, establishedOrigin);
+    // Currently does not handle opaque origins because they
+    // are not available to DevTools, instead checks
+    // that serialization of the origin is the same
+    // https://html.spec.whatwg.org/#ascii-serialisation-of-an-origin.
+    return this.getOrigin() === agentOrigin;
   }
 
   /**
