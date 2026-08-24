@@ -103,8 +103,8 @@ export class RequestContext extends ConversationContext<SDK.NetworkRequest.Netwo
     this.#calculator = calculator;
   }
 
-  override getURL(): string {
-    return this.#request.url();
+  override getOrigin(): string {
+    return new URL(this.#request.url()).origin;
   }
 
   override getItem(): SDK.NetworkRequest.NetworkRequest {
