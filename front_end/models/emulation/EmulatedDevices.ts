@@ -2019,4 +2019,5 @@ const emulatedDevices = [
   },
   // DEVICE-LIST-END
 ];
+
 /* eslint-enable @stylistic/quote-props */

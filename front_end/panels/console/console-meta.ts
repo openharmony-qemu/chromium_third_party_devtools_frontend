@@ -429,6 +429,12 @@ Common.Settings.registerSettingExtension({
   ],
 });
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+// 作用：OH 平台跳过 console-insight-teasers-enabled 设置扩展注册
+// #ifdef ARKWEB_DEVTOOLS
+if (!adaptForOhos) {
 Common.Settings.registerSettingExtension({
   category: Common.Settings.SettingCategory.CONSOLE,
   storageType: Common.Settings.SettingStorageType.SYNCED,
@@ -437,6 +443,8 @@ Common.Settings.registerSettingExtension({
   settingType: Common.Settings.SettingType.BOOLEAN,
   defaultValue: true,
 });
+}
+// #endif ARKWEB_DEVTOOLS
 
 Common.Revealer.registerRevealer({
   contextTypes() {

@@ -57,10 +57,6 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('panels/mobile_throttling/NetworkThrottlingSelector.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
-// #ifdef ARKWEB_DEVTOOLS
-const adaptForOhos = true;
-// #endif ARKWEB_DEVTOOLS
-
 interface ViewInput {
   recommendedConditions: SDK.NetworkManager.ThrottlingConditions|null;
   selectedConditions: SDK.NetworkManager.ThrottlingConditions|undefined;
@@ -134,7 +130,7 @@ export const DEFAULT_VIEW: ViewFunction = (input, output, target) => {
                   title(condition)}
             </option>`)}
         </optgroup>`)}
-        <optgroup label=${input.customConditionsGroup.title} ?hidden=${adaptForOhos}>
+        <optgroup label=${input.customConditionsGroup.title}>
           ${input.customConditionsGroup.items.map(condition => html`<option
               ${Directives.ref(option => option && optionsMap.set(option as HTMLOptionElement, condition))}
               ?selected=${selectedConditions && SDK.NetworkManager.networkConditionsEqual(condition, selectedConditions)}

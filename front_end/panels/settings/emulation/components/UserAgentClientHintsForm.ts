@@ -18,7 +18,9 @@ import * as EmulationUtils from '../utils/utils.js';
 import userAgentClientHintsFormStyles from './userAgentClientHintsForm.css.js';
 
 const {html} = Lit;
-
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
 const UIStrings = {
   /**
    * @description Title for user agent client hints form
@@ -544,7 +546,9 @@ export class UserAgentClientHintsForm extends HTMLElement {
           type="text"
           @input=${handlePlatformNameChange}
           .value=${platform}
-          placeholder=${i18nString(UIStrings.platformPlaceholder)}
+          // #ifdef ARKWEB_DEVTOOLS
+          placeholder=${adaptForOhos ? 'Platform (e.g. OpenHarmony)' : i18nString(UIStrings.platformPlaceholder)}
+          // #endif ARKWEB_DEVTOOLS
           aria-label=${i18nString(UIStrings.platformLabel)}
           jslog=${VisualLogging.textField('platform').track({
       change: true,
@@ -849,9 +853,8 @@ export class UserAgentClientHintsForm extends HTMLElement {
     // clang-format on
 
     // clang-format off
-    // #ifdef ARKWEB_DEVTOOLS
-    const adaptForOhos = true;
-    let output = html`
+    let output;
+    output = html`
       <style>${Input.checkboxStyles}</style>
       <style>${userAgentClientHintsFormStyles}</style>
       <section class="root">
@@ -871,7 +874,7 @@ export class UserAgentClientHintsForm extends HTMLElement {
             ${i18nString(UIStrings.title)}
           </div>
           <devtools-icon tabindex=${this.#isFormDisabled ? '-1' : '0'} class=info-icon name=info aria-label=${i18nString(UIStrings.userAgentClientHintsInfo)} title=${i18nString(UIStrings.userAgentClientHintsInfo)}></devtools-icon>
-          <x-link
+          ${adaptForOhos ? '' : html`<x-link
            tabindex=${this.#isFormDisabled ? '-1' : '0'}
            href="https://web.dev/user-agent-client-hints/"
            target="_blank"
@@ -881,7 +884,7 @@ export class UserAgentClientHintsForm extends HTMLElement {
            jslog=${VisualLogging.link('learn-more').track({click: true})}
           >
             ${i18nString(UIStrings.learnMore)}
-          </x-link>
+          </x-link>`}
         </div>
         <form
           id="form-container"
@@ -906,48 +909,6 @@ export class UserAgentClientHintsForm extends HTMLElement {
         <div aria-live="polite" aria-label=${this.#useragentModifiedAriaMessage}></div>
       </section>
     `;
-    if (adaptForOhos) {
-      output = html`
-        <section class="root">
-          <div
-            class="tree-title"
-            role="button"
-            @click=${this.#handleTreeClick}
-            tabindex=${this.#isFormDisabled ? '-1' : '0'}
-            @keydown=${this.#handleTreeExpand}
-            aria-expanded=${this.#isFormOpened}
-            aria-controls="form-container"
-            aria-disabled=${this.#isFormDisabled}
-            aria-label=${i18nString(UIStrings.title)}
-            jslog=${VisualLogging.toggleSubpane().track({click: true})}
-          >
-            <devtools-icon
-              class=${this.#isFormOpened ? 'rotate-icon' : ''}
-              .data=${{
-                color: 'var(--icon-default)',
-                iconName: 'triangle-right',
-                width: '14px',
-              }}
-            ></devtools-icon>
-            ${i18nString(UIStrings.title)}
-          </div>
-          <form
-            id="form-container"
-            class="form-container ${this.#isFormOpened ? '' : 'hide-container'}"
-            @submit=${this.#handleSubmit}
-          >
-            ${useragentSection}
-            ${fullVersionListSection}
-            ${fullBrowserInput}
-            ${platformSection}
-            ${architectureInput}
-            ${deviceModelSection}
-            ${submitButton}
-          </form>
-          <div aria-live="polite" aria-label=${this.#useragentModifiedAriaMessage}></div>
-        </section>
-      `;
-    }
     // clang-format on
     Lit.render(output, this.#shadow, {host: this});
   }

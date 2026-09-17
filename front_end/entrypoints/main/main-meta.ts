@@ -656,6 +656,9 @@ Common.Settings.registerSettingExtension({
   ],
 });
 
+// 作用：OH 平台跳过"与 Chrome 配色方案匹配"设置项（chrome-theme-colors）注册
+// #ifdef ARKWEB_DEVTOOLS
+if (!adaptForOhos) {
 Common.Settings.registerSettingExtension({
   category: Common.Settings.SettingCategory.APPEARANCE,
   storageType: Common.Settings.SettingStorageType.SYNCED,
@@ -681,6 +684,8 @@ Common.Settings.registerSettingExtension({
     tooltip: i18nLazyString(UIStrings.matchChromeColorSchemeDocumentation),
   },
 });
+}
+// #endif ARKWEB_DEVTOOLS
 
 Common.Settings.registerSettingExtension({
   category: Common.Settings.SettingCategory.APPEARANCE,
@@ -801,6 +806,9 @@ function createOptionForLocale(localeString: string): Common.Settings.SettingExt
   };
 }
 
+// #ifdef ARKWEB_DEVTOOLS
+// 作用：OH 平台跳过 Chrome Sync 偏好同步设置项（sync-preferences）注册
+if (!adaptForOhos) {
 Common.Settings.registerSettingExtension({
   category: Common.Settings.SettingCategory.ACCOUNT,
   // This name must be kept in sync with DevToolsSettings::kSyncDevToolsPreferencesFrontendName.
@@ -810,7 +818,10 @@ Common.Settings.registerSettingExtension({
   defaultValue: false,
   reloadRequired: true,
 });
+}
 
+// 作用：OH 平台跳过 Google Developer Program 徽章接收设置项（receive-gdp-badges）注册
+if (!adaptForOhos) {
 Common.Settings.registerSettingExtension({
   category: Common.Settings.SettingCategory.ACCOUNT,
   settingName: 'receive-gdp-badges',
@@ -820,6 +831,8 @@ Common.Settings.registerSettingExtension({
   defaultValue: false,
   reloadRequired: true,
 });
+}
+// #endif ARKWEB_DEVTOOLS
 
 Common.Settings.registerSettingExtension({
   storageType: Common.Settings.SettingStorageType.SYNCED,
@@ -938,10 +951,6 @@ UI.Toolbar.registerToolbarItem({
   location: UI.Toolbar.ToolbarItemLocation.MAIN_TOOLBAR_RIGHT,
 });
 
-// #ifdef ARKWEB_DEVTOOLS
-if (adaptForOhos) {
-  // arkweb does't support settings.
-} else {
 UI.Toolbar.registerToolbarItem({
   async loadItem() {
     const Main = await loadMainModule();
@@ -950,9 +959,6 @@ UI.Toolbar.registerToolbarItem({
   order: 99,
   location: UI.Toolbar.ToolbarItemLocation.MAIN_TOOLBAR_RIGHT,
 });
-}
-// #endif ARKWEB_DEVTOOLS
-
 UI.Toolbar.registerToolbarItem({
   condition: () => !Root.Runtime.Runtime.isTraceApp(),
   async loadItem() {
