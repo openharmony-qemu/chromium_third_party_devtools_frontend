@@ -223,7 +223,15 @@ export class GdpSignUpDialog extends UI.Widget.VBox {
         this.#keepMeUpdated ? Host.GdpClient.EmailPreference.ENABLED : Host.GdpClient.EmailPreference.DISABLED;
     const result = await Host.GdpClient.GdpClient.instance().createProfile({user, emailPreference});
     if (result) {
-      Common.Settings.Settings.instance().moduleSetting('receive-gdp-badges').set(true);
+      // #ifdef ARKWEB_DEVTOOLS
+      const adaptForOhos = true;
+      // #endif ARKWEB_DEVTOOLS
+      // 作用：OH上跳过 GDP 徽章设置的启用
+      // #ifdef ARKWEB_DEVTOOLS
+      if (!adaptForOhos) {
+        Common.Settings.Settings.instance().moduleSetting('receive-gdp-badges').set(true);
+      }
+      // #endif ARKWEB_DEVTOOLS
       await Badges.UserBadges.instance().initialize();
       Badges.UserBadges.instance().recordAction(Badges.BadgeAction.GDP_SIGN_UP_COMPLETE);
       this.#onSuccess?.();

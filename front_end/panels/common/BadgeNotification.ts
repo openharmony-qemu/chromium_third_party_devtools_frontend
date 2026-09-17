@@ -72,6 +72,11 @@ const LEFT_OFFSET = 5;
 const BOTTOM_OFFSET = 5;
 const AUTO_CLOSE_TIME_IN_MS = 30000;
 
+// 作用：OH 平台适配开关
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 export interface BadgeNotificationAction {
   label: string;
   jslogContext: string;
@@ -136,7 +141,12 @@ const DEFAULT_VIEW = (input: ViewInput, _output: undefined, target: HTMLElement)
 type View = typeof DEFAULT_VIEW;
 
 function revealBadgeSettings(): void {
-  void Common.Revealer.reveal(Common.Settings.moduleSetting('receive-gdp-badges'));
+  // 作用：OH上跳过 GDP badges 设置项的 reveal 操作
+  // #ifdef ARKWEB_DEVTOOLS
+  if (!adaptForOhos) {
+    void Common.Revealer.reveal(Common.Settings.moduleSetting('receive-gdp-badges'));
+  }
+  // #endif ARKWEB_DEVTOOLS
 }
 
 export class BadgeNotification extends UI.Widget.Widget {
@@ -275,29 +285,39 @@ export class BadgeNotification extends UI.Widget.Widget {
   }
 
   #presentActivityBasedBadge(badge: Badges.Badge): void {
+    // 作用：OH上不向操作列表追加"查看 Google 开发者资料"按钮
+    // #ifdef ARKWEB_DEVTOOLS
+    const actions: Array<{
+      label: string,
+      jslogContext: string,
+      onClick: () => void,
+    }> = [
+      {
+        label: i18nString(UIStrings.manageSettings),
+        jslogContext: 'manage-settings',
+        onClick: () => {
+          this.detach();
+          revealBadgeSettings();
+        },
+      },
+    ];
+    if (!adaptForOhos) {
+      actions.push({
+        label: i18nString(UIStrings.viewProfile),
+        jslogContext: 'view-profile',
+        onClick: () => {
+          UIHelpers.openInNewTab(Host.GdpClient.GOOGLE_DEVELOPER_PROGRAM_PROFILE_LINK);
+        },
+      });
+    }
     this.#show({
       message: i18nString(UIStrings.activityBasedBadgeAwardMessage, {PH1: badge.title}),
       jslogContext: badge.jslogContext,
-      actions: [
-        {
-          label: i18nString(UIStrings.manageSettings),
-          jslogContext: 'manage-settings',
-          onClick: () => {
-            this.detach();
-            revealBadgeSettings();
-          },
-        },
-        {
-          label: i18nString(UIStrings.viewProfile),
-          jslogContext: 'view-profile',
-          onClick: () => {
-            UIHelpers.openInNewTab(Host.GdpClient.GOOGLE_DEVELOPER_PROGRAM_PROFILE_LINK);
-          }
-        }
-      ],
+      actions,
       imageUri: badge.imageUri,
       isStarterBadge: badge.isStarterBadge,
     });
+    // #endif ARKWEB_DEVTOOLS
   }
 
   override onDetach(): void {

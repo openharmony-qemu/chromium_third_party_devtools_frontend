@@ -24,7 +24,9 @@ import {PanelUtils} from '../utils/utils.js';
 import * as PanelComponents from './components/components.js';
 import type {KeybindsSettingsTab} from './KeybindsSettingsTab.js';
 import settingsScreenStyles from './settingsScreen.css.js';
-
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
 const UIStrings = {
 
   /**
@@ -117,12 +119,17 @@ export class SettingsScreen extends UI.Widget.VBox implements UI.View.ViewLocati
     tabbedPane.headerElement().prepend(settingsLabelElement);
     tabbedPane.setShrinkableTabs(false);
     tabbedPane.makeVerticalTabLayout();
-    const keyBindsView = UI.ViewManager.ViewManager.instance().view('keybinds');
-    if (keyBindsView) {
-      void keyBindsView.widget().then(widget => {
-        this.keybindsTab = widget as KeybindsSettingsTab;
-      });
+    // 作用：OH上跳过 Keybinds 快捷键面板加载
+    // #ifdef ARKWEB_DEVTOOLS
+    if (!adaptForOhos) {
+      const keyBindsView = UI.ViewManager.ViewManager.instance().view('keybinds');
+      if (keyBindsView) {
+        void keyBindsView.widget().then(widget => {
+          this.keybindsTab = widget as KeybindsSettingsTab;
+        });
+      }
     }
+    // #endif ARKWEB_DEVTOOLS
     tabbedPane.show(this.contentElement);
     tabbedPane.selectTab('preferences');
     tabbedPane.addEventListener(UI.TabbedPane.Events.TabInvoked, this.tabInvoked, this);
@@ -235,8 +242,12 @@ export class GenericSettingsTab extends UI.Widget.VBox implements SettingsTab {
         this.contentElement.createChild('div', 'settings-card-container-wrapper').createChild('div');
 
     this.containerElement.classList.add('settings-multicolumn-card-container');
+    // 作用：OH上跳过 SyncSection 的 markAsRoot 调用
+    // #ifdef ARKWEB_DEVTOOLS
+    if (!adaptForOhos) {
     this.syncSection.markAsRoot();
-
+    }
+    // #endif ARKWEB_DEVTOOLS
     // AI, GRID, MOBILE, EMULATION, and RENDERING are intentionally excluded from this list.
     // AI settings are displayed in their own tab.
     const explicitSectionOrder: Common.Settings.SettingCategory[] = [
@@ -295,7 +306,12 @@ export class GenericSettingsTab extends UI.Widget.VBox implements SettingsTab {
   override wasShown(): void {
     UI.Context.Context.instance().setFlavor(GenericSettingsTab, this);
     super.wasShown();
+    // 作用：OH上跳过 SyncSection 更新
+    // #ifdef ARKWEB_DEVTOOLS
+    if (!adaptForOhos) {
     this.updateSyncSection();
+    }
+    // #endif ARKWEB_DEVTOOLS
   }
 
   override willHide(): void {
@@ -336,7 +352,10 @@ export class GenericSettingsTab extends UI.Widget.VBox implements SettingsTab {
     // Always create the EXTENSIONS section and append the link handling control.
     if (category === Common.Settings.SettingCategory.EXTENSIONS) {
       this.createExtensionSection(settings);
-    } else if (category === Common.Settings.SettingCategory.ACCOUNT && settings.length > 0) {
+    // 作用：OH上不渲染 ACCOUNT 分类卡片
+    // #ifdef ARKWEB_DEVTOOLS
+    } else if (category === Common.Settings.SettingCategory.ACCOUNT && settings.length > 0 && !adaptForOhos) {
+    // #endif ARKWEB_DEVTOOLS
       const syncCard = createSettingsCard(
           Common.SettingRegistration.getLocalizedSettingsCategory(Common.SettingRegistration.SettingCategory.ACCOUNT),
           this.syncSection.element);
@@ -371,7 +390,10 @@ export class GenericSettingsTab extends UI.Widget.VBox implements SettingsTab {
       const element = this.settingToControl.get(setting);
       if (element) {
         PanelUtils.highlightElement(element);
-      } else if (setting.name === 'receive-gdp-badges') {
+      // 作用：OH上跳过 GDP badges 设置的高亮定位
+      // #ifdef ARKWEB_DEVTOOLS
+      } else if (!adaptForOhos && setting.name === 'receive-gdp-badges') {
+      // #endif ARKWEB_DEVTOOLS
         void this.#syncSectionUpdatePromise?.then(() => {
           void this.syncSection.highlightReceiveBadgesSetting();
         });
@@ -542,8 +564,8 @@ export class ActionDelegate implements UI.ActionRegistration.ActionDelegate {
         void SettingsScreen.showSettingsScreen({focusTabHeader: true} as ShowSettingsScreenOptions);
         return true;
       case 'settings.documentation':
+      // 作用：OH上文档链接动作直接返回 true（不执行跳转）
       // #ifdef ARKWEB_DEVTOOLS
-      const adaptForOhos = true;
       if (adaptForOhos) {
         return true;
       }
@@ -551,7 +573,12 @@ export class ActionDelegate implements UI.ActionRegistration.ActionDelegate {
         UIHelpers.openInNewTab('https://developer.chrome.com/docs/devtools/');
         return true;
       case 'settings.shortcuts':
-        void SettingsScreen.showSettingsScreen({name: 'keybinds', focusTabHeader: true});
+        // 作用：OH上跳过快捷键设置面板打开
+        // #ifdef ARKWEB_DEVTOOLS
+        if (!adaptForOhos) {
+          void SettingsScreen.showSettingsScreen({name: 'keybinds', focusTabHeader: true});
+        }
+        // #endif ARKWEB_DEVTOOLS
         return true;
     }
     return false;

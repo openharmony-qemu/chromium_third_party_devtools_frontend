@@ -30,7 +30,12 @@ let userBadgesInstance: UserBadges|undefined = undefined;
 export class UserBadges extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
   readonly #badgeActionEventTarget = new Common.ObjectWrapper.ObjectWrapper<BadgeActionEvents>();
 
-  #receiveBadgesSetting: Common.Settings.Setting<Boolean>;
+  // #ifdef ARKWEB_DEVTOOLS
+  // 作用：OH 上该 setting 无对应注册项，置为 null
+  // 合理性：main-meta.ts 跳过了 receive-gdp-badges 的注册
+  // 必要性：不置空则 moduleSetting 抛 No setting registered 异常
+  #receiveBadgesSetting: Common.Settings.Setting<Boolean>|null;
+  // #endif ARKWEB_DEVTOOLS
   #allBadges: Badge[];
 
   #starterBadgeSnoozeCount: Common.Settings.Setting<number>;
@@ -48,11 +53,21 @@ export class UserBadges extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
   private constructor() {
     super();
 
-    this.#receiveBadgesSetting = Common.Settings.Settings.instance().moduleSetting('receive-gdp-badges');
-    if (!Host.GdpClient.isBadgesEnabled()) {
-      this.#receiveBadgesSetting.set(false);
+    // 作用：OH上将 receiveBadgesSetting 置空并跳过 changeListener 注册
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    // #endif ARKWEB_DEVTOOLS
+    // #ifdef ARKWEB_DEVTOOLS
+    if (!adaptForOhos) {
+      this.#receiveBadgesSetting = Common.Settings.Settings.instance().moduleSetting('receive-gdp-badges');
+      if (!Host.GdpClient.isBadgesEnabled()) {
+        this.#receiveBadgesSetting.set(false);
+      }
+      this.#receiveBadgesSetting.addChangeListener(this.#reconcileBadges, this);
+    } else {
+      this.#receiveBadgesSetting = null;
     }
-    this.#receiveBadgesSetting.addChangeListener(this.#reconcileBadges, this);
+    // #endif ARKWEB_DEVTOOLS
 
     this.#starterBadgeSnoozeCount = Common.Settings.Settings.instance().createSetting(
         'starter-badge-snooze-count', 0, Common.Settings.SettingStorageType.SYNCED);
@@ -105,7 +120,10 @@ export class UserBadges extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
       shouldAwardBadge = true;
     } else {
       const getProfileResponse = await Host.GdpClient.GdpClient.instance().getProfile();
-      const receiveBadgesSettingEnabled = Boolean(this.#receiveBadgesSetting.get());
+      // #ifdef ARKWEB_DEVTOOLS
+      // 作用：安全读取 receiveBadgesSetting；合理性：OH 上该 setting 为 null，需可选链防崩；必要性：null.get() 抛 TypeError
+      const receiveBadgesSettingEnabled = Boolean(this.#receiveBadgesSetting?.get());
+      // #endif ARKWEB_DEVTOOLS
       // If there is a GDP profile and the user has enabled receiving badges, we award the starter badge as well.
       if (getProfileResponse?.profile && receiveBadgesSettingEnabled && !this.#isStarterBadgeDismissed() &&
           !this.#isStarterBadgeSnoozed()) {
@@ -193,7 +211,10 @@ export class UserBadges extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
       }
     }
 
-    const receiveBadgesSettingEnabled = Boolean(this.#receiveBadgesSetting.get());
+    // #ifdef ARKWEB_DEVTOOLS
+    // 作用：安全读取 receiveBadgesSetting；合理性：OH 上该 setting 为 null，需可选链防崩；必要性：null.get() 抛 TypeError
+    const receiveBadgesSettingEnabled = Boolean(this.#receiveBadgesSetting?.get());
+    // #endif ARKWEB_DEVTOOLS
     for (const badge of this.#allBadges) {
       if (awardedBadgeNames?.has(badge.name)) {
         badge.deactivate();
@@ -217,6 +238,9 @@ export class UserBadges extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
   }
 
   isReceiveBadgesSettingEnabled(): boolean {
-    return Boolean(this.#receiveBadgesSetting.get());
+    // #ifdef ARKWEB_DEVTOOLS
+    // 作用：安全读取 receiveBadgesSetting；合理性：OH 上该 setting 为 null，需可选链防崩；必要性：null.get() 抛 TypeError
+    return Boolean(this.#receiveBadgesSetting?.get());
+    // #endif ARKWEB_DEVTOOLS
   }
 }

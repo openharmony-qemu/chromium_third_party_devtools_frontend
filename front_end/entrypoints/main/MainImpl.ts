@@ -66,6 +66,11 @@ import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 
 import {ExecutionContextSelector} from './ExecutionContextSelector.js';
 
+// 作用：OH 平台适配开关
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 const UIStrings = {
   /**
    * @description Title of item in main
@@ -185,7 +190,12 @@ export class MainImpl {
 
     await this.requestAndRegisterLocaleData();
 
-    Host.userMetrics.syncSetting(Common.Settings.Settings.instance().moduleSetting<boolean>('sync-preferences').get());
+    // 作用：OH上跳过 sync-preferences 设置项的 userMetrics 上报
+    // #ifdef ARKWEB_DEVTOOLS
+    if (!adaptForOhos) {
+      Host.userMetrics.syncSetting(Common.Settings.Settings.instance().moduleSetting<boolean>('sync-preferences').get());
+    }
+    // #endif ARKWEB_DEVTOOLS
     const veLogging = config.devToolsVeLogging;
 
     // Used by e2e to put VE Logs into "test mode".
@@ -314,8 +324,6 @@ export class MainImpl {
 
   #initializeExperiments(): void {
     // #ifdef ARKWEB_DEVTOOLS
-    const adaptForOhos = true;
-    // #endif ARKWEB_DEVTOOLS
     Root.Runtime.experiments.register('capture-node-creation-stacks', 'Capture node creation stacks');
     Root.Runtime.experiments.register('live-heap-profile', 'Live heap profile', true);
     // #ifdef ARKWEB_DEVTOOLS
@@ -1028,8 +1036,7 @@ export class MainMenuItem implements UI.Toolbar.Provider {
       }, {additionalElement, isPreviewFeature: viewExtension.isPreviewFeature(), jslogContext: id});
     }
 
-    // #if BUILDFLAG(ARKWEB_DEVTOOLS)
-    const adaptForOhos = true;
+    // #ifdef ARKWEB_DEVTOOLS
     if (adaptForOhos) {
       // ohos doesn't support this
     } else {

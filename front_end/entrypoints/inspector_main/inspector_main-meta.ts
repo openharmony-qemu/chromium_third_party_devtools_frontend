@@ -7,7 +7,10 @@ import * as i18n from '../../core/i18n/i18n.js';
 import * as UI from '../../ui/legacy/legacy.js';
 
 import type * as InspectorMain from './inspector_main.js';
-
+// 作用：ArkWeb OH 平台适配开关，控制广告拦截设置扩展的注册
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
 const UIStrings = {
   /**
    * @description Title of the Rendering tool. The rendering tool is a collection of settings that
@@ -205,7 +208,9 @@ UI.ActionRegistration.registerActionExtension({
     return new InspectorMain.RenderingOptions.ReloadActionDelegate();
   },
 });
-
+// 作用：OH 平台跳过 forceAdBlocking（强制广告拦截）设置扩展注册
+// #ifdef ARKWEB_DEVTOOLS
+if (!adaptForOhos) {
 Common.Settings.registerSettingExtension({
   category: Common.Settings.SettingCategory.NETWORK,
   title: i18nLazyString(UIStrings.forceAdBlocking),
@@ -224,7 +229,8 @@ Common.Settings.registerSettingExtension({
     },
   ],
 });
-
+}
+// #endif ARKWEB_DEVTOOLS
 Common.Settings.registerSettingExtension({
   category: Common.Settings.SettingCategory.GLOBAL,
   storageType: Common.Settings.SettingStorageType.SYNCED,

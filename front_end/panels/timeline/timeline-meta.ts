@@ -3,6 +3,10 @@
 // found in the LICENSE file.
 
 import * as Common from '../../core/common/common.js';
+
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
 import * as i18n from '../../core/i18n/i18n.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as UI from '../../ui/legacy/legacy.js';
@@ -305,6 +309,9 @@ UI.ActionRegistration.registerActionExtension({
   ],
 });
 
+// 作用：OH上屏蔽"在图层视图中隐藏chrome框架"设置项的注册
+// #ifdef ARKWEB_DEVTOOLS
+if (!adaptForOhos) {
 Common.Settings.registerSettingExtension({
   category: Common.Settings.SettingCategory.PERFORMANCE,
   storageType: Common.Settings.SettingStorageType.SYNCED,
@@ -313,6 +320,8 @@ Common.Settings.registerSettingExtension({
   settingType: Common.Settings.SettingType.BOOLEAN,
   defaultValue: false,
 });
+}
+// #endif ARKWEB_DEVTOOLS
 
 // IMPORTANT: if you are updating this, you should also update the setting in
 // js_timeline-meta.
