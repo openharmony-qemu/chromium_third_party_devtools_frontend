@@ -5,13 +5,7 @@
 import("../../../scripts/build/typescript/typescript.gni")
 
 ts_e2e_library("helpers") {
-  sources = [
-    "ai_eval-helpers.ts",
-    "eval-logger.ts",
-    "eval-task-recorder.ts",
-    "gcs-upload.ts",
-    "trajectory-builder.ts",
-  ]
+  sources = [ "ai_eval-helpers.ts" ]
   ts_deps = [
     "../../../front_end/panels/ai_assistance:bundle",
     "../../e2e/helpers",
