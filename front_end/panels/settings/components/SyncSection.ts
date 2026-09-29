@@ -275,8 +275,18 @@ export class SyncSection extends UI.Widget.Widget {
   constructor(element?: HTMLElement, view: View = DEFAULT_VIEW) {
     super(element);
     this.#view = view;
-    this.#receiveBadgesSetting = Common.Settings.Settings.instance().moduleSetting('receive-gdp-badges');
-    this.#syncSetting = Common.Settings.moduleSetting('sync-preferences') as Common.Settings.Setting<boolean>;
+    // 作用：OH上将 SyncSection 的两个设置项置空
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    // 作用：OH 平台将 receive-gdp-badges 和 sync-preferences 两个设置项置空，跳过上游的 moduleSetting 注册访问
+    if (!adaptForOhos) {
+      this.#receiveBadgesSetting = Common.Settings.Settings.instance().moduleSetting('receive-gdp-badges');
+      this.#syncSetting = Common.Settings.moduleSetting('sync-preferences') as Common.Settings.Setting<boolean>;
+    } else {
+      this.#receiveBadgesSetting = null as unknown as Common.Settings.Setting<boolean>;
+      this.#syncSetting = null as unknown as Common.Settings.Setting<boolean>;
+    }
+    // #endif ARKWEB_DEVTOOLS
   }
 
   override wasShown(): void {

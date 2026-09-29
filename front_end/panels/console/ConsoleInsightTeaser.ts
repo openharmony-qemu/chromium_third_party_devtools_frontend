@@ -523,12 +523,25 @@ export class ConsoleInsightTeaser extends UI.Widget.Widget {
     }
   }
 
+  // 作用：安全获取teaser设置，OH上未注册
+  // #ifdef ARKWEB_DEVTOOLS
+  #getConsoleInsightTeasersSetting(): Common.Settings.Setting<unknown>|null {
+    try {
+      return Common.Settings.Settings.instance().moduleSetting('console-insight-teasers-enabled');
+    } catch {
+      return null;
+    }
+  }
+  // #endif ARKWEB_DEVTOOLS
+
   maybeGenerateTeaser(): void {
     const startGeneratingTeaser = (): void => {
-      if (!this.#isInactive &&
-          Common.Settings.Settings.instance().moduleSetting('console-insight-teasers-enabled').get()) {
+      // #ifdef ARKWEB_DEVTOOLS
+      const teaserSetting = this.#getConsoleInsightTeasersSetting();
+      if (!this.#isInactive && teaserSetting && teaserSetting.get()) {
         void this.#generateTeaserText();
       }
+      // #endif ARKWEB_DEVTOOLS
     };
 
     const hasSession = this.#builtInAi.hasSession();
@@ -653,7 +666,12 @@ export class ConsoleInsightTeaser extends UI.Widget.Widget {
 
   #dontShowChanged(e: Event): void {
     const showTeasers = !(e.target as HTMLInputElement).checked;
-    Common.Settings.Settings.instance().moduleSetting('console-insight-teasers-enabled').set(showTeasers);
+    // #ifdef ARKWEB_DEVTOOLS
+    const teaserSetting = this.#getConsoleInsightTeasersSetting();
+    if (teaserSetting) {
+      teaserSetting.set(showTeasers);
+    }
+    // #endif ARKWEB_DEVTOOLS
   }
 
   #hasTellMeMoreButton(): boolean {
@@ -677,7 +695,9 @@ export class ConsoleInsightTeaser extends UI.Widget.Widget {
           headerText: this.#headerText,
           mainText: this.#mainText,
           isInactive: this.#isInactive ||
-              !Common.Settings.Settings.instance().moduleSetting('console-insight-teasers-enabled').get(),
+              // #ifdef ARKWEB_DEVTOOLS
+              !this.#getConsoleInsightTeasersSetting()?.get(),
+              // #endif ARKWEB_DEVTOOLS
           dontShowChanged: this.#dontShowChanged.bind(this),
           hasTellMeMoreButton: this.#hasTellMeMoreButton(),
           isSlowGeneration: this.#isSlow,

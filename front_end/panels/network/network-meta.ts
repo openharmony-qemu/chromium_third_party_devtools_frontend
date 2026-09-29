@@ -378,6 +378,10 @@ UI.ActionRegistration.registerActionExtension({
   },
 });
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 Common.Settings.registerSettingExtension({
   category: Common.Settings.SettingCategory.NETWORK,
   storageType: Common.Settings.SettingStorageType.SYNCED,
@@ -398,12 +402,17 @@ Common.Settings.registerSettingExtension({
       title: i18nLazyString(UIStrings.dontAllowToGenerateHarWithSensitiveData),
     },
   ],
+  // 作用：OH上屏蔽HAR导出设置中的"了解详情"链接
+  // #ifdef ARKWEB_DEVTOOLS
+  ...(adaptForOhos ? {} : {
   learnMore: {
     // #ifdef ARKWEB_DEVTOOLS
     // url: 'https://goo.gle/devtools-export-hars' as Platform.DevToolsPath.UrlString,
     // #endif ARKWEB_DEVTOOLS
     tooltip: i18nLazyString(UIStrings.allowToGenerateHarWithSensitiveDataDocumentation),
   },
+  }),
+  // #endif ARKWEB_DEVTOOLS
 });
 
 Common.Settings.registerSettingExtension({

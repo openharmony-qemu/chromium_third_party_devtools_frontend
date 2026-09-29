@@ -5,6 +5,10 @@
 import * as Common from '../common/common.js';
 import * as i18n from '../i18n/i18n.js';
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 const UIStrings = {
   /**
    * @description Title of a setting under the Console category that can be invoked through the Command Menu
@@ -448,7 +452,12 @@ Common.Settings.registerSettingExtension({
   title: i18nLazyString(UIStrings.disableJavascript),
   settingName: 'java-script-disabled',
   settingType: Common.Settings.SettingType.BOOLEAN,
+  // 作用：将"停用 JavaScript"设置的存储类型由 SESSION 改为 GLOBAL
+  // #ifdef ARKWEB_DEVTOOLS
+  // storageType: adaptForOhos ? Common.Settings.SettingStorageType.GLOBAL :
+  //                             Common.Settings.SettingStorageType.SESSION,
   storageType: Common.Settings.SettingStorageType.SESSION,
+  // #endif ARKWEB_DEVTOOLS
   order: 1,
   defaultValue: false,
   options: [
