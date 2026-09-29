@@ -86,6 +86,10 @@ const uniformSamplerLocations = new Map<WebGLProgram, WebGLUniformLocation|null>
 
 const imageForTexture = new Map<WebGLTexture, HTMLImageElement>();
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 export class Layers3DView extends Common.ObjectWrapper.eventMixin<EventTypes, typeof UI.Widget.VBox>(UI.Widget.VBox)
     implements LayerView {
   private failBanner: UI.EmptyWidget.EmptyWidget;
@@ -300,6 +304,22 @@ export class Layers3DView extends Common.ObjectWrapper.eventMixin<EventTypes, ty
   }
 
   private resizeCanvas(): void {
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      let floatEquals = (a: number, b: number): boolean => {
+        return Math.abs(a - b) < 1.5 * window.devicePixelRatio;
+      }
+      let newWidth = this.canvasElement.offsetWidth * window.devicePixelRatio;
+      let newHeight = this.canvasElement.offsetHeight * window.devicePixelRatio;
+      if (floatEquals(newWidth, this.canvasElement.width) &&
+          floatEquals(newHeight, this.canvasElement.height)) {
+        return;
+      }
+      this.canvasElement.width = newWidth;
+      this.canvasElement.height = newHeight;
+      return;
+    }
+    // #endif ARKWEB_DEVTOOLS
     this.canvasElement.width = this.canvasElement.offsetWidth * window.devicePixelRatio;
     this.canvasElement.height = this.canvasElement.offsetHeight * window.devicePixelRatio;
   }
@@ -656,6 +676,13 @@ export class Layers3DView extends Common.ObjectWrapper.eventMixin<EventTypes, ty
       return;
     }
 
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      // arkweb doesn't draw Chrome.
+      return;
+    }
+    // #endif ARKWEB_DEVTOOLS
+
     const drawChrome = !Common.Settings.Settings.instance().moduleSetting('frame-viewer-hide-chrome-window').get() &&
         this.chromeTextures.length >= 3 && this.chromeTextures.indexOf(undefined) < 0;
     const z = (this.maxDepth + 1) * LayerSpacing;
@@ -824,6 +851,12 @@ export class Layers3DView extends Common.ObjectWrapper.eventMixin<EventTypes, ty
     this.showSlowScrollRectsSetting = this.createVisibilitySetting(
         i18nString(UIStrings.slowScrollRects), 'frame-viewer-show-slow-scroll-rects', true, this.panelToolbar);
     this.showPaintsSetting.addChangeListener(this.updatePaints, this);
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      // 'frame-viewer-hide-chrome-window' isn't registered in arkweb.
+      return;
+    }
+    // #endif ARKWEB_DEVTOOLS
     Common.Settings.Settings.instance()
         .moduleSetting('frame-viewer-hide-chrome-window')
         .addChangeListener(this.update, this);

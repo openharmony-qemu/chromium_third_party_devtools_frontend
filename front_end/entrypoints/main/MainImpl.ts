@@ -427,6 +427,12 @@ export class MainImpl {
       ...(Root.Runtime.Runtime.queryParam('isChromeForTesting') ? ['protocol-monitor'] : []),
     ]);
 
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      Root.Runtime.experiments.enableExperimentsByDefault(['protocol-monitor']);
+    }
+    // #endif ARKWEB_DEVTOOLS
+
     Root.Runtime.experiments.cleanUpStaleExperiments();
     const enabledExperiments = Root.Runtime.Runtime.queryParam('enabledExperiments');
     if (enabledExperiments) {
