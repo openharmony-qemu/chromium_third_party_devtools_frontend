@@ -135,19 +135,26 @@ export class FrameworkIgnoreListSettingsTab extends UI.Widget.VBox implements
             i18nString(UIStrings.automaticallyIgnoreListKnownThirdPartyScripts),
             Common.Settings.Settings.instance().moduleSetting('automatically-ignore-list-known-third-party-scripts')));
 
-    const automaticallyIgnoreLinkButton = new Buttons.Button.Button();
-    automaticallyIgnoreLinkButton.data = {
-      iconName: 'help',
-      variant: Buttons.Button.Variant.ICON,
-      size: Buttons.Button.Size.SMALL,
-      jslogContext: 'learn-more',
-      title: i18nString(UIStrings.learnMore),
-    };
-    automaticallyIgnoreLinkButton.addEventListener(
-        'click',
-        () => UIHelpers.openInNewTab(
-            'https://developer.chrome.com/docs/devtools/settings/ignore-list/#skip-third-party'));
-    automaticallyIgnoreListContainer.appendChild(automaticallyIgnoreLinkButton);
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      // ArkWeb does not support external links to chrome sites
+    } else {
+      const automaticallyIgnoreLinkButton = new Buttons.Button.Button();
+      automaticallyIgnoreLinkButton.data = {
+        iconName: 'help',
+        variant: Buttons.Button.Variant.ICON,
+        size: Buttons.Button.Size.SMALL,
+        jslogContext: 'learn-more',
+        title: i18nString(UIStrings.learnMore),
+      };
+      automaticallyIgnoreLinkButton.addEventListener(
+          'click',
+          () => UIHelpers.openInNewTab(
+              'https://developer.chrome.com/docs/devtools/settings/ignore-list/#skip-third-party'));
+      automaticallyIgnoreListContainer.appendChild(automaticallyIgnoreLinkButton);
+    } 
+    // #endif ARKWEB_DEVTOOLS
 
     const ignoreListAnonymousScripts =
         generalExclusionGroup.createChild('div', 'ignore-list-option')
@@ -186,7 +193,9 @@ export class FrameworkIgnoreListSettingsTab extends UI.Widget.VBox implements
       const enabled = enabledSetting.get();
       ignoreListContentScripts.disabled = !enabled;
       automaticallyIgnoreList.disabled = !enabled;
-      automaticallyIgnoreLinkButton.disabled = !enabled;
+      // #ifdef ARKWEB_DEVTOOLS
+      // automaticallyIgnoreLinkButton.disabled = !enabled;
+      // #endif ARKWEB_DEVTOOLS
       ignoreListAnonymousScripts.disabled = !enabled;
       addPatternButton.disabled = !enabled;
       this.settingUpdated();

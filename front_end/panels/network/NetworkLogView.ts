@@ -73,10 +73,6 @@ import {NetworkFrameGrouper} from './NetworkFrameGrouper.js';
 import networkLogViewStyles from './networkLogView.css.js';
 import {NetworkLogViewColumns} from './NetworkLogViewColumns.js';
 
-// #ifdef ARKWEB_DEVTOOLS
-const adaptForOhos = true;
-// #endif ARKWEB_DEVTOOLS
-
 const UIStrings = {
   /**
    * @description Text in Network Log View of the Network panel
@@ -1876,11 +1872,6 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
           manager.requestConditions.add(SDK.NetworkManager.RequestCondition.createFromSetting(
               {enabled: true, url: url as Platform.DevToolsPath.UrlString}));
           manager.requestConditions.conditionsEnabled = true;
-          // #ifdef ARKWEB_DEVTOOLS
-          if (adaptForOhos) {
-            return;
-          }
-          // #endif ARKWEB_DEVTOOLS
           void UI.ViewManager.ViewManager.instance().showView('network.blocked-urls');
         }
 
@@ -1889,11 +1880,6 @@ export class NetworkLogView extends Common.ObjectWrapper.eventMixin<EventTypes, 
           if (entry) {
             manager.requestConditions.delete(entry);
           }
-          // #ifdef ARKWEB_DEVTOOLS
-          if (adaptForOhos) {
-            return;
-          }
-          // #endif ARKWEB_DEVTOOLS
           void UI.ViewManager.ViewManager.instance().showView('network.blocked-urls');
         }
 
