@@ -40,6 +40,11 @@ import * as Root from '../../../core/root/root.js';
 
 let themeSupportInstance: ThemeSupport;
 
+// 作用：OH 平台适配开关
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 const themeValueByTargetByName = new Map<Element|null, Map<string, string>>();
 
 export class ThemeSupport extends EventTarget {
@@ -159,7 +164,10 @@ export class ThemeSupport extends EventTarget {
     this.#themeName = useSystemPreferred ? systemPreferredTheme : this.setting.get();
     document.documentElement.classList.toggle('theme-with-dark-background', this.#themeName === 'dark');
 
-    const useChromeTheme = Common.Settings.moduleSetting('chrome-theme-colors').get();
+    // 作用：将 useChromeTheme 强制置为 false；合理性：main-meta.ts 已跳过 chrome-theme-colors 注册；必要性：不短路则 moduleSetting 抛异常
+    // #ifdef ARKWEB_DEVTOOLS
+    const useChromeTheme = adaptForOhos ? false : Common.Settings.moduleSetting('chrome-theme-colors').get();
+    // #endif ARKWEB_DEVTOOLS
     const isIncognito = Root.Runtime.hostConfig.isOffTheRecord === true;
     // Baseline is the name of Chrome's default color theme and there are two of these: default and grayscale.
     // The collective name for the rest of the color themes is dynamic.
@@ -191,7 +199,10 @@ export class ThemeSupport extends EventTarget {
   }
 
   #fetchColorsAndApplyHostTheme(document: Document): void {
-    const useChromeTheme = Common.Settings.moduleSetting('chrome-theme-colors').get();
+    // 作用：将 useChromeTheme 强制置为 false；合理性：main-meta.ts 已跳过 chrome-theme-colors 注册；必要性：不短路则 moduleSetting 抛异常
+    // #ifdef ARKWEB_DEVTOOLS
+    const useChromeTheme = adaptForOhos ? false : Common.Settings.moduleSetting('chrome-theme-colors').get();
+    // #endif ARKWEB_DEVTOOLS
     if (Host.InspectorFrontendHost.InspectorFrontendHostInstance.isHostedMode() || !useChromeTheme) {
       this.#applyThemeToDocument(document);
       return;

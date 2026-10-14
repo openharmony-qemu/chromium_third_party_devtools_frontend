@@ -299,8 +299,18 @@ export class BackendSettingsSync implements SDK.TargetManager.Observer {
     this.#autoAttachSetting.addChangeListener(this.#updateAutoAttach, this);
     this.#updateAutoAttach();
 
-    this.#adBlockEnabledSetting = Common.Settings.Settings.instance().moduleSetting('network.ad-blocking-enabled');
-    this.#adBlockEnabledSetting.addChangeListener(this.#update, this);
+    // 作用：OH上跳过广告拦截设置注册，置空引用
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    // #endif ARKWEB_DEVTOOLS
+    // #ifdef ARKWEB_DEVTOOLS
+    if (!adaptForOhos) {
+      this.#adBlockEnabledSetting = Common.Settings.Settings.instance().moduleSetting('network.ad-blocking-enabled');
+      this.#adBlockEnabledSetting.addChangeListener(this.#update, this);
+    } else {
+      this.#adBlockEnabledSetting = null as unknown as Common.Settings.Setting<boolean>;
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     this.#emulatePageFocusSetting = Common.Settings.Settings.instance().moduleSetting('emulate-page-focus');
     this.#emulatePageFocusSetting.addChangeListener(this.#update, this);
@@ -315,7 +325,12 @@ export class BackendSettingsSync implements SDK.TargetManager.Observer {
     if (target.type() !== SDK.Target.Type.FRAME || target.parentTarget()?.type() === SDK.Target.Type.FRAME) {
       return;
     }
-    void target.pageAgent().invoke_setAdBlockingEnabled({enabled: this.#adBlockEnabledSetting.get()});
+    // 作用：调用广告拦截 CDP 前检查设置对象是否存在
+    // #ifdef ARKWEB_DEVTOOLS
+    if (this.#adBlockEnabledSetting) {
+      void target.pageAgent().invoke_setAdBlockingEnabled({enabled: this.#adBlockEnabledSetting.get()});
+    }
+    // #endif ARKWEB_DEVTOOLS
     void target.emulationAgent().invoke_setFocusEmulationEnabled({enabled: this.#emulatePageFocusSetting.get()});
   }
 

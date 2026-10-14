@@ -57,6 +57,10 @@ import * as SDK from '../../core/sdk/sdk.js';
  * @throws TypeError if `url` is not a valid URL.
  * @see https://en.wikipedia.org/wiki/UTM_parameters
  */
+// 作用：声明 OH 平台适配开关变量
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
 export function openInNewTab(url: URL|string): void {
   url = new URL(url);
   if (Common.ParsedURL.schemeIs(url, 'javascript:')) {
@@ -77,7 +81,9 @@ export function openInNewTab(url: URL|string): void {
       }
     });
   } else {
-    if (['developer.chrome.com', 'developers.google.com', 'web.dev'].includes(url.hostname)) {
+    // 作用：OH 平台跳过对 Chrome 站点的 UTM 参数追加
+    // #ifdef ARKWEB_DEVTOOLS
+    if (!adaptForOhos && ['developer.chrome.com', 'developers.google.com', 'web.dev'].includes(url.hostname)) {
       if (!url.searchParams.has('utm_source')) {
         url.searchParams.append('utm_source', 'devtools');
       }
@@ -86,6 +92,7 @@ export function openInNewTab(url: URL|string): void {
         url.searchParams.append('utm_campaign', channel);
       }
     }
+    // #endif ARKWEB_DEVTOOLS
     Host.InspectorFrontendHost.InspectorFrontendHostInstance.openInNewTab(Platform.DevToolsPath.urlString`${url}`);
   }
 }

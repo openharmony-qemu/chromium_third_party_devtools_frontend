@@ -111,7 +111,9 @@ UI.ViewManager.registerViewExtension({
   },
   iconName: 'folder',
 });
-
+// 作用：OH上隐藏 Chrome AI 设置面板
+// #ifdef ARKWEB_DEVTOOLS
+if (!adaptForOhos) {
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.SETTINGS_VIEW,
   id: 'chrome-ai',
@@ -130,7 +132,9 @@ UI.ViewManager.registerViewExtension({
         false;
   },
 });
-
+}
+// 作用：OH上隐藏 Experiments 实验性功能设置面板
+if (!adaptForOhos) {
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.SETTINGS_VIEW,
   id: 'experiments',
@@ -144,7 +148,8 @@ UI.ViewManager.registerViewExtension({
   },
   iconName: 'experiment',
 });
-
+}
+// #endif ARKWEB_DEVTOOLS
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.SETTINGS_VIEW,
   id: 'blackbox',
@@ -157,7 +162,9 @@ UI.ViewManager.registerViewExtension({
   },
   iconName: 'clear-list',
 });
-
+// 作用：OH上隐藏 Keybinds 快捷键设置面板
+// #ifdef ARKWEB_DEVTOOLS
+if (!adaptForOhos) {
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.SETTINGS_VIEW,
   id: 'keybinds',
@@ -170,11 +177,12 @@ UI.ViewManager.registerViewExtension({
   },
   iconName: 'keyboard',
 });
+}
+// #endif ARKWEB_DEVTOOLS
 
-// #ifdef ARKWEB_DEVTOOLS
-if (adaptForOhos) {
-  // arkweb does't support settings.
-} else {
+// 作用：移除 ARKWEB_DEVTOOLS 条件编译宏，改为始终注册设置相关动作（快捷键、文档链接等）
+// 合理性：OH上通过各动作内部的 adaptForOhos 判断来决定行为，而非外部整体屏蔽，使代码更可维护
+// 必要性：旧方式整体屏蔽导致 OH 上设置面板的齿轮图标等 UI 元素也消失
 UI.ActionRegistration.registerActionExtension({
   category: UI.ActionRegistration.ActionCategory.SETTINGS,
   actionId: 'settings.show',
@@ -210,8 +218,6 @@ UI.ActionRegistration.registerActionExtension({
     },
   ],
 });
-}
-// #endif ARKWEB_DEVTOOLS
 
 UI.ActionRegistration.registerActionExtension({
   category: UI.ActionRegistration.ActionCategory.SETTINGS,
