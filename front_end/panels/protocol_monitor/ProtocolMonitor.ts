@@ -125,6 +125,10 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('panels/protocol_monitor/ProtocolMonitor.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 export const buildProtocolMetadata = (domains: Iterable<ProtocolDomain>):
     Map<string, {parameters: Parameter[], description: string, replyArgs: string[]}> => {
       const metadataByCommand = new Map<string, {parameters: Parameter[], description: string, replyArgs: string[]}>();
@@ -514,6 +518,12 @@ export class ProtocolMonitorImpl extends UI.Panel.Panel implements SDK.TargetMan
       this.#filter = `method:${message.method}`;
       this.requestUpdate();
     }, {jslogContext: 'filter'});
+
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      return;
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     /**
      * You can click the "Documentation" item in the context menu to be

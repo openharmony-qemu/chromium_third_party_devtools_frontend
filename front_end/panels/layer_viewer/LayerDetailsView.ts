@@ -21,6 +21,10 @@ import {
   Type,
 } from './LayerViewHost.js';
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 const UIStrings = {
   /**
    * @description Text in Layer Details View of the Layers panel
@@ -331,6 +335,18 @@ export class LayerDetailsView extends Common.ObjectWrapper.eventMixin<EventTypes
     });
     this.paintProfilerLink.setAttribute(
         'jslog', `${VisualLogging.action('layers.paint-profiler').track({click: true, keydown: 'Enter'})}`);
+
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      this.paintProfilerLink.remove();
+      let transition_class_list = ['hidden', 'devtools-link', 'link-margin'];
+      this.paintProfilerLink.classList.remove(...transition_class_list);
+      let linkContainer = this.contentElement.createChild('div', transition_class_list.join(' '));
+      linkContainer.appendChild(this.paintProfilerLink);
+      this.paintProfilerLink = linkContainer;
+      this.contentElement.appendChild(this.paintProfilerLink);
+    }
+    // #endif ARKWEB_DEVTOOLS
   }
 
   private createRow(title: string): HTMLElement {

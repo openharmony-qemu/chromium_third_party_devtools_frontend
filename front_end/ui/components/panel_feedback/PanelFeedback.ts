@@ -37,6 +37,10 @@ const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
 const videoThumbnailUrl = new URL('../../../Images/preview_feature_video_thumbnail.svg', import.meta.url).toString();
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 export interface PanelFeedbackData {
   feedbackUrl: Platform.DevToolsPath.UrlString;
   quickStartUrl: Platform.DevToolsPath.UrlString;
@@ -60,6 +64,13 @@ export class PanelFeedback extends HTMLElement {
     if (!ComponentHelpers.ScheduledRender.isScheduledRender(this)) {
       throw new Error('PanelFeedback render was not scheduled');
     }
+
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      // Feedback is not supported.
+      return;
+    }
+    // #endif ARKWEB_DEVTOOLS
 
     // clang-format off
     render(html`
