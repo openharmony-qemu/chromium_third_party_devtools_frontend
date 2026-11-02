@@ -364,7 +364,7 @@ export class WatchExpression extends Common.ObjectWrapper.ObjectWrapper<EventTyp
       }
     }
 
-    return await executionContext.evaluate(
+    return await executionContext.evaluateWithSelectedFrameFallback(
         {
           expression,
           objectGroup: WatchExpression.watchObjectGroupId,
