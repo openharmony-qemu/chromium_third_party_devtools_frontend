@@ -96,7 +96,11 @@ interface StringParameter extends BaseParameter {
 
 interface BooleanParameter extends BaseParameter {
   type: ParameterType.BOOLEAN;
-  value?: boolean;
+// #ifdef ARKWEB_DEVTOOLS
+  value?: boolean|string;
+// #elseif
+// value?: boolean;
+// #endif ARKWEB_DEVTOOLS
 }
 
 interface ObjectParameter extends BaseParameter {
@@ -294,6 +298,11 @@ export class JSONEditor extends Common.ObjectWrapper.eventMixin<EventTypes, type
           return Number(parameter.value);
         }
         case ParameterType.BOOLEAN: {
+// #ifdef ARKWEB_DEVTOOLS
+          if (typeof parameter.value === 'string') {
+            return String(parameter.value).toLowerCase() === 'true';
+          }
+// #endif ARKWEB_DEVTOOLS
           return Boolean(parameter.value);
         }
         case ParameterType.OBJECT: {
