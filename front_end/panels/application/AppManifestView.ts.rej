@@ -1,0 +1,78 @@
+diff a/front_end/panels/application/AppManifestView.ts b/front_end/panels/application/AppManifestView.ts	(rejected hunks)
+@@ -262,11 +262,11 @@ const UIStrings = {
+   /**
+    * @description Warning message for offline capability check
+    * @example {https://developer.chrome.com/blog/improved-pwa-offline-detection} PH1
+    */
+   pageDoesNotWorkOfflineThePage:
+-      'Page does not work offline. Starting in Chrome 93, the installability criteria are changing, and this site will not be installable. See {PH1} for more information.',
++      'Page does not work offline. Starting in ArkWeb 93, the installability criteria are changing, and this site will not be installable. See {PH1} for more information.',
+   /**
+    * @description Text to indicate the source of an image
+    * @example {example.com} PH1
+    */
+   imageFromS: 'Image from {PH1}',
+@@ -494,11 +494,18 @@ export class AppManifestView extends Common.ObjectWrapper.eventMixin<EventTypes,
+     this.registerRequiredCSS(appManifestViewStyles);
+ 
+     this.contentElement.classList.add('manifest-container');
+ 
+     this.emptyView = emptyView;
++    // #ifdef ARKWEB_DEVTOOLS
++    const adaptForOhos = true;
++    if (adaptForOhos) {
++      // ohos doesn't support external links
++    } else {
+     this.emptyView.link = 'https://web.dev/add-manifest/' as Platform.DevToolsPath.UrlString;
++    }
++    // #endif ARKWEB_DEVTOOLS
+ 
+     this.emptyView.show(this.contentElement);
+     this.emptyView.hideWidget();
+ 
+     this.reportView = reportView;
+@@ -679,14 +686,21 @@ export class AppManifestView extends Common.ObjectWrapper.eventMixin<EventTypes,
+       const helpIcon = createIcon('help', 'inline-icon');
+       helpIcon.title = i18nString(UIStrings.appIdExplainer);
+       helpIcon.setAttribute('jslog', `${VisualLogging.action('help').track({hover: true})}`);
+       appIdField.appendChild(helpIcon);
+ 
++      // #ifdef ARKWEB_DEVTOOLS
++      const adaptForOhos = true;
++      if (adaptForOhos) {
++        // ohos doesn't support external links
++      } else {
+       const learnMoreLink = UI.XLink.XLink.create(
+           'https://developer.chrome.com/blog/pwa-manifest-id/', i18nString(UIStrings.learnMore), undefined, undefined,
+           'learn-more');
+       appIdField.appendChild(learnMoreLink);
++      }
++      // #endif ARKWEB_DEVTOOLS
+ 
+       if (!stringProperty('id')) {
+         const suggestedIdNote = appIdField.createChild('div', 'multiline-value');
+         const suggestedIdSpan = document.createElement('code');
+         suggestedIdSpan.textContent = recommendedId;
+@@ -777,15 +791,22 @@ export class AppManifestView extends Common.ObjectWrapper.eventMixin<EventTypes,
+         'jslog', `${VisualLogging.toggle('show-minimal-safe-area-for-maskable-icons').track({change: true})}`);
+     setIconMaskedCheckbox.addEventListener('click', () => {
+       this.iconsSection.setIconMasked(setIconMaskedCheckbox.checked);
+     });
+     this.iconsSection.appendRow().appendChild(setIconMaskedCheckbox);
++    // #ifdef ARKWEB_DEVTOOLS
++    const adaptForOhos = true;
++    if (adaptForOhos) {
++      // ohos doesn't support external links
++    } else {
+     const documentationLink = UI.XLink.XLink.create(
+         'https://web.dev/maskable-icon/', i18nString(UIStrings.documentationOnMaskableIcons), undefined, undefined,
+         'learn-more');
+     this.iconsSection.appendRow().appendChild(
+         uiI18n.getFormatLocalizedString(str_, UIStrings.needHelpReadOurS, {PH1: documentationLink}));
++    }
++    // #endif ARKWEB_DEVTOOLS
+ 
+     let squareSizedIconAvailable = false;
+     for (const icon of icons) {
+       const result = await this.appendImageResourceToSection(url, icon, this.iconsSection, /** isScreenshot= */ false);
+       imageErrors.push(...result.imageResourceErrors);

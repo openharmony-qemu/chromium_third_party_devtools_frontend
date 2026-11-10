@@ -271,7 +271,12 @@ export class BackendSettingsSync implements SDK.TargetManager.Observer {
     if (target.type() !== SDK.Target.Type.FRAME || target.parentTarget()?.type() === SDK.Target.Type.FRAME) {
       return;
     }
-    void target.pageAgent().invoke_setAdBlockingEnabled({enabled: this.#adBlockEnabledSetting.get()});
+    // 作用：调用广告拦截 CDP 前检查设置对象是否存在
+    // #ifdef ARKWEB_DEVTOOLS
+    if (this.#adBlockEnabledSetting) {
+      void target.pageAgent().invoke_setAdBlockingEnabled({enabled: this.#adBlockEnabledSetting.get()});
+    }
+    // #endif ARKWEB_DEVTOOLS
     void target.emulationAgent().invoke_setFocusEmulationEnabled({enabled: this.#emulatePageFocusSetting.get()});
   }
 

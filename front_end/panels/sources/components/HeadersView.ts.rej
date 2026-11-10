@@ -1,0 +1,47 @@
+diff a/front_end/panels/sources/components/HeadersView.ts b/front_end/panels/sources/components/HeadersView.ts	(rejected hunks)
+@@ -356,10 +356,32 @@ export class HeadersViewComponent extends HTMLElement {
+       // clang-format on
+       return;
+     }
+ 
+     // clang-format off
++    // #ifdef ARKWEB_DEVTOOLS
++    const adaptForOhos = true;
++    if (adaptForOhos) {
++      Lit.render(html`
++        ${this.#headerOverrides.map((headerOverride, blockIndex) =>
++          html`
++            ${this.#renderApplyToRow(headerOverride.applyTo, blockIndex)}
++            ${headerOverride.headers.map((header, headerIndex) =>
++              html`
++                ${this.#renderHeaderRow(header, blockIndex, headerIndex)}
++              `,
++            )}
++          `,
++        )}
++        <devtools-button
++            .variant=${Buttons.Button.Variant.OUTLINED}
++            .jslogContext=${'headers-view.add-override-rule'}
++            class="add-block">
++          ${i18nString(UIStrings.addOverrideRule)}
++        </devtools-button>
++      `, this.#shadow, {host: this});
++    } else {
+     Lit.render(html`
+       <style>${headersViewStyles}</style>
+       ${this.#headerOverrides.map((headerOverride, blockIndex) =>
+         html`
+           ${this.#renderApplyToRow(headerOverride.applyTo, blockIndex)}
+@@ -381,10 +403,12 @@ export class HeadersViewComponent extends HTMLElement {
+             href="https://goo.gle/devtools-override"
+             class="link"
+             jslog=${VisualLogging.link('learn-more').track({click: true})}>${i18nString(UIStrings.learnMore)}</x-link>
+       </div>
+     `, this.#shadow, {host: this});
++    }
++    // #endif ARKWEB_DEVTOOLS
+     // clang-format on
+ 
+     if (this.#focusElement) {
+       let focusElement: Element|null = null;
+       if (this.#focusElement.headerIndex) {

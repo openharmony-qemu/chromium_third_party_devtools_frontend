@@ -1,0 +1,19 @@
+diff a/front_end/panels/autofill/AutofillView.ts b/front_end/panels/autofill/AutofillView.ts	(rejected hunks)
+@@ -30,10 +30,17 @@ const UIStrings = {
+   /**
+    * @description Explanation for how to populate the autofill panel with data. Shown when there is
+    * no data available.
+    */
+   toStartDebugging: 'To start debugging autofill, use Chrome\'s autofill menu to fill an address form.',
++  /**
++   * @description Explanation for how to populate the autofill panel with data. Shown when there is
++   * no data available.
++   */
++  // #ifdef ARKWEB_DEVTOOLS
++  toStartDebuggingHW: 'To start debugging autofill, use autofill menu to fill an address form.',
++  // #endif ARKWEB_DEVTOOLS
+   /**
+    * @description Column header for column containing form field values
+    */
+   value: 'Value',
+   /**

@@ -1,0 +1,44 @@
+diff a/front_end/models/issues_manager/MarkdownIssueDescription.ts b/front_end/models/issues_manager/MarkdownIssueDescription.ts	(rejected hunks)
+@@ -35,10 +35,21 @@ export function resolveLazyDescription(lazyDescription: LazyMarkdownIssueDescrip
+   const substitutionMap = new Map();
+   lazyDescription.substitutions?.forEach((value, key) => {
+     substitutionMap.set(key, value());
+   });
+ 
++  // #ifdef ARKWEB_DEVTOOLS
++  const adaptForOhos = true;
++  if (adaptForOhos) {
++    return {
++      file: lazyDescription.file,
++      links: [],
++      substitutions: substitutionMap,
++    };
++  }
++  // #endif ARKWEB_DEVTOOLS
++
+   const description = {
+     file: lazyDescription.file,
+     links: lazyDescription.links.map(linksMap),
+     substitutions: substitutionMap,
+   };
+@@ -85,10 +96,20 @@ export function createIssueDescriptionFromRawMarkdown(
+   const title = findTitleFromMarkdownAst(markdownAst);
+   if (!title) {
+     throw new Error('Markdown issue descriptions must start with a heading');
+   }
+ 
++  // #ifdef ARKWEB_DEVTOOLS
++  const adaptForOhos = true;
++  if (adaptForOhos) {
++    return {
++      title,
++      markdown: markdownAst.slice(1),
++      links: [],
++    };
++  }
++  // #endif ARKWEB_DEVTOOLS
+   return {
+     title,
+     markdown: markdownAst.slice(1),
+     links: description.links,
+   };

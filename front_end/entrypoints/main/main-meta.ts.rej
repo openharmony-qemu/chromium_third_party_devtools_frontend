@@ -1,0 +1,138 @@
+diff a/front_end/entrypoints/main/main-meta.ts b/front_end/entrypoints/main/main-meta.ts	(rejected hunks)
+@@ -13,10 +13,14 @@ import * as Components from '../../ui/legacy/components/utils/utils.js';
+ import * as UI from '../../ui/legacy/legacy.js';
+ import type * as InspectorMain from '../inspector_main/inspector_main.js';
+ 
+ import type * as Main from './main.js';
+ 
++// #ifdef ARKWEB_DEVTOOLS
++const adaptForOhos = true;
++// #endif ARKWEB_DEVTOOLS
++
+ const UIStrings = {
+   /**
+    * @description Text in Main
+    */
+   focusDebuggee: 'Focus page',
+@@ -644,10 +654,13 @@ Common.Settings.registerSettingExtension({
+     i18nLazyString(UIStrings.darkLower),
+     i18nLazyString(UIStrings.lightLower),
+   ],
+ });
+ 
++// 作用：OH 平台跳过"与 Chrome 配色方案匹配"设置项（chrome-theme-colors）注册
++// #ifdef ARKWEB_DEVTOOLS
++if (!adaptForOhos) {
+ Common.Settings.registerSettingExtension({
+   category: Common.Settings.SettingCategory.APPEARANCE,
+   storageType: Common.Settings.SettingStorageType.SYNCED,
+   title: i18nLazyString(UIStrings.matchChromeColorScheme),
+   settingName: 'chrome-theme-colors',
+@@ -663,14 +676,18 @@ Common.Settings.registerSettingExtension({
+       title: i18nLazyString(UIStrings.dontMatchChromeColorSchemeCommand),
+     },
+   ],
+   reloadRequired: true,
+   learnMore: {
+-    url: 'https://goo.gle/devtools-customize-theme' as Platform.DevToolsPath.UrlString,
++    // #ifdef ARKWEB_DEVTOOLS
++    // url: 'https://goo.gle/devtools-customize-theme' as Platform.DevToolsPath.UrlString,
++    // #endif ARKWEB_DEVTOOLS
+     tooltip: i18nLazyString(UIStrings.matchChromeColorSchemeDocumentation),
+   },
+ });
++}
++// #endif ARKWEB_DEVTOOLS
+ 
+ Common.Settings.registerSettingExtension({
+   category: Common.Settings.SettingCategory.APPEARANCE,
+   storageType: Common.Settings.SettingStorageType.SYNCED,
+   title: i18nLazyString(UIStrings.panelLayout),
+@@ -702,15 +719,17 @@ Common.Settings.registerSettingExtension({
+   settingName: 'language',
+   settingType: Common.Settings.SettingType.ENUM,
+   title: i18nLazyString(UIStrings.language),
+   defaultValue: 'en-US',
+   options: [
+-    {
+-      value: 'browserLanguage',
+-      title: i18nLazyString(UIStrings.browserLanguage),
+-      text: i18nLazyString(UIStrings.browserLanguage),
+-    },
++  // #ifdef ARKWEB_DEVTOOLS
++    //{
++      //value: 'browserLanguage',
++      //title: i18nLazyString(UIStrings.browserLanguage),
++      //text: i18nLazyString(UIStrings.browserLanguage),
++    //},
++  // #endif ARKWEB_DEVTOOLS
+     ...i18n.i18n.getAllSupportedDevToolsLocales().sort().map(locale => createOptionForLocale(locale)),
+   ],
+   reloadRequired: true,
+ });
+ 
+@@ -726,11 +745,13 @@ Common.Settings.registerSettingExtension({
+ 
+ Common.Settings.registerSettingExtension({
+   category: Common.Settings.SettingCategory.GLOBAL,
+   settingName: 'currentDockState',
+   settingType: Common.Settings.SettingType.ENUM,
+-  defaultValue: 'right',
++  // DevTools stage 1 : use 'undocked' as default.
++  defaultValue: 'undocked',
++  // defaultValue: 'right',
+   options: [
+     {
+       value: 'right',
+       text: i18nLazyString(UIStrings.right),
+       title: i18nLazyString(UIStrings.dockToRight),
+@@ -783,29 +804,37 @@ function createOptionForLocale(localeString: string): Common.Settings.SettingExt
+     title: createLazyLocalizedLocaleSettingText(localeString),
+     text: createLazyLocalizedLocaleSettingText(localeString),
+   };
+ }
+ 
++// #ifdef ARKWEB_DEVTOOLS
++// 作用：OH 平台跳过 Chrome Sync 偏好同步设置项（sync-preferences）注册
++if (!adaptForOhos) {
+ Common.Settings.registerSettingExtension({
+   category: Common.Settings.SettingCategory.ACCOUNT,
+   // This name must be kept in sync with DevToolsSettings::kSyncDevToolsPreferencesFrontendName.
+   settingName: 'sync-preferences',
+   settingType: Common.Settings.SettingType.BOOLEAN,
+   title: i18nLazyString(UIStrings.saveSettings),
+   defaultValue: false,
+   reloadRequired: true,
+ });
++}
+ 
++// 作用：OH 平台跳过 Google Developer Program 徽章接收设置项（receive-gdp-badges）注册
++if (!adaptForOhos) {
+ Common.Settings.registerSettingExtension({
+   category: Common.Settings.SettingCategory.ACCOUNT,
+   settingName: 'receive-gdp-badges',
+   settingType: Common.Settings.SettingType.BOOLEAN,
+   storageType: Common.Settings.SettingStorageType.SYNCED,
+   title: i18nLazyString(UIStrings.earnBadges),
+   defaultValue: false,
+   reloadRequired: true,
+ });
++}
++// #endif ARKWEB_DEVTOOLS
+ 
+ Common.Settings.registerSettingExtension({
+   storageType: Common.Settings.SettingStorageType.SYNCED,
+   settingName: 'user-shortcuts',
+   settingType: Common.Settings.SettingType.ARRAY,
+@@ -928,11 +957,10 @@ UI.Toolbar.registerToolbarItem({
+     return Main.MainImpl.SettingsButtonProvider.instance();
+   },
+   order: 99,
+   location: UI.Toolbar.ToolbarItemLocation.MAIN_TOOLBAR_RIGHT,
+ });
+-
+ UI.Toolbar.registerToolbarItem({
+   condition: () => !Root.Runtime.Runtime.isTraceApp(),
+   async loadItem() {
+     const Main = await loadMainModule();
+     return Main.MainImpl.MainMenuItem.instance();

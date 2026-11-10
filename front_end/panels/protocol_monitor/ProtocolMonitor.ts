@@ -520,6 +520,12 @@ export class ProtocolMonitorImpl extends UI.Panel.Panel implements SDK.TargetMan
       this.requestUpdate();
     }, {jslogContext: 'filter'});
 
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      return;
+    }
+    // #endif ARKWEB_DEVTOOLS
+
     /**
      * You can click the "Documentation" item in the context menu to be
      * taken to the CDP Documentation site entry for the given method.

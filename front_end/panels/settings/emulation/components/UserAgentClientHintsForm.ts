@@ -538,7 +538,9 @@ export class UserAgentClientHintsForm extends HTMLElement {
           type="text"
           @input=${handlePlatformNameChange}
           .value=${platform}
-          placeholder=${i18nString(UIStrings.platformPlaceholder)}
+          // #ifdef ARKWEB_DEVTOOLS
+          placeholder=${adaptForOhos ? 'Platform (e.g. OpenHarmony)' : i18nString(UIStrings.platformPlaceholder)}
+          // #endif ARKWEB_DEVTOOLS
           aria-label=${i18nString(UIStrings.platformLabel)}
           jslog=${VisualLogging.textField('platform').track({
       change: true,
@@ -843,7 +845,8 @@ export class UserAgentClientHintsForm extends HTMLElement {
     // clang-format on
 
     // clang-format off
-    const output = html`
+    let output;
+    output = html`
       <style>${Input.checkboxStyles}</style>
       <style>${userAgentClientHintsFormStyles}</style>
       <section class="root">

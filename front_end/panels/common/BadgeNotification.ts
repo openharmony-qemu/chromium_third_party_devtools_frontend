@@ -75,6 +75,11 @@ const LEFT_OFFSET = 5;
 const BOTTOM_OFFSET = 5;
 const AUTO_CLOSE_TIME_IN_MS = 30000;
 
+// 作用：OH 平台适配开关
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 export interface BadgeNotificationAction {
   label: string;
   jslogContext: string;

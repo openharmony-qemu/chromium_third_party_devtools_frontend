@@ -190,7 +190,9 @@ export class FrameworkIgnoreListSettingsTab extends UI.Widget.VBox implements
       const enabled = enabledSetting.get();
       ignoreListContentScripts.disabled = !enabled;
       automaticallyIgnoreList.disabled = !enabled;
-      automaticallyIgnoreLinkButton.disabled = !enabled;
+      // #ifdef ARKWEB_DEVTOOLS
+      // automaticallyIgnoreLinkButton.disabled = !enabled;
+      // #endif ARKWEB_DEVTOOLS
       ignoreListAnonymousScripts.disabled = !enabled;
       addPatternButton.disabled = !enabled;
       this.settingUpdated();

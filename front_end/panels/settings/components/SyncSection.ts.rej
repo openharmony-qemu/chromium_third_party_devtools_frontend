@@ -1,0 +1,57 @@
+diff a/front_end/panels/settings/components/SyncSection.ts b/front_end/panels/settings/components/SyncSection.ts	(rejected hunks)
+@@ -25,26 +25,26 @@ import syncSectionStyles from './syncSection.css.js';
+ const UIStrings = {
+   /**
+    * @description Text shown to the user in the Settings UI. 'This setting' refers
+    * to a checkbox that is disabled.
+    */
+-  syncDisabled: 'To turn this setting on, you must enable Chrome sync.',
++  syncDisabled: 'To turn this setting on, you must enable ArkWeb sync.',
+   /**
+    * @description Text shown to the user in the Settings UI. Explains why the checkbox
+    * for saving DevTools settings to the user's Google account is inactive.
+    */
+-  preferencesSyncDisabled: 'You need to first enable saving `Chrome` settings in your `Google` account.',
++  preferencesSyncDisabled: 'You need to first enable saving `ArkWeb` settings in your account.',
+   /**
+    * @description Label for the account email address. Shown in the DevTools Settings UI in
+    * front of the email address currently used for Chrome Sync.
+    */
+-  signedIn: 'Signed into Chrome as:',
++  signedIn: 'Signed into ArkWeb as:',
+   /**
+    * @description Label for the account settings. Shown in the DevTools Settings UI in
+    * case the user is not logged in to Chrome.
+    */
+-  notSignedIn: 'You\'re not signed into Chrome.',
++  notSignedIn: 'You\'re not signed into ArkWeb.',
+   /**
+    * @description Label for the Google Developer Program profile status that corresponds to
+    * standard plan (No subscription).
+    */
+   gdpStandardPlan: 'Standard plan',
+@@ -273,12 +273,22 @@ export class SyncSection extends UI.Widget.Widget {
+   #viewOutput: ViewOutput = {};
+ 
+   constructor(element?: HTMLElement, view: View = DEFAULT_VIEW) {
+     super(element);
+     this.#view = view;
+-    this.#receiveBadgesSetting = Common.Settings.Settings.instance().moduleSetting('receive-gdp-badges');
+-    this.#syncSetting = Common.Settings.moduleSetting('sync-preferences') as Common.Settings.Setting<boolean>;
++    // 作用：OH上将 SyncSection 的两个设置项置空
++    // #ifdef ARKWEB_DEVTOOLS
++    const adaptForOhos = true;
++    // 作用：OH 平台将 receive-gdp-badges 和 sync-preferences 两个设置项置空，跳过上游的 moduleSetting 注册访问
++    if (!adaptForOhos) {
++      this.#receiveBadgesSetting = Common.Settings.Settings.instance().moduleSetting('receive-gdp-badges');
++      this.#syncSetting = Common.Settings.moduleSetting('sync-preferences') as Common.Settings.Setting<boolean>;
++    } else {
++      this.#receiveBadgesSetting = null as unknown as Common.Settings.Setting<boolean>;
++      this.#syncSetting = null as unknown as Common.Settings.Setting<boolean>;
++    }
++    // #endif ARKWEB_DEVTOOLS
+   }
+ 
+   override wasShown(): void {
+     super.wasShown();
+     this.requestUpdate();

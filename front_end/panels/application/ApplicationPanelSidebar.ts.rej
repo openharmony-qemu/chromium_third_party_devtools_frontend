@@ -1,0 +1,17 @@
+diff a/front_end/panels/application/ApplicationPanelSidebar.ts b/front_end/panels/application/ApplicationPanelSidebar.ts	(rejected hunks)
+@@ -370,10 +370,15 @@ export class ApplicationPanelSidebar extends UI.Widget.VBox implements SDK.Targe
+   readonly sharedStorageTreeElementDispatcher:
+       Common.ObjectWrapper.ObjectWrapper<SharedStorageTreeElementDispatcher.EventTypes>;
+ 
+   constructor(panel: ResourcesPanel) {
+     super();
++
++    // #ifdef ARKWEB_DEVTOOLS
++    const adaptForOhos = true;
++    // #endif ARKWEB_DEVTOOLS
++
+     this.panel = panel;
+ 
+     this.sidebarTree = new UI.TreeOutline.TreeOutlineInShadow(UI.TreeOutline.TreeVariant.NAVIGATION_TREE);
+     this.sidebarTree.registerRequiredCSS(resourcesSidebarStyles);
+     this.sidebarTree.element.classList.add('resources-sidebar');

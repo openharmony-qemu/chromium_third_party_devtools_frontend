@@ -1,0 +1,14 @@
+diff a/front_end/generated/Deprecation.ts b/front_end/generated/Deprecation.ts	(rejected hunks)
+@@ -207,11 +207,11 @@ export const UIStrings = {
+    */
+   RtcpMuxPolicyNegotiate: "The `rtcpMuxPolicy` option is deprecated and will be removed.",
+   /**
+    * @description A deprecation warning shown in the DevTools Issues tab. The placeholder is always the noun 'SharedArrayBuffer' which refers to a JavaScript construct.
+    */
+-  SharedArrayBufferConstructedWithoutIsolation: "`SharedArrayBuffer` will require cross-origin isolation. See https://developer.chrome.com/blog/enabling-shared-array-buffer/ for more details.",
++  SharedArrayBufferConstructedWithoutIsolation: "`SharedArrayBuffer` will require cross-origin isolation.",
+   /**
+    * @description A deprecation warning shown in the DevTools Issues tab. It's shown when one of the Shared Storage APIs like `sharedStorage.set()`, `sharedStorage.worklet.addModule()`, `sharedStorage.selectURL()`, etc., along with `<img sharedstoragewritable>`, `<iframe sharedstoragewritable>`, or `fetch(url, {sharedStorageWritable: true})` are used.
+    */
+   SharedStorage: "The Shared Storage API is deprecated and will be removed in a future release.",
+   /**

@@ -13,13 +13,17 @@ import '../../panels/sensors/sensors-meta.js';
 import '../../panels/accessibility/accessibility-meta.js';
 import '../../panels/animation/animation-meta.js';
 import '../../panels/developer_resources/developer_resources-meta.js';
-import '../../panels/autofill/autofill-meta.js';
+// #ifdef ARKWEB_DEVTOOLS
+//import '../../panels/autofill/autofill-meta.js';
+// #endif ARKWEB_DEVTOOLS
 import '../inspector_main/inspector_main-meta.js';
 import '../../panels/application/application-meta.js';
 import '../../panels/issues/issues-meta.js';
 import '../../panels/layers/layers-meta.js';
-import '../../panels/lighthouse/lighthouse-meta.js';
-import '../../panels/media/media-meta.js';
+// #ifdef ARKWEB_DEVTOOLS
+//import '../../panels/lighthouse/lighthouse-meta.js';
+//import '../../panels/media/media-meta.js';
+// #endif ARKWEB_DEVTOOLS
 import '../../panels/mobile_throttling/mobile_throttling-meta.js';
 import '../../panels/performance_monitor/performance_monitor-meta.js';
 import '../../panels/timeline/timeline-meta.js';
@@ -27,7 +31,9 @@ import '../../panels/web_audio/web_audio-meta.js';
 import '../../panels/webauthn/webauthn-meta.js';
 import '../../panels/layer_viewer/layer_viewer-meta.js';
 import '../../panels/recorder/recorder-meta.js';
-import '../../panels/whats_new/whats_new-meta.js';
+// #ifdef ARKWEB_DEVTOOLS
+//import '../../panels/whats_new/whats_new-meta.js';
+// #endif ARKWEB_DEVTOOLS
 
 import * as Root from '../../core/root/root.js';
 import * as Main from '../main/main.js';

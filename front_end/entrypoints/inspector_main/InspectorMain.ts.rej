@@ -1,0 +1,26 @@
+diff a/front_end/entrypoints/inspector_main/InspectorMain.ts b/front_end/entrypoints/inspector_main/InspectorMain.ts	(rejected hunks)
+@@ -297,12 +297,22 @@ export class BackendSettingsSync implements SDK.TargetManager.Observer {
+   constructor() {
+     this.#autoAttachSetting = Common.Settings.Settings.instance().moduleSetting('auto-attach-to-created-pages');
+     this.#autoAttachSetting.addChangeListener(this.#updateAutoAttach, this);
+     this.#updateAutoAttach();
+ 
+-    this.#adBlockEnabledSetting = Common.Settings.Settings.instance().moduleSetting('network.ad-blocking-enabled');
+-    this.#adBlockEnabledSetting.addChangeListener(this.#update, this);
++    // 作用：OH上跳过广告拦截设置注册，置空引用
++    // #ifdef ARKWEB_DEVTOOLS
++    const adaptForOhos = true;
++    // #endif ARKWEB_DEVTOOLS
++    // #ifdef ARKWEB_DEVTOOLS
++    if (!adaptForOhos) {
++      this.#adBlockEnabledSetting = Common.Settings.Settings.instance().moduleSetting('network.ad-blocking-enabled');
++      this.#adBlockEnabledSetting.addChangeListener(this.#update, this);
++    } else {
++      this.#adBlockEnabledSetting = null as unknown as Common.Settings.Setting<boolean>;
++    }
++    // #endif ARKWEB_DEVTOOLS
+ 
+     this.#emulatePageFocusSetting = Common.Settings.Settings.instance().moduleSetting('emulate-page-focus');
+     this.#emulatePageFocusSetting.addChangeListener(this.#update, this);
+     SDK.TargetManager.TargetManager.instance().addModelListener(
+         SDK.ChildTargetManager.ChildTargetManager, SDK.ChildTargetManager.Events.TARGET_INFO_CHANGED,

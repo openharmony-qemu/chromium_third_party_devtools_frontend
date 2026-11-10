@@ -1,0 +1,17 @@
+diff a/front_end/panels/emulation/BUILD.gn b/front_end/panels/emulation/BUILD.gn	(rejected hunks)
+@@ -47,11 +47,14 @@ devtools_ui_module("emulation") {
+     "../../ui/visual_logging:bundle",
+     "./components:bundle",
+   ]
+ 
+   public_deps =
+-      [ "../../emulated_devices/optimized:optimized_emulated_devices" ]
++#if BUILDFLAG(ARKWEB_DEVTOOLS)
++      # [ "../../emulated_devices/optimized:optimized_emulated_devices" ]
++      [ "../../emulated_devices:emulated_devices" ]
++#endif BUILDFLAG(ARKWEB_DEVTOOLS)
+ }
+ 
+ devtools_entrypoint("bundle") {
+   entrypoint = "emulation.ts"
+ 
