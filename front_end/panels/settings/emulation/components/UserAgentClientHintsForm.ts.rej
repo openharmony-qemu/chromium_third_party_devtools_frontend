@@ -1,0 +1,40 @@
+diff a/front_end/panels/settings/emulation/components/UserAgentClientHintsForm.ts b/front_end/panels/settings/emulation/components/UserAgentClientHintsForm.ts	(rejected hunks)
+@@ -16,11 +16,13 @@ import * as VisualLogging from '../../../../ui/visual_logging/visual_logging.js'
+ import * as EmulationUtils from '../utils/utils.js';
+ 
+ import userAgentClientHintsFormStyles from './userAgentClientHintsForm.css.js';
+ 
+ const {html} = Lit;
+-
++// #ifdef ARKWEB_DEVTOOLS
++const adaptForOhos = true;
++// #endif ARKWEB_DEVTOOLS
+ const UIStrings = {
+   /**
+    * @description Title for user agent client hints form
+    */
+   title: 'User agent client hints',
+@@ -867,21 +872,21 @@ export class UserAgentClientHintsForm extends HTMLElement {
+             <devtools-icon name=triangle-right></devtools-icon>
+             <devtools-icon name=triangle-down></devtools-icon>
+             ${i18nString(UIStrings.title)}
+           </div>
+           <devtools-icon tabindex=${this.#isFormDisabled ? '-1' : '0'} class=info-icon name=info aria-label=${i18nString(UIStrings.userAgentClientHintsInfo)} title=${i18nString(UIStrings.userAgentClientHintsInfo)}></devtools-icon>
+-          <x-link
++          ${adaptForOhos ? '' : html`<x-link
+            tabindex=${this.#isFormDisabled ? '-1' : '0'}
+            href="https://web.dev/user-agent-client-hints/"
+            target="_blank"
+            class="link"
+            @keypress=${this.#handleLinkPress}
+            aria-label=${i18nString(UIStrings.learnMore)}
+            jslog=${VisualLogging.link('learn-more').track({click: true})}
+           >
+             ${i18nString(UIStrings.learnMore)}
+-          </x-link>
++          </x-link>`}
+         </div>
+         <form
+           id="form-container"
+           class="form-container ${this.#isFormOpened ? '' : 'hide-container'}"
+           @submit=${this.#handleSubmit}

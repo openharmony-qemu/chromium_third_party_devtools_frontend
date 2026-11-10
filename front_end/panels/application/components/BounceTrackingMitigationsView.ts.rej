@@ -1,0 +1,37 @@
+diff a/front_end/panels/application/components/BounceTrackingMitigationsView.ts b/front_end/panels/application/components/BounceTrackingMitigationsView.ts	(rejected hunks)
+@@ -106,10 +106,22 @@ export class BounceTrackingMitigationsView extends LegacyWrapper.LegacyWrapper.W
+       `;
+       // clang-format on
+     }
+ 
+     // clang-format off
++    // #ifdef ARKWEB_DEVTOOLS
++    const adaptForOhos = true;
++    if (adaptForOhos) {
++      return html`
++        <devtools-report-section>
++          ${this.#renderForceRunButton()}
++        </devtools-report-section>
++          ${this.#renderDeletedSitesOrNoSitesMessage()}
++        <devtools-report-divider>
++        </devtools-report-divider>
++      `;
++    } else {
+     return html`
+       <devtools-report-section>
+         ${this.#renderForceRunButton()}
+       </devtools-report-section>
+       ${this.#renderDeletedSitesOrNoSitesMessage()}
+@@ -120,10 +132,12 @@ export class BounceTrackingMitigationsView extends LegacyWrapper.LegacyWrapper.W
+         jslog=${VisualLogging.link('learn-more').track({click: true})}>
+           ${i18nString(UIStrings.learnMore)}
+         </x-link>
+       </devtools-report-section>
+     `;
++    }
++    // #endif ARKWEB_DEVTOOLS
+     // clang-format on
+   }
+ 
+   #renderForceRunButton(): Lit.TemplateResult {
+     const isMitigationRunning = (this.#screenStatus === ScreenStatusType.RUNNING);

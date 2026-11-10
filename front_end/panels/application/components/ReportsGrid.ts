@@ -59,6 +59,12 @@ export interface ViewInput {
 
 export const DEFAULT_VIEW = (input: ViewInput, output: undefined, target: HTMLElement): void => {
   // clang-format off
+  // Follow-up Processing
+  // // #ifdef ARKWEB_DEVTOOLS
+  // const adaptForOhos = true;
+  // if (adaptForOhos) {
+  //   render(html`${i18nString(UIStrings.status)}`, this.#shadow, {host: this});
+  // } else {
   render(html`
     <style>${reportsGridStyles}</style>
     <style>${UI.inspectorCommonStyles}</style>
@@ -114,6 +120,8 @@ export const DEFAULT_VIEW = (input: ViewInput, output: undefined, target: HTMLEl
       `}
     </div>
   `, target);
+  // }
+  // // #endif ARKWEB_DEVTOOLS
   // clang-format on
 };
 

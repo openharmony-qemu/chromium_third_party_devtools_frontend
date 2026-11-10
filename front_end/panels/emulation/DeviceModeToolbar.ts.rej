@@ -1,0 +1,16 @@
+diff a/front_end/panels/emulation/DeviceModeToolbar.ts b/front_end/panels/emulation/DeviceModeToolbar.ts	(rejected hunks)
+@@ -349,11 +349,13 @@ export class DeviceModeToolbar {
+ 
+     this.throttlingConditionsItem =
+         MobileThrottling.ThrottlingManager.throttlingManager().createMobileThrottlingButton();
+     this.throttlingConditionsItem.turnShrinkable();
+     toolbar.appendToolbarItem(this.throttlingConditionsItem);
+-    toolbar.appendToolbarItem(MobileThrottling.ThrottlingManager.throttlingManager().createSaveDataOverrideSelector());
++    // #if BUILDFLAG(ARKWEB_DEVTOOLS)
++    // toolbar.appendToolbarItem(MobileThrottling.ThrottlingManager.throttlingManager().createSaveDataOverrideSelector());
++    // #endif //BUILDFLAG(ARKWEB_DEVTOOLS)
+   }
+ 
+   private appendDevicePositionItems(toolbar: UI.Toolbar.Toolbar): void {
+     toolbar.appendToolbarItem(new UI.Toolbar.ToolbarItem(this.createEmptyToolbarElement()));
+     this.modeButton = new UI.Toolbar.ToolbarButton('', 'screen-rotation', undefined, 'screen-rotation');

@@ -1,0 +1,14 @@
+diff a/front_end/panels/sources/SourcesView.ts b/front_end/panels/sources/SourcesView.ts	(rejected hunks)
+@@ -155,11 +155,11 @@ export class SourcesView extends Common.ObjectWrapper.eventMixin<EventTypes, typ
+     text.textContent = UIStrings.workspaceDropInAFolderToSyncSources;
+     const browseButton = text.createChild('button');
+     browseButton.textContent = i18nString(UIStrings.selectFolder);
+     browseButton.addEventListener('click', this.addFileSystemClicked.bind(this));
+ 
+-    const shortcuts = [
++    let shortcuts = [
+       {actionId: 'quick-open.show', description: i18nString(UIStrings.openFile)},
+       {actionId: 'quick-open.show-command-menu', description: i18nString(UIStrings.runCommand)},
+     ];
+ 
+     const list = placeholder.createChild('div', 'shortcuts-list');

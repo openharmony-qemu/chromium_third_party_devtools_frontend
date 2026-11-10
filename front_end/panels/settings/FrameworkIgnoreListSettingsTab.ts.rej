@@ -1,0 +1,45 @@
+diff a/front_end/panels/settings/FrameworkIgnoreListSettingsTab.ts b/front_end/panels/settings/FrameworkIgnoreListSettingsTab.ts	(rejected hunks)
+@@ -133,23 +133,30 @@ export class FrameworkIgnoreListSettingsTab extends UI.Widget.VBox implements
+     const automaticallyIgnoreList =
+         automaticallyIgnoreListContainer.appendChild(SettingsUI.SettingsUI.createSettingCheckbox(
+             i18nString(UIStrings.automaticallyIgnoreListKnownThirdPartyScripts),
+             Common.Settings.Settings.instance().moduleSetting('automatically-ignore-list-known-third-party-scripts')));
+ 
+-    const automaticallyIgnoreLinkButton = new Buttons.Button.Button();
+-    automaticallyIgnoreLinkButton.data = {
+-      iconName: 'help',
+-      variant: Buttons.Button.Variant.ICON,
+-      size: Buttons.Button.Size.SMALL,
+-      jslogContext: 'learn-more',
+-      title: i18nString(UIStrings.learnMore),
+-    };
+-    automaticallyIgnoreLinkButton.addEventListener(
+-        'click',
+-        () => UIHelpers.openInNewTab(
+-            'https://developer.chrome.com/docs/devtools/settings/ignore-list/#skip-third-party'));
+-    automaticallyIgnoreListContainer.appendChild(automaticallyIgnoreLinkButton);
++    // #ifdef ARKWEB_DEVTOOLS
++    const adaptForOhos = true;
++    if (adaptForOhos) {
++      // ArkWeb does not support external links to chrome sites
++    } else {
++      const automaticallyIgnoreLinkButton = new Buttons.Button.Button();
++      automaticallyIgnoreLinkButton.data = {
++        iconName: 'help',
++        variant: Buttons.Button.Variant.ICON,
++        size: Buttons.Button.Size.SMALL,
++        jslogContext: 'learn-more',
++        title: i18nString(UIStrings.learnMore),
++      };
++      automaticallyIgnoreLinkButton.addEventListener(
++          'click',
++          () => UIHelpers.openInNewTab(
++              'https://developer.chrome.com/docs/devtools/settings/ignore-list/#skip-third-party'));
++      automaticallyIgnoreListContainer.appendChild(automaticallyIgnoreLinkButton);
++    } 
++    // #endif ARKWEB_DEVTOOLS
+ 
+     const ignoreListAnonymousScripts =
+         generalExclusionGroup.createChild('div', 'ignore-list-option')
+             .appendChild(SettingsUI.SettingsUI.createSettingCheckbox(
+                 i18nString(UIStrings.ignoreListAnonymousScripts),

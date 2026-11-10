@@ -1,0 +1,16 @@
+diff a/BUILD.gn b/BUILD.gn	(rejected hunks)
+@@ -2,11 +2,13 @@
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+ 
+ import("./config/gni/devtools_grd_files.gni")
+ import("./config/gni/devtools_image_files.gni")
+-import("./front_end/emulated_devices/optimized/optimized_images.gni")
++#if BUILDFLAG(ARKWEB_DEVTOOLS)
++# import("./front_end/emulated_devices/optimized/optimized_images.gni")
++#endif BUILDFLAG(ARKWEB_DEVTOOLS)
+ import("./scripts/build/ninja/copy.gni")
+ import("./scripts/build/ninja/node.gni")
+ import("./scripts/build/ninja/vars.gni")
+ import("./scripts/build/typescript/typescript.gni")
+ import("./third_party/blink/public/public_features.gni")

@@ -1,0 +1,28 @@
+diff a/front_end/panels/console/console-meta.ts b/front_end/panels/console/console-meta.ts	(rejected hunks)
+@@ -427,18 +427,26 @@ Common.Settings.registerSettingExtension({
+       title: i18nLazyString(UIStrings.collapseConsoleTraceMessagesByDefault),
+     },
+   ],
+ });
+ 
++// #ifdef ARKWEB_DEVTOOLS
++const adaptForOhos = true;
++// #endif ARKWEB_DEVTOOLS
++// 作用：OH 平台跳过 console-insight-teasers-enabled 设置扩展注册
++// #ifdef ARKWEB_DEVTOOLS
++if (!adaptForOhos) {
+ Common.Settings.registerSettingExtension({
+   category: Common.Settings.SettingCategory.CONSOLE,
+   storageType: Common.Settings.SettingStorageType.SYNCED,
+   title: i18nLazyString(UIStrings.showConsoleInsightTeasers),
+   settingName: 'console-insight-teasers-enabled',
+   settingType: Common.Settings.SettingType.BOOLEAN,
+   defaultValue: true,
+ });
++}
++// #endif ARKWEB_DEVTOOLS
+ 
+ Common.Revealer.registerRevealer({
+   contextTypes() {
+     return [
+       Common.Console.Console,

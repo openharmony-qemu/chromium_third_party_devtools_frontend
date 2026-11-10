@@ -1,0 +1,14 @@
+diff a/front_end/panels/timeline/TimelinePanel.ts b/front_end/panels/timeline/TimelinePanel.ts	(rejected hunks)
+@@ -61,10 +61,12 @@ import * as SettingsUI from '../../ui/legacy/components/settings_ui/settings_ui.
+ import * as UI from '../../ui/legacy/legacy.js';
+ import * as ThemeSupport from '../../ui/legacy/theme_support/theme_support.js';
+ import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
+ import * as MobileThrottling from '../mobile_throttling/mobile_throttling.js';
+ 
++import * as Bindings from '../../models/bindings/bindings.js';
++
+ import {ActiveFilters} from './ActiveFilters.js';
+ import * as AnnotationHelpers from './AnnotationHelpers.js';
+ import {TraceLoadEvent} from './BenchmarkEvents.js';
+ import * as TimelineComponents from './components/components.js';
+ import * as TimelineInsights from './components/insights/insights.js';

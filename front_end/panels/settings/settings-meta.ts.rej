@@ -1,0 +1,53 @@
+diff a/front_end/panels/settings/settings-meta.ts b/front_end/panels/settings/settings-meta.ts	(rejected hunks)
+@@ -9,10 +9,14 @@ import * as i18n from '../../core/i18n/i18n.js';
+ import * as Root from '../../core/root/root.js';
+ import * as UI from '../../ui/legacy/legacy.js';
+ 
+ import type * as Settings from './settings.js';
+ 
++// #ifdef ARKWEB_DEVTOOLS
++const adaptForOhos = true;
++// #endif ARKWEB_DEVTOOLS
++
+ const UIStrings = {
+   /**
+    * @description Text for keyboard shortcuts
+    */
+   shortcuts: 'Shortcuts',
+@@ -151,11 +160,13 @@ UI.ViewManager.registerViewExtension({
+     const Settings = await loadSettingsModule();
+     return new Settings.FrameworkIgnoreListSettingsTab.FrameworkIgnoreListSettingsTab();
+   },
+   iconName: 'clear-list',
+ });
+-
++// 作用：OH上隐藏 Keybinds 快捷键设置面板
++// #ifdef ARKWEB_DEVTOOLS
++if (!adaptForOhos) {
+ UI.ViewManager.registerViewExtension({
+   location: UI.ViewManager.ViewLocationValues.SETTINGS_VIEW,
+   id: 'keybinds',
+   title: i18nLazyString(UIStrings.shortcuts),
+   commandPrompt: i18nLazyString(UIStrings.showShortcuts),
+@@ -260,15 +282,21 @@ Common.Revealer.registerRevealer({
+     const Settings = await loadSettingsModule();
+     return new Settings.SettingsScreen.Revealer();
+   },
+ });
+ 
++// #ifdef ARKWEB_DEVTOOLS
++if (adaptForOhos) {
++  // arkweb does't support settings.
++} else {
+ UI.ContextMenu.registerItem({
+   location: UI.ContextMenu.ItemLocation.MAIN_MENU_FOOTER,
+   actionId: 'settings.shortcuts',
+   order: undefined,
+ });
++}
++// #endif ARKWEB_DEVTOOLS
+ 
+ UI.ContextMenu.registerItem({
+   location: UI.ContextMenu.ItemLocation.MAIN_MENU_HELP_DEFAULT,
+   actionId: 'settings.documentation',
+   order: undefined,

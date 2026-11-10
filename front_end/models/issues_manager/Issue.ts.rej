@@ -1,0 +1,14 @@
+diff a/front_end/models/issues_manager/Issue.ts b/front_end/models/issues_manager/Issue.ts	(rejected hunks)
+@@ -29,11 +29,11 @@ const UIStrings = {
+    */
+   pageErrorIssue: 'A page error issue: the page is not working correctly',
+   /**
+    * @description A description for a kind of issue we display in the issues tab.
+    */
+-  breakingChangeIssue: 'A breaking change issue: the page may stop working in an upcoming version of Chrome',
++  breakingChangeIssue: 'A breaking change issue: the page may stop working in an upcoming version of ArkWeb',
+   /**
+    * @description A description for a kind of issue we display in the issues tab.
+    */
+   improvementIssue: 'An improvement issue: there is an opportunity to improve the page',
+ } as const;

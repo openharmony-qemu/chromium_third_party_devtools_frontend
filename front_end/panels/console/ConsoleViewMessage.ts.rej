@@ -1,0 +1,70 @@
+diff a/front_end/panels/console/ConsoleViewMessage.ts b/front_end/panels/console/ConsoleViewMessage.ts	(rejected hunks)
+@@ -1408,14 +1408,28 @@ export class ConsoleViewMessage implements ConsoleViewportElement {
+     this.updateTimestamp();
+     return this.contentElementInternal;
+   }
+ 
+   #startTeaserGeneration(): void {
+-    if (this.#teaser &&
+-        Common.Settings.Settings.instance().moduleSetting('console-insight-teasers-enabled').getIfNotDisabled()) {
+-      this.#teaser.maybeGenerateTeaser();
++    // #ifdef ARKWEB_DEVTOOLS
++    if (this.#teaser) {
++      // 作用：用 try/catch 包裹 console-insight-teasers-enabled 设置项读取
++      // 合理性：OH上未注册该设置项，moduleSetting 会抛异常
++      // 必要性：不捕获则控制台消息渲染崩溃
++      let teaserEnabled = false;
++      try {
++        teaserEnabled =
++            Common.Settings.Settings.instance().moduleSetting('console-insight-teasers-enabled')
++                .getIfNotDisabled() as boolean;
++      } catch {
++        teaserEnabled = false;
++      }
++      if (teaserEnabled) {
++        this.#teaser.maybeGenerateTeaser();
++      }
+     }
++    // #endif ARKWEB_DEVTOOLS
+   }
+ 
+   #abortTeaserGeneration(): void {
+     this.#teaser?.abortTeaserGeneration();
+   }
+@@ -1526,22 +1540,35 @@ export class ConsoleViewMessage implements ConsoleViewportElement {
+     return this.message.level === Protocol.Log.LogEntryLevel.Error ||
+         this.message.level === Protocol.Log.LogEntryLevel.Warning;
+   }
+ 
+   shouldShowTeaser(): boolean {
++    // #ifdef ARKWEB_DEVTOOLS
+     if (!this.shouldShowInsights()) {
+       return false;
+     }
+-    if (!Common.Settings.Settings.instance().moduleSetting('console-insight-teasers-enabled').getIfNotDisabled() ||
++    // 作用：用 try/catch 包裹设置项读取，OH上设置项不存在时安全降级
++    // 合理性：与 #startTeaserGeneration 中的防御模式一致
++    // 必要性：不捕获则 shouldShowInsights 崩溃导致控制台消息不显示
++    let teaserEnabled = false;
++    try {
++      teaserEnabled =
++          Common.Settings.Settings.instance().moduleSetting('console-insight-teasers-enabled')
++              .getIfNotDisabled() as boolean;
++    } catch {
++      teaserEnabled = false;
++    }
++    if (!teaserEnabled ||
+         !AiAssistanceModel.BuiltInAi.BuiltInAi.instance().isEventuallyAvailable()) {
+       return false;
+     }
+     const devtoolsLocale = i18n.DevToolsLocale.DevToolsLocale.instance();
+     if (!devtoolsLocale.locale.startsWith('en-')) {
+       return false;
+     }
+     return true;
++    // #endif ARKWEB_DEVTOOLS
+   }
+ 
+   getExplainLabel(): string {
+     if (this.message.level === Protocol.Log.LogEntryLevel.Error) {
+       return i18nString(UIStrings.explainThisError);

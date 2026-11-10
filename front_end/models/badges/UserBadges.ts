@@ -254,7 +254,10 @@ export class UserBadges extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
       }
     }
 
-    const receiveBadgesSettingEnabled = Boolean(this.#receiveBadgesSetting.get());
+    // #ifdef ARKWEB_DEVTOOLS
+    // 作用：安全读取 receiveBadgesSetting；合理性：OH 上该 setting 为 null，需可选链防崩；必要性：null.get() 抛 TypeError
+    const receiveBadgesSettingEnabled = Boolean(this.#receiveBadgesSetting?.get());
+    // #endif ARKWEB_DEVTOOLS
     for (const badge of this.#allBadges) {
       if (awardedBadgeNames?.has(badge.name)) {
         badge.deactivate();
@@ -278,6 +281,9 @@ export class UserBadges extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
   }
 
   isReceiveBadgesSettingEnabled(): boolean {
-    return Boolean(this.#receiveBadgesSetting.get());
+    // #ifdef ARKWEB_DEVTOOLS
+    // 作用：安全读取 receiveBadgesSetting；合理性：OH 上该 setting 为 null，需可选链防崩；必要性：null.get() 抛 TypeError
+    return Boolean(this.#receiveBadgesSetting?.get());
+    // #endif ARKWEB_DEVTOOLS
   }
 }

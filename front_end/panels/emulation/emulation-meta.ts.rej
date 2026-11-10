@@ -1,0 +1,17 @@
+diff a/front_end/panels/emulation/emulation-meta.ts b/front_end/panels/emulation/emulation-meta.ts	(rejected hunks)
+@@ -183,11 +183,14 @@ Common.Settings.registerSettingExtension({
+   tags: [i18nLazyString(UIStrings.device)],
+ });
+ 
+ UI.Toolbar.registerToolbarItem({
+   actionId: 'emulation.toggle-device-mode',
+-  condition: Root.Runtime.conditions.canDock,
++  // #ifdef ARKWEB_DEVTOOLS
++  // condition: Root.Runtime.conditions.canDock,
++  condition: Root.Runtime.conditions.showToolbox,
++  // #endif ARKWEB_DEVTOOLS
+   location: UI.Toolbar.ToolbarItemLocation.MAIN_TOOLBAR_LEFT,
+   order: 1,
+   loadItem: undefined,
+   separator: undefined,
+ });

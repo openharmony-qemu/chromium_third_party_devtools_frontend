@@ -1,0 +1,162 @@
+diff a/front_end/entrypoints/main/MainImpl.ts b/front_end/entrypoints/main/MainImpl.ts	(rejected hunks)
+@@ -64,10 +64,15 @@ import * as ThemeSupport from '../../ui/legacy/theme_support/theme_support.js';
+ import {html, render} from '../../ui/lit/lit.js';
+ import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
+ 
+ import {ExecutionContextSelector} from './ExecutionContextSelector.js';
+ 
++// 作用：OH 平台适配开关
++// #ifdef ARKWEB_DEVTOOLS
++const adaptForOhos = true;
++// #endif ARKWEB_DEVTOOLS
++
+ const UIStrings = {
+   /**
+    * @description Title of item in main
+    */
+   customizeAndControlDevtools: 'Customize and control DevTools',
+@@ -183,11 +188,16 @@ export class MainImpl {
+     this.#universe = new Foundation.Universe.Universe(creationOptions);
+     Root.DevToolsContext.setGlobalInstance(this.#universe.context);
+ 
+     await this.requestAndRegisterLocaleData();
+ 
+-    Host.userMetrics.syncSetting(Common.Settings.Settings.instance().moduleSetting<boolean>('sync-preferences').get());
++    // 作用：OH上跳过 sync-preferences 设置项的 userMetrics 上报
++    // #ifdef ARKWEB_DEVTOOLS
++    if (!adaptForOhos) {
++      Host.userMetrics.syncSetting(Common.Settings.Settings.instance().moduleSetting<boolean>('sync-preferences').get());
++    }
++    // #endif ARKWEB_DEVTOOLS
+     const veLogging = config.devToolsVeLogging;
+ 
+     // Used by e2e to put VE Logs into "test mode".
+     const veLogsTestMode = Common.Settings.Settings.instance().createSetting('veLogsTestMode', false).get();
+ 
+@@ -311,15 +321,23 @@ export class MainImpl {
+ 
+     return {syncedStorage, globalStorage, localStorage};
+   }
+ 
+   #initializeExperiments(): void {
++    // #ifdef ARKWEB_DEVTOOLS
+     Root.Runtime.experiments.register('capture-node-creation-stacks', 'Capture node creation stacks');
+     Root.Runtime.experiments.register('live-heap-profile', 'Live heap profile', true);
++    // #ifdef ARKWEB_DEVTOOLS
++    if (adaptForOhos) {
++      Root.Runtime.experiments.register(
++        'protocol-monitor', 'Protocol Monitor');
++    } else {
+     Root.Runtime.experiments.register(
+         'protocol-monitor', 'Protocol Monitor', undefined,
+         'https://developer.chrome.com/blog/new-in-devtools-92/#protocol-monitor');
++    }
++    // #endif ARKWEB_DEVTOOLS
+     Root.Runtime.experiments.register('sampling-heap-profiler-timeline', 'Sampling heap profiler timeline', true);
+     Root.Runtime.experiments.register(
+         'show-option-tp-expose-internals-in-heap-snapshot', 'Show option to expose internals in heap snapshots');
+ 
+     // Timeline
+@@ -335,13 +353,33 @@ export class MainImpl {
+     // Debugging
+     Root.Runtime.experiments.register('instrumentation-breakpoints', 'Enable instrumentation breakpoints', true);
+     Root.Runtime.experiments.register('use-source-map-scopes', 'Use scope information from source maps', true);
+ 
+     // Advanced Perceptual Contrast Algorithm.
++    // #ifdef ARKWEB_DEVTOOLS
++    if (adaptForOhos) {
++      Root.Runtime.experiments.register(
++        'apca',
++        'Enable new Advanced Perceptual Contrast Algorithm (APCA) \
++        replacing previous contrast ratio and AA/AAA guidelines');
++
++    // Full Accessibility Tree
++    Root.Runtime.experiments.register(
++        'full-accessibility-tree', 'Enable full accessibility tree view in the Elements panel');
++
++    // Font Editor
++    Root.Runtime.experiments.register(
++        'font-editor', 'Enable new font editor within the Styles tab');
++
++    // Contrast issues reported via the Issues panel.
++    Root.Runtime.experiments.register(
++        'contrast-issues', 'Enable automatic contrast issue reporting via the Issues panel');
++    } else {
+     Root.Runtime.experiments.register(
+         'apca',
+-        'Enable new Advanced Perceptual Contrast Algorithm (APCA) replacing previous contrast ratio and AA/AAA guidelines',
++          'Enable new Advanced Perceptual Contrast Algorithm (APCA) \
++          replacing previous contrast ratio and AA/AAA guidelines',
+         undefined, 'https://developer.chrome.com/blog/new-in-devtools-89/#apca');
+ 
+     // Full Accessibility Tree
+     Root.Runtime.experiments.register(
+         'full-accessibility-tree', 'Enable full accessibility tree view in the Elements panel', undefined,
+@@ -355,18 +393,27 @@ export class MainImpl {
+ 
+     // Contrast issues reported via the Issues panel.
+     Root.Runtime.experiments.register(
+         'contrast-issues', 'Enable automatic contrast issue reporting via the Issues panel', undefined,
+         'https://developer.chrome.com/blog/new-in-devtools-90/#low-contrast');
++    }
++    // #endif ARKWEB_DEVTOOLS
+ 
+     // New cookie features.
+     Root.Runtime.experiments.register('experimental-cookie-features', 'Enable experimental cookie features');
+ 
+     // Change grouping of sources panel to use Authored/Deployed trees
+-    Root.Runtime.experiments.register(
+-        Root.Runtime.ExperimentName.AUTHORED_DEPLOYED_GROUPING, 'Group sources into authored and deployed trees',
+-        undefined, 'https://goo.gle/authored-deployed', 'https://goo.gle/authored-deployed-feedback');
++    // #ifdef ARKWEB_DEVTOOLS
++    if (adaptForOhos) {
++      Root.Runtime.experiments.register(
++        Root.Runtime.ExperimentName.AUTHORED_DEPLOYED_GROUPING, 'Group sources into authored and deployed trees');
++    } else {
++      Root.Runtime.experiments.register(
++          Root.Runtime.ExperimentName.AUTHORED_DEPLOYED_GROUPING, 'Group sources into authored and deployed trees',
++          undefined, 'https://goo.gle/authored-deployed', 'https://goo.gle/authored-deployed-feedback');
++    }
++    // #endif ARKWEB_DEVTOOLS
+ 
+     // Hide third party code (as determined by ignore lists or source maps)
+     Root.Runtime.experiments.register(
+         Root.Runtime.ExperimentName.JUST_MY_CODE, 'Hide ignore-listed code in Sources tree view');
+ 
+@@ -378,10 +425,16 @@ export class MainImpl {
+     Root.Runtime.experiments.enableExperimentsByDefault([
+       Root.Runtime.ExperimentName.FULL_ACCESSIBILITY_TREE,
+       ...(Root.Runtime.Runtime.queryParam('isChromeForTesting') ? ['protocol-monitor'] : []),
+     ]);
+ 
++    // #ifdef ARKWEB_DEVTOOLS
++    if (adaptForOhos) {
++      Root.Runtime.experiments.enableExperimentsByDefault(['protocol-monitor']);
++    }
++    // #endif ARKWEB_DEVTOOLS
++
+     Root.Runtime.experiments.cleanUpStaleExperiments();
+     const enabledExperiments = Root.Runtime.Runtime.queryParam('enabledExperiments');
+     if (enabledExperiments) {
+       Root.Runtime.experiments.setServerEnabledExperiments(enabledExperiments.split(';'));
+     }
+@@ -984,13 +1040,19 @@ export class MainMenuItem implements UI.Toolbar.Provider {
+       moreTools.defaultSection().appendItem(title, () => {
+         void UI.ViewManager.ViewManager.instance().showView(id, true, false);
+       }, {additionalElement, isPreviewFeature: viewExtension.isPreviewFeature(), jslogContext: id});
+     }
+ 
++    // #ifdef ARKWEB_DEVTOOLS
++    if (adaptForOhos) {
++      // ohos doesn't support this
++    } else {
+     const helpSubMenu = contextMenu.footerSection().appendSubMenuItem(i18nString(UIStrings.help), false, 'help');
+     helpSubMenu.appendItemsAtLocation('mainMenuHelp');
+   }
++    // #endif // ARKWEB_DEVTOOLS
++  }
+ }
+ 
+ let settingsButtonProviderInstance: SettingsButtonProvider;
+ 
+ export class SettingsButtonProvider implements UI.Toolbar.Provider {

@@ -221,6 +221,40 @@ const DEFAULT_VIEW: View = (input: ViewInput, _output: ViewOutput, target: HTMLE
   if (!input.address && !input.filledFields.length) {
     // Disabled until https://crbug.com/1079231 is fixed.
     // clang-format off
+    // #ifdef ARKWEB_DEVTOOLS
+    const adaptForOhos = true;
+    if (adaptForOhos) {
+      render(html`
+        <style>${autofillViewStyles}</style>
+        <style>${UI.inspectorCommonStyles}</style>
+        <main>
+          <div class="top-left-corner">
+            <devtools-checkbox
+                ${bindToSetting(input.showTestAddressesInAutofillMenuSetting)}
+                title=${i18nString(UIStrings.showTestAddressesInAutofillMenu)}
+                jslog=${VisualLogging.toggle(input.showTestAddressesInAutofillMenuSetting.name).track({ change: true })}>
+              ${i18nString(UIStrings.showTestAddressesInAutofillMenu)}
+            </devtools-checkbox>
+            <devtools-checkbox
+                ${bindToSetting(input.autoOpenViewSetting)}
+                title=${i18nString(UIStrings.autoShowTooltip)}
+                jslog=${VisualLogging.toggle(input.autoOpenViewSetting.name).track({ change: true })}>
+              ${i18nString(UIStrings.autoShow)}
+            </devtools-checkbox>
+            <x-link href=${AUTOFILL_FEEDBACK_URL} class="feedback link" jslog=${VisualLogging.link('feedback').track({click: true})}>${i18nString(UIStrings.sendFeedback)}</x-link>
+          </div>
+          <div class="placeholder-container" jslog=${VisualLogging.pane('autofill-empty')}>
+            <div class="empty-state">
+              <span class="empty-state-header">${i18nString(UIStrings.noAutofill)}</span>
+              <div class="empty-state-description">
+                <span>${i18nString(UIStrings.toStartDebuggingHW)}</span>
+                <x-link href=${AUTOFILL_INFO_URL} class="link" jslog=${VisualLogging.link('learn-more').track({click: true})}>${i18nString(UIStrings.learnMore)}</x-link>
+              </div>
+            </div>
+          </div>
+        </main>
+      `, target);
+    } else {
       render(html`
         <style>${autofillViewStyles}</style>
         <style>${UI.inspectorCommonStyles}</style>
@@ -249,12 +283,17 @@ const DEFAULT_VIEW: View = (input: ViewInput, _output: ViewOutput, target: HTMLE
           </div>
         </main>
       `, target);
+    }
+    // #endif ARKWEB_DEVTOOLS
     // clang-format on
     return;
   }
 
   // Disabled until https://crbug.com/1079231 is fixed.
   // clang-format off
+  // #ifdef ARKWEB_DEVTOOLS
+  const adaptForOhos = true;
+  if (adaptForOhos) {
     render(html`
       <style>${autofillViewStyles}</style>
       <style>${UI.inspectorCommonStyles}</style>
@@ -284,6 +323,40 @@ const DEFAULT_VIEW: View = (input: ViewInput, _output: ViewOutput, target: HTMLE
         </div>
       </main>
     `, target);
+  } else {
+    render(html`
+      <style>${autofillViewStyles}</style>
+      <style>${UI.inspectorCommonStyles}</style>
+      <main>
+        <div class="content-container" jslog=${VisualLogging.pane('autofill')}>
+          <div class="right-to-left" role="region" aria-label=${i18nString(UIStrings.addressPreview)}>
+            <div class="header">
+              <div class="label-container">
+                <devtools-checkbox
+                    ${bindToSetting(input.showTestAddressesInAutofillMenuSetting)}
+                    title=${i18nString(UIStrings.showTestAddressesInAutofillMenu)}
+                    jslog=${VisualLogging.toggle(input.showTestAddressesInAutofillMenuSetting.name).track({ change: true })}>
+                  ${i18nString(UIStrings.showTestAddressesInAutofillMenu)}
+                </devtools-checkbox>
+              </div>
+              <div class="label-container">
+                <devtools-checkbox
+                    ${bindToSetting(input.autoOpenViewSetting)}
+                    title=${i18nString(UIStrings.autoShowTooltip)}
+                    jslog=${VisualLogging.toggle(input.autoOpenViewSetting.name).track({ change: true })}>
+                  ${i18nString(UIStrings.autoShow)}
+                </devtools-checkbox>
+              </div>
+              <x-link href=${AUTOFILL_FEEDBACK_URL} class="feedback link" jslog=${VisualLogging.link('feedback').track({click: true})}>${i18nString(UIStrings.sendFeedback)}</x-link>
+            </div>
+            ${renderAddress()}
+          </div>
+          ${renderFilledFields()}
+        </div>
+      </main>
+    `, target);
+  }
+  // #endif ARKWEB_DEVTOOLS
   // clang-format on
 };
 

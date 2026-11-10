@@ -1,0 +1,59 @@
+diff a/front_end/panels/application/components/BackForwardCacheStrings.ts b/front_end/panels/application/components/BackForwardCacheStrings.ts	(rejected hunks)
+@@ -56,11 +56,11 @@ const UIStrings = {
+    */
+   cacheLimit: 'The page was evicted from the cache to allow another page to be cached.',
+   /**
+    * @description Description text for not restored reason JavaScriptExecution.
+    */
+-  JavaScriptExecution: 'Chrome detected an attempt to execute JavaScript while in the cache.',
++  JavaScriptExecution: 'ArkWeb detected an attempt to execute JavaScript while in the cache.',
+   /**
+    * @description Description text for not restored reason RendererProcessKilled.
+    */
+   rendererProcessKilled: 'The renderer process for the page in back/forward cache was killed.',
+   /**
+@@ -81,11 +81,11 @@ const UIStrings = {
+    */
+   serviceWorkerVersionActivation: 'The page was evicted from back/forward cache due to a service worker activation.',
+   /**
+    * @description Description text for not restored reason SessionRestored.
+    */
+-  sessionRestored: 'Chrome restarted and cleared the back/forward cache entries.',
++  sessionRestored: 'ArkWeb restarted and cleared the back/forward cache entries.',
+   /**
+    * @description Description text for not restored reason ServiceWorkerPostMessage.
+    * Note: "MessageEvent" should not be translated.
+    */
+   serviceWorkerPostMessage: 'A service worker attempted to send the page in back/forward cache a `MessageEvent`.',
+@@ -128,16 +128,16 @@ const UIStrings = {
+       'The page was evicted from back/forward cache because an active network request involved a redirect.',
+   /**
+    * @description Description text for not restored reason NetworkRequestTimeout.
+    */
+   networkRequestTimeout:
+-      'The page was evicted from the cache because a network connection was open too long. Chrome limits the amount of time that a page may receive data while cached.',
++      'The page was evicted from the cache because a network connection was open too long. ArkWeb limits the amount of time that a page may receive data while cached.',
+   /**
+    * @description Description text for not restored reason NetworkExceedsBufferLimit.
+    */
+   networkExceedsBufferLimit:
+-      'The page was evicted from the cache because an active network connection received too much data. Chrome limits the amount of data that a page may receive while cached.',
++      'The page was evicted from the cache because an active network connection received too much data. ArkWeb limits the amount of data that a page may receive while cached.',
+   /**
+    * @description Description text for not restored reason NavigationCancelledWhileRestoring.
+    */
+   navigationCancelledWhileRestoring:
+       'Navigation was cancelled before the page could be restored from back/forward cache.',
+@@ -474,11 +474,11 @@ const UIStrings = {
+   embedderOfflinePage: 'The offline page was shown upon navigating away.',
+ 
+   /**
+    *  @description Description text for not restored reason EmbedderChromePasswordManagerClientBindCredentialManager.
+    */
+-  embedderChromePasswordManagerClientBindCredentialManager: 'Chrome Password Manager was present upon navigating away.',
++  embedderChromePasswordManagerClientBindCredentialManager: 'ArkWeb Password Manager was present upon navigating away.',
+ 
+   /**
+    *  @description Description text for not restored reason EmbedderPermissionRequestManager.
+    */
+   embedderPermissionRequestManager: 'There were permission requests upon navigating away.',

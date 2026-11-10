@@ -1,0 +1,14 @@
+diff a/front_end/ui/legacy/tabbedPane.css b/front_end/ui/legacy/tabbedPane.css	(rejected hunks)
+@@ -528,5 +528,12 @@
+ }
+ 
+ .tabbed-pane-header-tab.ai .ai-icon devtools-icon {
+   color: var(--sys-color-on-primary);
+ }
++
++/* For ArkWeb */
++.tabbed-pane-header-tabs-drop-down-container {
++  &[aria-haspopup='true'][aria-expanded='true'] {
++    pointer-events: none;
++  }
++}

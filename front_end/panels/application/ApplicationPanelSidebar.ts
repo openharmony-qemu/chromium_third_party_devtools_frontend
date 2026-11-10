@@ -410,8 +410,14 @@ export class ApplicationPanelSidebar extends UI.Widget.VBox implements SDK.Targe
     this.localStorageListTreeElement = new ExpandableApplicationPanelTreeElement(
         panel, i18nString(UIStrings.localStorage), i18nString(UIStrings.noLocalStorage),
         i18nString(UIStrings.localStorageDescription), 'local-storage');
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
     this.localStorageListTreeElement.setLink(
         'https://developer.chrome.com/docs/devtools/storage/localstorage/' as Platform.DevToolsPath.UrlString);
+    }
+    // #endif ARKWEB_DEVTOOLS
     const localStorageIcon = createIcon('table');
     this.localStorageListTreeElement.setLeadingIcons([localStorageIcon]);
 
@@ -419,8 +425,14 @@ export class ApplicationPanelSidebar extends UI.Widget.VBox implements SDK.Targe
     this.sessionStorageListTreeElement = new ExpandableApplicationPanelTreeElement(
         panel, i18nString(UIStrings.sessionStorage), i18nString(UIStrings.noSessionStorage),
         i18nString(UIStrings.sessionStorageDescription), 'session-storage');
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
     this.sessionStorageListTreeElement.setLink(
         'https://developer.chrome.com/docs/devtools/storage/sessionstorage/' as Platform.DevToolsPath.UrlString);
+    }
+    // #endif ARKWEB_DEVTOOLS
     const sessionStorageIcon = createIcon('table');
     this.sessionStorageListTreeElement.setLeadingIcons([sessionStorageIcon]);
 
@@ -429,23 +441,41 @@ export class ApplicationPanelSidebar extends UI.Widget.VBox implements SDK.Targe
     this.extensionStorageListTreeElement = new ExpandableApplicationPanelTreeElement(
         panel, i18nString(UIStrings.extensionStorage), i18nString(UIStrings.noExtensionStorage),
         i18nString(UIStrings.extensionStorageDescription), 'extension-storage');
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
     this.extensionStorageListTreeElement.setLink(
         'https://developer.chrome.com/docs/extensions/reference/api/storage/' as Platform.DevToolsPath.UrlString);
+    }
+    // #endif ARKWEB_DEVTOOLS
     const extensionStorageIcon = createIcon('table');
     this.extensionStorageListTreeElement.setLeadingIcons([extensionStorageIcon]);
 
     storageTreeElement.appendChild(this.extensionStorageListTreeElement);
 
     this.indexedDBListTreeElement = new IndexedDBTreeElement(panel);
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
     this.indexedDBListTreeElement.setLink(
         'https://developer.chrome.com/docs/devtools/storage/indexeddb/' as Platform.DevToolsPath.UrlString);
+    }
+    // #endif ARKWEB_DEVTOOLS
     storageTreeElement.appendChild(this.indexedDBListTreeElement);
 
     this.cookieListTreeElement = new ExpandableApplicationPanelTreeElement(
         panel, i18nString(UIStrings.cookies), i18nString(UIStrings.noCookies), i18nString(UIStrings.cookiesDescription),
         'cookies');
+    // #ifdef ARKWEB_DEVTOOLS
+    if (adaptForOhos) {
+      // ohos doesn't support external links
+    } else {
     this.cookieListTreeElement.setLink(
         'https://developer.chrome.com/docs/devtools/storage/cookies/' as Platform.DevToolsPath.UrlString);
+    }
+    // #endif ARKWEB_DEVTOOLS
     const cookieIcon = createIcon('cookie');
     this.cookieListTreeElement.setLeadingIcons([cookieIcon]);
     storageTreeElement.appendChild(this.cookieListTreeElement);
