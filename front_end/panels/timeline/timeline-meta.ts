@@ -3,6 +3,10 @@
 // found in the LICENSE file.
 
 import * as Common from '../../core/common/common.js';
+
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
 import * as i18n from '../../core/i18n/i18n.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as LiveMetrics from '../../models/live-metrics/live-metrics.js';

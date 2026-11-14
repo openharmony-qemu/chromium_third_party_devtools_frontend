@@ -1,20 +1,4 @@
 diff a/front_end/entrypoints/main/MainImpl.ts b/front_end/entrypoints/main/MainImpl.ts	(rejected hunks)
-@@ -64,10 +64,15 @@ import * as ThemeSupport from '../../ui/legacy/theme_support/theme_support.js';
- import {html, render} from '../../ui/lit/lit.js';
- import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
- 
- import {ExecutionContextSelector} from './ExecutionContextSelector.js';
- 
-+// 作用：OH 平台适配开关
-+// #ifdef ARKWEB_DEVTOOLS
-+const adaptForOhos = true;
-+// #endif ARKWEB_DEVTOOLS
-+
- const UIStrings = {
-   /**
-    * @description Title of item in main
-    */
-   customizeAndControlDevtools: 'Customize and control DevTools',
 @@ -183,11 +188,16 @@ export class MainImpl {
      this.#universe = new Foundation.Universe.Universe(creationOptions);
      Root.DevToolsContext.setGlobalInstance(this.#universe.context);

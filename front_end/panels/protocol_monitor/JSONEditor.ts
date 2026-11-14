@@ -58,6 +58,10 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('panels/protocol_monitor/JSONEditor.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 export const enum ParameterType {
   STRING = 'string',
   NUMBER = 'number',
@@ -532,6 +536,9 @@ export class JSONEditor extends JSONEditorBase {
           getMessage: () => html`<span>${head}</span>`,
           getPossibleFixMessage: () => popupContent,
           getLearnMoreLink: () =>
+              // #ifdef ARKWEB_DEVTOOLS
+              adaptForOhos ? '' :
+              // #endif ARKWEB_DEVTOOLS
               `https://chromedevtools.github.io/devtools-protocol/tot/${this.command.split('.')[0]}/`,
         });
         popover.contentElement.appendChild(popupElement);

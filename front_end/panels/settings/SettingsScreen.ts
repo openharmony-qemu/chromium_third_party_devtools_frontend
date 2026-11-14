@@ -353,7 +353,10 @@ export class GenericSettingsTab extends UI.Widget.VBox implements SettingsTab {
     // Always create the EXTENSIONS section and append the link handling control.
     if (category === Common.Settings.SettingCategory.EXTENSIONS) {
       this.createExtensionSection(settings);
-    } else if (category === Common.Settings.SettingCategory.ACCOUNT && settings.length > 0) {
+    // 作用：OH上不渲染 ACCOUNT 分类卡片
+    // #ifdef ARKWEB_DEVTOOLS
+    } else if (category === Common.Settings.SettingCategory.ACCOUNT && settings.length > 0 && !adaptForOhos) {
+    // #endif ARKWEB_DEVTOOLS
       const syncCard = createSettingsCard(
           Common.SettingRegistration.getLocalizedSettingsCategory(Common.SettingRegistration.SettingCategory.ACCOUNT),
           this.syncSection.element);

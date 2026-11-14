@@ -62,6 +62,11 @@ import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 
 import {ExecutionContextSelector} from './ExecutionContextSelector.js';
 
+// 作用：OH 平台适配开关
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 const UIStrings = {
   /**
    * @description Title of the menu item in the main toolbar to customize and control DevTools.

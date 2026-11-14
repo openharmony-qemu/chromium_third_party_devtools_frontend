@@ -1,20 +1,4 @@
 diff a/front_end/entrypoints/inspector_main/inspector_main-meta.ts b/front_end/entrypoints/inspector_main/inspector_main-meta.ts	(rejected hunks)
-@@ -5,11 +5,14 @@
- import * as Common from '../../core/common/common.js';
- import * as i18n from '../../core/i18n/i18n.js';
- import * as UI from '../../ui/legacy/legacy.js';
- 
- import type * as InspectorMain from './inspector_main.js';
--
-+// 作用：ArkWeb OH 平台适配开关，控制广告拦截设置扩展的注册
-+// #ifdef ARKWEB_DEVTOOLS
-+const adaptForOhos = true;
-+// #endif ARKWEB_DEVTOOLS
- const UIStrings = {
-   /**
-    * @description Title of the Rendering tool. The rendering tool is a collection of settings that
-    * lets the user debug the rendering (i.e. how the website is drawn onto the screen) of the
-    * website.
 @@ -203,11 +206,13 @@ UI.ActionRegistration.registerActionExtension({
    async loadActionDelegate() {
      const InspectorMain = await loadInspectorMainModule();
