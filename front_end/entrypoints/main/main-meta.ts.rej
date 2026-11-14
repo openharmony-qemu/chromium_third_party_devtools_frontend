@@ -124,15 +124,3 @@ diff a/front_end/entrypoints/main/main-meta.ts b/front_end/entrypoints/main/main
    storageType: Common.Settings.SettingStorageType.SYNCED,
    settingName: 'user-shortcuts',
    settingType: Common.Settings.SettingType.ARRAY,
-@@ -928,11 +957,10 @@ UI.Toolbar.registerToolbarItem({
-     return Main.MainImpl.SettingsButtonProvider.instance();
-   },
-   order: 99,
-   location: UI.Toolbar.ToolbarItemLocation.MAIN_TOOLBAR_RIGHT,
- });
--
- UI.Toolbar.registerToolbarItem({
-   condition: () => !Root.Runtime.Runtime.isTraceApp(),
-   async loadItem() {
-     const Main = await loadMainModule();
-     return Main.MainImpl.MainMenuItem.instance();
