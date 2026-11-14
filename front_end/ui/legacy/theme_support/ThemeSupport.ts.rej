@@ -1,20 +1,4 @@
 diff a/front_end/ui/legacy/theme_support/ThemeSupport.ts b/front_end/ui/legacy/theme_support/ThemeSupport.ts	(rejected hunks)
-@@ -38,10 +38,15 @@ import * as Common from '../../../core/common/common.js';
- import * as Host from '../../../core/host/host.js';
- import * as Root from '../../../core/root/root.js';
- 
- let themeSupportInstance: ThemeSupport;
- 
-+// 作用：OH 平台适配开关
-+// #ifdef ARKWEB_DEVTOOLS
-+const adaptForOhos = true;
-+// #endif ARKWEB_DEVTOOLS
-+
- const themeValueByTargetByName = new Map<Element|null, Map<string, string>>();
- 
- export class ThemeSupport extends EventTarget {
-   #themeName = 'default';
-   private computedStyleOfHTML = Common.Lazy.lazy(() => window.getComputedStyle(document.documentElement));
 @@ -157,11 +162,14 @@ export class ThemeSupport extends EventTarget {
  
      const useSystemPreferred = this.setting.get() === 'systemPreferred' || isForcedColorsMode;

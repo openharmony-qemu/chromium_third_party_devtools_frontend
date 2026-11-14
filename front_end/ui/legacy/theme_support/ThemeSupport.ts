@@ -41,6 +41,11 @@ import * as SettingsUI from '../../settings/settings.js';
 
 let themeSupportInstance: ThemeSupport;
 
+// 作用：OH 平台适配开关
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
+
 const themeValueByTargetByName = new Map<Element|null, Map<string, string>>();
 
 export class ThemeSupport extends EventTarget {

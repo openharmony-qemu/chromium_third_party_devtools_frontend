@@ -19,7 +19,9 @@ import * as EmulationUtils from '../utils/utils.js';
 import userAgentClientHintsFormStyles from './userAgentClientHintsForm.css.js';
 
 const {html} = Lit;
-
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
 const UIStrings = {
   /**
    * @description Title for user agent client hints form.

@@ -9,7 +9,10 @@ import * as UI from '../../ui/legacy/legacy.js';
 import * as SettingsUI from '../../ui/settings/settings.js';
 
 import type * as InspectorMain from './inspector_main.js';
-
+// 作用：ArkWeb OH 平台适配开关，控制广告拦截设置扩展的注册
+// #ifdef ARKWEB_DEVTOOLS
+const adaptForOhos = true;
+// #endif ARKWEB_DEVTOOLS
 const UIStrings = {
   /**
    * @description The name of a checkbox setting in the Rendering tool. This setting
