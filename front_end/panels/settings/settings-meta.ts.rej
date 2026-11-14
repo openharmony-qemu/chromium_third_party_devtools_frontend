@@ -14,21 +14,6 @@ diff a/front_end/panels/settings/settings-meta.ts b/front_end/panels/settings/se
     * @description Text for keyboard shortcuts
     */
    shortcuts: 'Shortcuts',
-@@ -151,11 +160,13 @@ UI.ViewManager.registerViewExtension({
-     const Settings = await loadSettingsModule();
-     return new Settings.FrameworkIgnoreListSettingsTab.FrameworkIgnoreListSettingsTab();
-   },
-   iconName: 'clear-list',
- });
--
-+// 作用：OH上隐藏 Keybinds 快捷键设置面板
-+// #ifdef ARKWEB_DEVTOOLS
-+if (!adaptForOhos) {
- UI.ViewManager.registerViewExtension({
-   location: UI.ViewManager.ViewLocationValues.SETTINGS_VIEW,
-   id: 'keybinds',
-   title: i18nLazyString(UIStrings.shortcuts),
-   commandPrompt: i18nLazyString(UIStrings.showShortcuts),
 @@ -260,15 +282,21 @@ Common.Revealer.registerRevealer({
      const Settings = await loadSettingsModule();
      return new Settings.SettingsScreen.Revealer();

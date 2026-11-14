@@ -183,7 +183,9 @@ UI.ViewManager.registerViewExtension({
   ],
   condition: config => config?.devToolsNetworkBackendLinking?.enabled ?? false,
 });
-
+// 作用：OH上隐藏 Keybinds 快捷键设置面板
+// #ifdef ARKWEB_DEVTOOLS
+if (!adaptForOhos) {
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.SETTINGS_VIEW,
   id: 'keybinds',
